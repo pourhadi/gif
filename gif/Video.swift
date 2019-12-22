@@ -157,7 +157,6 @@ class ThumbGenerator {
 struct ImagePickerController: UIViewControllerRepresentable {
     
 //     var selectedVideo: CurrentValueSubject<Video?, Never>
-    @Binding var presentedVideoPicker: Bool
     @Binding var video: Video
     
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePickerController>) {
@@ -190,11 +189,9 @@ struct ImagePickerController: UIViewControllerRepresentable {
                 self.parent.video = Video(data: nil, url: url)
             }
             
-            self.parent.presentedVideoPicker = false
         }
         
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            self.parent.presentedVideoPicker = false
             picker.dismiss(animated: true, completion: nil)
         }
     }

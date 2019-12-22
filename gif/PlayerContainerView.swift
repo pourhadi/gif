@@ -55,8 +55,7 @@ struct PlayerContainerView: View {
                     self.getEndFrameView()
                 }
                 
-            }.frame(height: inner == .horizontal ? videoSize.fittingWidth((metrics.size.width / 2) - 3).height +  self.size(for: metrics.size,
-                                                    videoSize: videoSize).height: nil)
+            }//.frame(height: inner == .horizontal ? videoSize.fittingWidth((metrics.size.width / 2) - 3).height +  self.size(for: metrics.size, videoSize: videoSize).height: nil)
         }.asAny
     }
     

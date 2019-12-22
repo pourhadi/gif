@@ -123,9 +123,9 @@ struct RoundedCorner: Shape {
 
 extension Image {
     
-    static func symbol(_ named: String) -> Self {
+    static func symbol(_ named: String, useDefault: Bool = false) -> Self {
         let config = UIImage.SymbolConfiguration(pointSize: 20)
-        let img = UIImage(systemName: named, withConfiguration: config)
+        let img = UIImage(systemName: named, withConfiguration: useDefault ? .unspecified : config)
         
         return Image(uiImage: img ?? UIImage())
     }

@@ -32,6 +32,12 @@
 		37FD5A0623902EFA00CB098E /* ControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FD5A0523902EFA00CB098E /* ControlsView.swift */; };
 		37FD5A08239A078700CB098E /* VisualEffectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FD5A07239A078700CB098E /* VisualEffectView.swift */; };
 		47E7EC8984E4C81B0670EF7B /* Pods_gif.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E62278685D2C1A10C337E8B /* Pods_gif.framework */; };
+		DC3DB1B923AF9D45004F706F /* ToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3DB1B823AF9D45004F706F /* ToolbarView.swift */; };
+		DC821E9723AD8AA80015C0FE /* ScrollViewTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC821E9623AD8AA80015C0FE /* ScrollViewTest.swift */; };
+		DC821E9A23AF50860015C0FE /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC821E9923AF50860015C0FE /* GalleryView.swift */; };
+		DC821E9C23AF50BE0015C0FE /* Gallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC821E9B23AF50BE0015C0FE /* Gallery.swift */; };
+		DC821E9E23AF519B0015C0FE /* GIFImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC821E9D23AF519B0015C0FE /* GIFImageView.swift */; };
+		DC821EA123AF719D0015C0FE /* GIFView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC821EA023AF719D0015C0FE /* GIFView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +70,13 @@
 		37FD5A07239A078700CB098E /* VisualEffectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectView.swift; sourceTree = "<group>"; };
 		4E61FA6AE0F826D446D1F649 /* Pods-gif.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-gif.release.xcconfig"; path = "Target Support Files/Pods-gif/Pods-gif.release.xcconfig"; sourceTree = "<group>"; };
 		8E62278685D2C1A10C337E8B /* Pods_gif.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_gif.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DC3DB1B823AF9D45004F706F /* ToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarView.swift; sourceTree = "<group>"; };
+		DC821E9623AD8AA80015C0FE /* ScrollViewTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewTest.swift; sourceTree = "<group>"; };
+		DC821E9923AF50860015C0FE /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		DC821E9B23AF50BE0015C0FE /* Gallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gallery.swift; sourceTree = "<group>"; };
+		DC821E9D23AF519B0015C0FE /* GIFImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFImageView.swift; sourceTree = "<group>"; };
+		DC821E9F23AF53DE0015C0FE /* gif.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = gif.entitlements; sourceTree = "<group>"; };
+		DC821EA023AF719D0015C0FE /* GIFView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,8 +129,11 @@
 		37A7A950238087A000BBCADB /* gif */ = {
 			isa = PBXGroup;
 			children = (
+				DC821E9F23AF53DE0015C0FE /* gif.entitlements */,
+				DC821E9823AF50770015C0FE /* Gallery */,
 				37FD5A00238C875100CB098E /* UtilViews */,
 				37A7A965238089EB00BBCADB /* EditorView.swift */,
+				DC821E9623AD8AA80015C0FE /* ScrollViewTest.swift */,
 				37A7A951238087A000BBCADB /* AppDelegate.swift */,
 				37A7A953238087A000BBCADB /* SceneDelegate.swift */,
 				37A7A955238087A000BBCADB /* ContentView.swift */,
@@ -157,8 +173,20 @@
 				37FD5A07239A078700CB098E /* VisualEffectView.swift */,
 				37A61A3F239A87570072BAE3 /* Stack.swift */,
 				37EDBD4823A1A26800166CD9 /* ActivityIndicatorView.swift */,
+				DC3DB1B823AF9D45004F706F /* ToolbarView.swift */,
 			);
 			path = UtilViews;
+			sourceTree = "<group>";
+		};
+		DC821E9823AF50770015C0FE /* Gallery */ = {
+			isa = PBXGroup;
+			children = (
+				DC821E9923AF50860015C0FE /* GalleryView.swift */,
+				DC821E9B23AF50BE0015C0FE /* Gallery.swift */,
+				DC821E9D23AF519B0015C0FE /* GIFImageView.swift */,
+				DC821EA023AF719D0015C0FE /* GIFView.swift */,
+			);
+			path = Gallery;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -278,6 +306,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				37EDBD4B23A7DB6700166CD9 /* DocumentPickerView.swift in Sources */,
+				DC821EA123AF719D0015C0FE /* GIFView.swift in Sources */,
 				37A7A9682380BED900BBCADB /* Video.swift in Sources */,
 				37AC0E20239D1AA10073A1FD /* Colors.swift in Sources */,
 				37AC0E22239D92270073A1FD /* GifSettingsView.swift in Sources */,
@@ -286,15 +315,20 @@
 				37FD5A02238C878400CB098E /* ScrollViewUtils.swift in Sources */,
 				3757E6602381059E00D9E953 /* TimelineView.swift in Sources */,
 				3757E662238744E000D9E953 /* PlayerContainerView.swift in Sources */,
+				DC821E9E23AF519B0015C0FE /* GIFImageView.swift in Sources */,
 				3757E66423877DE000D9E953 /* PlayerView.swift in Sources */,
+				DC3DB1B923AF9D45004F706F /* ToolbarView.swift in Sources */,
 				37FD5A08239A078700CB098E /* VisualEffectView.swift in Sources */,
 				37FD5A04238F989E00CB098E /* Utils.swift in Sources */,
 				37A7A952238087A000BBCADB /* AppDelegate.swift in Sources */,
 				37A7A966238089EB00BBCADB /* EditorView.swift in Sources */,
+				DC821E9723AD8AA80015C0FE /* ScrollViewTest.swift in Sources */,
 				3707E1D923A1517800ABC970 /* PreviewView.swift in Sources */,
 				37A7A954238087A000BBCADB /* SceneDelegate.swift in Sources */,
 				37A7A956238087A000BBCADB /* ContentView.swift in Sources */,
 				37EDBD4923A1A26800166CD9 /* ActivityIndicatorView.swift in Sources */,
+				DC821E9A23AF50860015C0FE /* GalleryView.swift in Sources */,
+				DC821E9C23AF50BE0015C0FE /* Gallery.swift in Sources */,
 				37AC0E1E239CB54A0073A1FD /* Gif.swift in Sources */,
 				37FD5A0623902EFA00CB098E /* ControlsView.swift in Sources */,
 			);
@@ -433,6 +467,7 @@
 			baseConfigurationReference = 22C6870D4081427B60DEBB5C /* Pods-gif.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = gif/gif.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"gif/Preview Content\"";
 				DEVELOPMENT_TEAM = 84476NUWZH;
@@ -455,6 +490,7 @@
 			baseConfigurationReference = 4E61FA6AE0F826D446D1F649 /* Pods-gif.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = gif/gif.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"gif/Preview Content\"";
 				DEVELOPMENT_TEAM = 84476NUWZH;

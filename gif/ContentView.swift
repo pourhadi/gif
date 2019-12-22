@@ -14,7 +14,11 @@ enum ActiveView: Hashable {
     case editor
 }
 
-enum ActivePopover {
+enum ActivePopover: Identifiable {
+    var id: ActivePopover {
+        return self
+    }
+    
     case videoPicker
     case gifSettings
     case preview
@@ -23,8 +27,7 @@ enum ActivePopover {
 
 struct TopControlView: View {
     
-    @Binding var presentedPopover: Bool
-    @Binding var activePopover: ActivePopover
+    @Binding var activePopover: ActivePopover?
     @Binding var activeView: ActiveView
     @Binding var ready: Bool
     
@@ -60,7 +63,7 @@ class GlobalState: ObservableObject {
     
     @Published var video: Video = Video.empty()
     @Published var visualState = VisualState()
-        
+    @Published var gallery = Gallery()
     var gifGenerator: GifGenerator = GifGenerator(video: Video.empty())
 
     var cancellables = Set<AnyCancellable>()
@@ -86,32 +89,42 @@ class GlobalState: ObservableObject {
 struct ContentView: View {
     @State var activeView: ActiveView = .pickVideo
     @EnvironmentObject var globalState: GlobalState
-    @State var presentedPopover = false
     
     var videoSubject = CurrentValueSubject<Video?, Never>(nil)
-    @State var activePopover: ActivePopover = .videoPicker
+    @State var activePopover: ActivePopover? = nil
     
     var body: some View {
         ZStack {
-            self.getMainMenu()
+            self.getMain()
             
             if self.activeView == .editor {
                 self.getEditor().transition(.slide)
             }
             
-        }.popover(isPresented: $presentedPopover) {
+        }.popover(isPresented: Binding<Bool>(get: { () -> Bool in
+            return self.activePopover != nil
+        }, set: { (active) in
+            if !active {
+                self.activePopover = nil
+            }
+        }), content: {
             self.getPopover()
-        }.onReceive(self.globalState.video.gifConfig.$visible) { (s) in
-            self.activePopover = .gifSettings
-            self.presentedPopover = s
+        }).onReceive(self.globalState.video.gifConfig.$visible) { (s) in
+            self.activePopover = s ? .gifSettings : nil
+        }.onReceive(self.globalState.$video) { (v) in
+            if self.activePopover == .videoPicker {
+                if v.isValid {
+                    self.activePopover = nil
+                }
+            }
         }
     }
     
-    func getPopover() -> some View {
+    func getPopover() -> AnyView {
         switch self.activePopover {
         case .videoPicker:
-            return ImagePickerController(presentedVideoPicker: self.$presentedPopover,
-                                         video: self.$globalState.video).onDisappear {
+            return ImagePickerController(video: self.$globalState.video).onDisappear {
+                self.activePopover = nil
                 if self.globalState.video.isValid {
                     withAnimation(Animation.default.delay(0.4)) {
                         self.activeView = .editor
@@ -120,12 +133,15 @@ struct ContentView: View {
             }.asAny
         case .gifSettings:
             return GifSettingsView().environmentObject(self.globalState.video.gifConfig).onDisappear {
+                self.activePopover = nil
                 self.globalState.video.gifConfig.visible = false
             }.asAny
         case .preview:
-            return PreviewModal(presentedPopover: self.$presentedPopover).environmentObject(self.globalState.gifGenerator).asAny
+            return PreviewModal(activePopover: self.$activePopover).environmentObject(self.globalState.gifGenerator).asAny
             case .docBrowser:
                 return DocumentBrowserView().asAny
+        case .none:
+            return EmptyView().asAny
         }
         
     }
@@ -134,8 +150,7 @@ struct ContentView: View {
         return GeometryReader { metrics in
             VStack(spacing:4) {
                 if !(self.globalState.visualState.compact) {
-                    TopControlView(presentedPopover: self.$presentedPopover,
-                                   activePopover: self.$activePopover,
+                    TopControlView(activePopover: self.$activePopover,
                                    activeView: self.$activeView,
                                    ready: self.$globalState.video.ready)
                         .background(Color.background)
@@ -152,24 +167,8 @@ struct ContentView: View {
     }
     
     
-    func getMainMenu() -> some View {
-        return VStack {
-            Spacer()
-            Button(action: {
-                self.activePopover = .videoPicker
-                if !self.presentedPopover {
-                    self.presentedPopover = true
-                }
-            }, label: { return Text("Get Video") } )
-            Spacer()
-            Button(action: {
-                self.activePopover = .docBrowser
-                if !self.presentedPopover {
-                    self.presentedPopover = true
-                }
-            }, label: { return Text("Import Video") } )
-            Spacer()
-        }
+    func getMain() -> some View {
+        return GalleryContainer(activePopover: self.$activePopover).environmentObject(self.globalState.gallery)
         
     }
 }

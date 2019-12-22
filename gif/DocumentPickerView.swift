@@ -19,6 +19,7 @@ struct DocumentBrowserView: UIViewControllerRepresentable {
         let vc = UIDocumentBrowserViewController(forOpeningFilesWithContentTypes: [(kUTTypeMovie as String)])
         vc.delegate = context.coordinator
         vc.allowsDocumentCreation = false
+        vc.allowsPickingMultipleItems = false
         return vc
     }
     

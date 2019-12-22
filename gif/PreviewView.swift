@@ -10,7 +10,7 @@ import SwiftUI
 import SnapKit
 
 struct PreviewModal: View {
-    @Binding var presentedPopover: Bool
+    @Binding var activePopover: ActivePopover?
     
     var body: some View {
         NavigationView {
@@ -19,7 +19,7 @@ struct PreviewModal: View {
             }
         }.navigationBarTitle("Preview GIF")
             .navigationBarItems(trailing: Button(action: {
-                self.presentedPopover = false
+                self.activePopover = nil
             }, label: { Text("Done") } ))
     }
 }

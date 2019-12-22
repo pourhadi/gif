@@ -7,4 +7,6 @@ target 'gif' do
 
   # Pods for gif
 	pod 'SnapKit'
+  pod 'SwiftyGif'
+
 end

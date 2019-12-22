@@ -24,14 +24,15 @@ struct EditorView: View {
                 PlayerContainerView(gifGenerator: self.$gifGenerator,
                                     selectedMode: self.$selectedMode,
                                     visualState: self.$visualState)
-                    .environmentObject(self.video).background(Color.red)
+                    .environmentObject(self.video)
                     .zIndex(2)
-                    TimelineView(selection: self.$video.gifConfig.selection,
+                    .layoutPriority(1)
+                TimelineView(selection: self.$video.gifConfig.selection,
                              playState: self.$video.playState,
                              videoMode: self.$selectedMode,
                              visualState: self.$visualState)
+                    .frame(minHeight: metrics.size.height / 3)
                     .background(Color.background)
-//                    .frame(height: metrics.size.height / 3)
                 
                 ControlsView(selection: self.$video.gifConfig.selection,
                              playState: self.$video.playState)
@@ -42,7 +43,7 @@ struct EditorView: View {
 }
 
 struct EditorView_Previews: PreviewProvider {
-
+    
     static var previews: some View {
         GlobalPreviewView()
     }

@@ -1,2 +1,3 @@
 ${PODS_ROOT}/Target Support Files/Pods-gif/Pods-gif-frameworks.sh
 ${BUILT_PRODUCTS_DIR}/SnapKit/SnapKit.framework
+${BUILT_PRODUCTS_DIR}/SwiftyGif/SwiftyGif.framework

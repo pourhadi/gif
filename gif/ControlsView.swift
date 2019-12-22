@@ -15,20 +15,19 @@ struct ControlsView: View {
     var body: some View {
         HStack(spacing: 20) {
             Spacer()
-            Spacer()
             Button(action: {
                 self.selection.startTime = self.playState.currentPlayhead
                 if self.selection.endTime < self.selection.startTime {
                     self.selection.endTime = self.selection.startTime + 0.1
                 }
             }, label: { Text("Set Start").padding(8) }).foregroundColor(Color.green.opacity(1)).cornerRadius(4)
+            Spacer()
             Button(action: {
                 self.selection.endTime = self.playState.currentPlayhead
                 if self.selection.endTime < self.selection.startTime {
                     self.selection.startTime = self.selection.endTime - 0.1
                 }
                 }, label: { Text("Set End").padding(8) }).foregroundColor(Color.red.opacity(1)).cornerRadius(4)
-            Spacer()
             Spacer()
         }
     }
