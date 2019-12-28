@@ -149,20 +149,26 @@ struct GalleryContainer: View {
     
     @State var removeGIFView = false
     var body: some View {
-        TabView(selection: self.$activeGallery) {
-            ForEach(0..<self.galleryStore.galleries.count) { x in
-                self.getMainView(gallery: self.$galleryStore.galleries[x],
-                                 title: self.galleryStore.galleries[x].title,
-                                 trailingNavItems: x == 0 ? self.getTrailingBarItem().any : EmptyView().any)
-                    .tabItem {
-                        return self.galleryStore.galleries[x].tabItem
-                        
-                }.tag(x)
+        ZStack {
+            TabView(selection: self.$activeGallery) {
+                ForEach(0..<self.galleryStore.galleries.count) { x in
+                    self.getMainView(gallery: self.$galleryStore.galleries[x],
+                                     title: self.galleryStore.galleries[x].title,
+                                     trailingNavItems: x == 0 ? self.getTrailingBarItem().any : EmptyView().any)
+                        .tabItem {
+                            return self.galleryStore.galleries[x].tabItem
+                            
+                    }.tag(x)
+                }
+                
+            }.edgesIgnoringSafeArea([.top]).actionSheet(item: self.$visibleActionSheet) { (val) -> ActionSheet in
+                return self.getActionSheet()
             }
             
-        }.edgesIgnoringSafeArea([.top]).actionSheet(item: self.$visibleActionSheet) { (val) -> ActionSheet in
-            return self.getActionSheet()
-        }.overlay(self.showingGIF ? self.getGIFView().any : EmptyView().any)
+            if self.showingGIF {
+                self.getGIFView()
+            }
+        }
     }
     
     

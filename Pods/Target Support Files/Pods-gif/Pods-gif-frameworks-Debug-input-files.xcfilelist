@@ -1,7 +1,5 @@
 ${PODS_ROOT}/Target Support Files/Pods-gif/Pods-gif-frameworks.sh
-${BUILT_PRODUCTS_DIR}/FLAnimatedImage/FLAnimatedImage.framework
 ${BUILT_PRODUCTS_DIR}/Gifu/Gifu.framework
 ${BUILT_PRODUCTS_DIR}/SnapKit/SnapKit.framework
 ${BUILT_PRODUCTS_DIR}/SwiftDate/SwiftDate.framework
 ${BUILT_PRODUCTS_DIR}/SwiftyGif/SwiftyGif.framework
-${BUILT_PRODUCTS_DIR}/YYImage/YYImage.framework
