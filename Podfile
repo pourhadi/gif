@@ -9,7 +9,5 @@ target 'gif' do
 	pod 'SnapKit'
   pod 'SwiftyGif'
   pod 'SwiftDate'
-  pod 'YYImage'
-  pod 'Gifu'
   pod 'FLAnimatedImage'
 end
