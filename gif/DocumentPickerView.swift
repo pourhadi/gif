@@ -11,15 +11,19 @@ import UIKit
 import MobileCoreServices
 
 struct DocumentBrowserView: UIViewControllerRepresentable {
+    
+    @Binding var activePopover: ActivePopover?
+    
     func makeCoordinator() -> DocumentBrowserView.Coordinator {
         return Coordinator(self)
     }
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<DocumentBrowserView>) -> UIDocumentBrowserViewController {
-        let vc = UIDocumentBrowserViewController(forOpeningFilesWithContentTypes: [(kUTTypeMovie as String)])
+        let vc = UIDocumentBrowserViewController(forOpeningFilesWithContentTypes: [(kUTTypeMovie as String), "com.compuserve.gif"])
         vc.delegate = context.coordinator
         vc.allowsDocumentCreation = false
         vc.allowsPickingMultipleItems = false
+        vc.additionalTrailingNavigationBarButtonItems = [UIBarButtonItem(barButtonSystemItem: .cancel, target: context.coordinator, action: #selector(Coordinator.close))]
         return vc
     }
     
@@ -43,6 +47,10 @@ struct DocumentBrowserView: UIViewControllerRepresentable {
         
         func documentBrowser(_ controller: UIDocumentBrowserViewController, didImportDocumentAt sourceURL: URL, toDestinationURL destinationURL: URL) {
             print("did import document")
+        }
+        
+        @objc func close() {
+            self.parent.activePopover = nil
         }
     }
 }

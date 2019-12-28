@@ -14,23 +14,28 @@ struct ToolbarView<Content>: View where Content: View {
     let metrics: GeometryProxy
     
     let background: AnyView
-    init(metrics: GeometryProxy, background: AnyView, @ViewBuilder content: () -> Content) {
+    
+    let bottomAdjustment: CGFloat?
+    
+    init(metrics: GeometryProxy, bottomAdjustment: CGFloat? = nil, background: AnyView, @ViewBuilder content: () -> Content) {
         self.items = content()
         self.metrics = metrics
         self.background = background
+        self.bottomAdjustment = bottomAdjustment
     }
     
     var body: some View {
-        VStack {
-            HStack {
-                self.items
+        Group {
+            VStack {
+                HStack {
+                    self.items
+                }
+                Spacer(minLength: self.bottomAdjustment)
             }
-            Spacer(minLength: metrics.safeAreaInsets.bottom)
-        }
-        //.opacity(self.selectedGIFs.count > 0 ? 1 : 0.5)
             .background(self.background)
-            .frame(height: 60 + metrics.safeAreaInsets.bottom)
-            .position(x: metrics.size.width / 2, y: metrics.size.height - metrics.safeAreaInsets.bottom)
+            .frame(height: 40 + (self.bottomAdjustment ?? 0))
+        }.frame(height: metrics.size.height, alignment: .bottom)
+            .offset(y: self.bottomAdjustment ?? 0)
     }
 }
 

@@ -54,16 +54,17 @@ struct TimelineView: View {
                                visualState: self.$visualState,
                                thumbnailMultiplier: self.$thumbnailMultiplier)
             }
+
             Rectangle()
-                .background(Color.white)
+                .background(Color.text)
                 .frame(width: 2, height: metrics.size.height - 10)
-                .offset(x: (metrics.size.width - 3) / 2, y: 5)
-        }.gesture(MagnificationGesture().onChanged({ (value) in
+                .offset(x: (metrics.size.width - 2) / 2, y: 5)
+        }
+        .gesture(MagnificationGesture().onChanged({ (value) in
             let m = value < 0.5 ? 0.5 : floorf(Float(value * 2)) / 2
             print(m)
             self.thumbnailMultiplier = CGFloat(m)
         }))
-        
     }
 }
 
@@ -214,9 +215,11 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
         self.collectionView.register(TimelineCell.self, forCellWithReuseIdentifier: "cell")
         
         self.addSubview(self.collectionView)
-        self.collectionView.snp.makeConstraints { (make) in
-            make.edges.equalToSuperview()
-        }
+        self.collectionView.frame = self.bounds
+        self.collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+//        self.collectionView.snp.makeConstraints { (make) in
+//            make.edges.equalToSuperview()
+//        }
         
         self.collectionView.showsHorizontalScrollIndicator = false
         

@@ -22,10 +22,14 @@ struct VisualEffectView: UIViewRepresentable {
     
     typealias UIViewType = UIVisualEffectView
     
+    static func blur(_ style: UIBlurEffect.Style) -> VisualEffectView {
+        return VisualEffectView(effect: .init(style: style))
+    }
+    
 }
 
 struct VisualEffectView_Previews: PreviewProvider {
-    @State static var effect = UIBlurEffect.init(style: .dark)
+    @State static var effect = UIBlurEffect.init(style: .regular)
     static var previews: some View {
         VisualEffectView(effect: effect)
     }

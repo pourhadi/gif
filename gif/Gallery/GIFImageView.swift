@@ -9,13 +9,13 @@
 import SwiftUI
 import SwiftyGif
 
-struct GIFImageView: UIViewRepresentable {
+struct GIFImageView<G: GIF>: UIViewRepresentable {
     let isAnimating: Bool
-    let gif: GIF?
+    let gif: G?
     
     let contentMode: UIView.ContentMode
     
-    init(isAnimating: Bool, gif: GIF?, contentMode: UIView.ContentMode = .scaleAspectFit) {
+    init(isAnimating: Bool, gif: G?, contentMode: UIView.ContentMode = .scaleAspectFit) {
         self.isAnimating = isAnimating
         self.gif = gif
         self.contentMode = contentMode

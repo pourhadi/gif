@@ -18,15 +18,17 @@ struct EditorView: View {
     
     @Binding var visualState: VisualState
     
+    @State var playersHeight: CGFloat? = nil
+    
     var body: some View {
         GeometryReader { metrics in
             VStack(spacing:0) {
                 PlayerContainerView(gifGenerator: self.$gifGenerator,
                                     selectedMode: self.$selectedMode,
-                                    visualState: self.$visualState)
-                    .environmentObject(self.video)
-                    .zIndex(2)
-                    .layoutPriority(1)
+                                    visualState: self.$visualState,
+                                    playersHeight: self.$playersHeight)
+                    .environmentObject(self.video).frame(height: self.playersHeight)
+//                    .zIndex(2)
                 TimelineView(selection: self.$video.gifConfig.selection,
                              playState: self.$video.playState,
                              videoMode: self.$selectedMode,
@@ -36,7 +38,7 @@ struct EditorView: View {
                 
                 ControlsView(selection: self.$video.gifConfig.selection,
                              playState: self.$video.playState)
-                    .background(Color.black)
+                    .background(Color.background)
             }
         }
     }

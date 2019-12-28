@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SwiftUI_Utils
 
 struct GifSettingsView: View {
     

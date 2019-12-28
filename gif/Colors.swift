@@ -11,7 +11,9 @@ import SwiftUI
 
 extension Color {
     
+    static var text = Color.primary
+    static var background = Color(UIColor.systemBackground) //.brightness(-0.1)
 //    static var background = Color(UIColor(red: 0.00, green: 0.09, blue: 0.16, alpha: 1.00))
-    static var background = Color(white: 0.1)
-    static var text = Color.white
+//    static var background = Color(white: 0.1)
+   // static var text = Color.white
 }

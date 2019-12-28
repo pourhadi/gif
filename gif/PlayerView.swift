@@ -216,7 +216,7 @@ struct PlayerLabelView: View {
         Text(self.label.uppercased())
             .font(.system(size: 20))
         .fontWeight(.bold)
-        .foregroundColor(Color.black)
+        .foregroundColor(Color.text)
     }
     
     func stepForward() {

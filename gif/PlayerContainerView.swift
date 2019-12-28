@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import SwiftUI_Utils
 
 struct PlayerContainerView: View {
     
@@ -22,14 +23,17 @@ struct PlayerContainerView: View {
     
     @Binding var visualState: VisualState
     
+    @Binding var playersHeight: CGFloat?
+    
     var body: some View {
-        
+        let spacing: CGFloat = 6
+
         if self.visualState.compact {
             return HStack {
                 self.getStartFrameView()
                 self.getMainView()
                 self.getEndFrameView()
-            }.asAny
+            }.any
         }
         
         var outer = Axis.horizontal
@@ -39,24 +43,35 @@ struct PlayerContainerView: View {
         if videoSize.width > videoSize.height {
             outer = .vertical
             inner = .horizontal
+            
+            
         }
         
+        
         return GeometryReader { metrics in
-            Stack(outer, spacing: 6) {
-
-                self.getMainView()
-                .frame(width: self.size(for: metrics.size,
-                                        videoSize: videoSize).width,
-                       height: self.size(for: metrics.size,
-                                         videoSize: videoSize).height)
+            Run {
+                if videoSize.width > videoSize.height {
+                    self.playersHeight = self.size(for: metrics.size,
+                                                   videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0)
+                }
+            }
+            
+            Stack(outer, spacing: spacing) {
                 
-                Stack(inner, spacing: 6) {
+                self.getMainView()
+                    .frame(width: self.size(for: metrics.size,
+                                            videoSize: videoSize).width,
+                           height: self.size(for: metrics.size,
+                                             videoSize: videoSize).height)
+                
+                Stack(inner, spacing: spacing) {
                     self.getStartFrameView()
                     self.getEndFrameView()
-                }
+                }.frame(height: self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize))
                 
-            }//.frame(height: inner == .horizontal ? videoSize.fittingWidth((metrics.size.width / 2) - 3).height +  self.size(for: metrics.size, videoSize: videoSize).height: nil)
-        }.asAny
+            }.frame(height: inner == .horizontal ? self.size(for: metrics.size,
+                                                             videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0) : nil)
+        }.any
     }
     
     func getEndFrameView() -> some View {
@@ -69,7 +84,7 @@ struct PlayerContainerView: View {
 
     func getMainView() -> some View {
         if self.video.playState.previewing {
-            return PreviewView().environmentObject(self.gifGenerator).asAny
+            return PreviewView().environmentObject(self.gifGenerator).any
         } else {
             return PlayerView(url: self.video.url,
                               timestamp: self.$video.playState.currentPlayhead,
@@ -83,8 +98,14 @@ struct PlayerContainerView: View {
                 .overlay(Button(action: {
                     self.selectedMode = .playhead
                     self.$video.playState.playing.wrappedValue.toggle()
-                }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70)).asAny
+                }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70)).any
         }
+    }
+    
+    func heightForSecondary(for width: CGFloat, videoSize: CGSize) -> CGFloat? {
+        if videoSize.height > videoSize.width { return nil }
+        
+        return videoSize.fittingWidth(width).height
     }
     
     func size(for metricsSize: CGSize, videoSize: CGSize) -> CGSize {

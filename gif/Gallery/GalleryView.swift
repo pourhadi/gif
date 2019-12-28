@@ -1,15 +1,126 @@
-//
-//  GalleryView.swift
-//  gif
-//
-//  Created by Daniel Pourhadi on 12/22/19.
-//  Copyright © 2019 dan. All rights reserved.
-//
 
 import SwiftUI
 import QuickLook
 
+struct SizeModifier: ViewModifier {
+    
+    let size: CGSize
+    func body(content: _ViewModifier_Content<SizeModifier>) -> AnyView {
+        content.frame(width: size.width, height: size.height).any
+    }
+    
+    typealias Body = AnyView
+    
+    
+}
+
+struct ScaleModifier: ViewModifier {
+    
+    let scale: CGSize
+    let translation: CGSize
+    func body(content: _ViewModifier_Content<ScaleModifier>) -> AnyView {
+        content.scaleEffect(scale).offset(translation).any
+    }
+    
+    typealias Body = AnyView
+    
+    
+}
+
+
+struct RevealModifier: ViewModifier {
+    
+    let size: CGSize
+    let position: CGPoint
+    func body(content: _ViewModifier_Content<RevealModifier>) -> AnyView {
+        content.frame(width: size.width, height: size.height).position(position).any
+    }
+    
+    typealias Body = AnyView
+    
+    
+}
+
+class TransitionContext: ObservableObject {
+    
+    @Published var scaledGIFIndex: Int? = nil
+    
+    @Published var yDrag: CGFloat? = nil
+    @Published var dragScale: CGFloat? = nil
+    
+    @Published var fullscreen = false
+    @Published var disableAnimation = true
+    
+    var itemMetrics: GeometryProxy? = nil
+    
+    var itemFrame: CGRect? {
+        if let metrics = itemMetrics {
+            return metrics.frame(in: .global)
+        }
+        return nil
+    }
+    
+    func offsetRelativeTo(metrics: GeometryProxy) -> CGSize {
+        if let itemFrame = self.itemFrame {
+            let mainFrame = metrics.frame(in: .global)
+            
+            return CGSize(width: itemFrame.midX - mainFrame.midX, height: itemFrame.midY - mainFrame.midY)
+        }
+        return CGSize.zero
+    }
+    
+    func position(in coordinateSpace: CoordinateSpace) -> CGPoint {
+        if let itemMetrics = itemMetrics {
+            let frame = itemMetrics.frame(in: GalleryCoordinateSpace)
+            
+            return CGPoint(x: frame.midX, y: frame.midY)
+        }
+        
+        return CGPoint.zero
+    }
+}
+
+extension GeometryProxy {
+    
+    func midpoint(in coordinateSpace: CoordinateSpace) -> CGPoint {
+        let frame = self.frame(in: coordinateSpace)
+        return CGPoint(x: frame.midX, y: frame.midY)
+    }
+    
+}
+
+let GalleryCoordinateSpace: CoordinateSpace = .named("galleryCoordinate")
+
+class GalleryState<G: GIF>: ObservableObject {
+    
+    @Published var selectedGIFs: [G]
+    @Published var selectionMode = false
+    
+    
+    init(selectedGIFs: [G]) {
+        self.selectedGIFs = selectedGIFs
+    }
+}
+
 struct GalleryContainer: View {
+    
+    enum ActiveGallery: Int {
+        case photoLibrary
+        
+        case local
+    }
+    
+    @State var activeGallery: Int = 0
+    
+    var gallery: some Gallery {
+        return self.galleryStore.galleries[self.activeGallery]
+    }
+    
+    var galleryBinding: Binding<Gallery> {
+        return self.$galleryStore.galleries[self.activeGallery]
+    }
+    
+    @State var transitionContext = TransitionContext()
     
     @Binding var activePopover: ActivePopover?
     
@@ -22,139 +133,137 @@ struct GalleryContainer: View {
         case createMenu
     }
     
-    @EnvironmentObject var gallery: Gallery
+    @Binding var galleryStore: GalleryStore
     @State var showingActionSheet = false
     @State var visibleActionSheet: VisibleActionSheet? = nil
     
     @State var showingCreateMenu = false
-        
-    @State var showingPreview:Bool? = nil
-    
-    @State var selectedGIFs = [GIF]()
-    
-    @State var selectionMode = false
-    
-    @State var fullscreen = false
+
     
     @State var showToolbar = false
     
+    
     var showingGIF: Bool {
-        return !self.selectionMode && self.selectedGIFs.count > 0
+        return !self.gallery.viewState.selectionMode && self.gallery.viewState.selectedGIFs.count > 0
     }
     
+    @State var removeGIFView = false
     var body: some View {
-        Group {
-                
-                NavigationView {
-                    Group {
-                        GeometryReader { metrics in
-
-                        GalleryView(gifs: self.$gallery.gifs,
-                                    selectedGIFs: self.$selectedGIFs,
-                                    selectionMode: self.$selectionMode)
+        TabView(selection: self.$activeGallery) {
+            ForEach(0..<self.galleryStore.galleries.count) { x in
+                self.getMainView(gallery: self.$galleryStore.galleries[x],
+                                 title: self.galleryStore.galleries[x].title,
+                                 trailingNavItems: x == 0 ? self.getTrailingBarItem().any : EmptyView().any)
+                    .tabItem {
+                        return self.galleryStore.galleries[x].tabItem
                         
-                        
-                        
-                        NavigationLink(destination: GIFView(gif: self.selectedGIFs.first,
-                                                            fullscreen: self.$fullscreen,
-                                                            toolbarBuilder: self.getToolbar),
-                                       isActive: Binding<Bool>(get: { () -> Bool in
-                                        return self.showingGIF
-                                       }, set: { (active) in
-                                        if !active {
-                                            withAnimation {
-                                                self.selectedGIFs = []
-                                            }
-                                        }
-                                       }), label: { EmptyView() })
-                        if self.showToolbar {
-                            
-                            self.getToolbar(with: metrics)
-                                .transition(.move(edge: .bottom))
-                        }
-                        
-                        }}.navigationBarTitle("GIFs")
-                        .navigationBarItems(trailing: self.getTrailingBarItem())
-                        .navigationBarHidden(self.fullscreen)
-                        .actionSheet(item: self.$visibleActionSheet) { (val) -> ActionSheet in
-                            return self.getActionSheet()
+                }.tag(x)
+            }
+            
+        }.edgesIgnoringSafeArea([.top]).actionSheet(item: self.$visibleActionSheet) { (val) -> ActionSheet in
+            return self.getActionSheet()
+        }.overlay(self.showingGIF ? self.getGIFView().any : EmptyView().any)
+    }
+    
+    
+    func getGIFView() -> some View {
+        return
+            GIFView(removeGIFView: self.$removeGIFView, transitionContext: self.transitionContext, gifs: self.galleryBinding.gifs,
+                    selectedGIFs: self.galleryBinding.viewState.selectedGIFs,
+                    toolbarBuilder: self.getToolbar)
+                .onAppear(perform: {
+                    print("appeared")
                     
+                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
+                        self.transitionContext.disableAnimation = false
+                    }
+                })
+                .onDisappear(perform: {
+                    print("disappear")
+                    self.transitionContext.fullscreen = false
+                    self.gallery.viewState.selectedGIFs = []
+                }).transition(.opacity)
+    }
+    
+    func getMainView<T>(gallery: Binding<Gallery>, title: String, trailingNavItems: T) -> some View where T : View {
+        return NavigationView {
+            Group {
+                GeometryReader { metrics in
+                    CollectionView(items: gallery.gifs, selectedItems: gallery.viewState.selectedGIFs, selectionMode: gallery.viewState.selectionMode, tapAction: { item, metrics in
+                        
+                        if !gallery.viewState.selectionMode.wrappedValue {
+                            self.transitionContext.itemMetrics = metrics
+                            self.transitionContext.yDrag = nil
+                            self.transitionContext.dragScale = nil
+                            self.transitionContext.disableAnimation = true
+                        }
+                    }) { (item, cvMetrics, itemMetrics) -> AnyView in
+                        return Group {
+                            
+                            return Image(uiImage: item.thumbnail!).resizable().scaledToFill()
+                        }.frame(width: itemMetrics.size.width, height: itemMetrics.size.height).clipped().any
+                    }
+                    if self.showToolbar {
+                        self.getToolbar(with: metrics)
+                            .transition(.opacity)
+                    }
                     
                 }
                 
-            }.edgesIgnoringSafeArea(self.showToolbar ? .bottom : [])
+            }.navigationBarTitle(title)
+                .navigationBarItems(trailing: trailingNavItems)
+            
             
         }
+        
     }
     
-    func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .systemMaterialDark)).asAny) -> AnyView {
+    func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .prominent)).any) -> AnyView {
         return ToolbarView(metrics: metrics, background: background) {
             Button(action: {
                 
-            }, label: { Image.symbol("square.and.arrow.up", useDefault: true) } )
-                .disabled(self.selectedGIFs.count == 0)
-                .padding(12).opacity(self.selectedGIFs.count > 0 ? 1 : 0.5)
+            }, label: { Image.symbol("square.and.arrow.up") } )
+                .disabled(self.gallery.viewState.selectedGIFs.count == 0)
+                .padding(12).opacity(self.gallery.viewState.selectedGIFs.count > 0 ? 1 : 0.5)
             Spacer()
             Button(action: {
                 withAnimation {
-                    self.gallery.remove(self.selectedGIFs)
-                    self.selectedGIFs = []
+                    self.gallery.remove(self.gallery.viewState.selectedGIFs)
+                    self.gallery.viewState.selectedGIFs = []
                 }
-            }, label: { Image.symbol("trash", useDefault: true) } )
-                .disabled(self.selectedGIFs.count == 0)
-                .padding(12).opacity(self.selectedGIFs.count > 0 ? 1 : 0.5)
-        }.asAny
+            }, label: { Image.symbol("trash") } )
+                .disabled(self.gallery.viewState.selectedGIFs.count == 0)
+                .padding(12).opacity(self.gallery.viewState.selectedGIFs.count > 0 ? 1 : 0.5)
+        }.any
         
-        
-//        return VStack {
-//            HStack {
-//                Button(action: {
-//
-//                }, label: { Image.symbol("square.and.arrow.up") } )
-//                    .disabled(self.selectedGIFs.count == 0)
-//                    .padding(12)
-//                Spacer()
-//                Button(action: {
-//                    withAnimation {
-//                        self.gallery.remove(self.selectedGIFs)
-//                        self.selectedGIFs = []
-//                    }
-//                }, label: { Image.symbol("trash") } )
-//                    .disabled(self.selectedGIFs.count == 0)
-//                    .padding(12)
-//            }
-//            Spacer(minLength: metrics.safeAreaInsets.bottom)
-//        }.opacity(self.selectedGIFs.count > 0 ? 1 : 0.5).background(VisualEffectView(effect: .init(style: .systemMaterialDark)))
-//            .frame(height: 60 + metrics.safeAreaInsets.bottom)
-//            .position(x: metrics.size.width / 2, y: metrics.size.height - metrics.safeAreaInsets.bottom)
     }
     
     func getTrailingBarItem() -> some View {
-        if self.selectionMode {
+        if self.gallery.viewState.selectionMode {
             return Button(action: {
                 withAnimation {
-                    self.selectedGIFs = []
-                    self.selectionMode = false
+                    self.gallery.viewState.selectedGIFs = []
+                    self.gallery.viewState.selectionMode = false
                     self.showToolbar = false
                 }
                 
-            }, label: { Text("Done") } ).asAny
+            }, label: { Text("Done") } ).any
         } else {
             return HStack {
                 
                 Button(action: {
                     withAnimation {
-                        self.selectionMode = true
+                        self.gallery.viewState.selectionMode = true
                         self.showToolbar = true
                     }
                     
-                    }, label: { Text("Select") } )
+                }, label: { Text("Select") } )
                 Spacer(minLength: 30)
                 Button(action: {
                     self.visibleActionSheet = .addMenu
                     
-                    }, label: { Image.symbol("plus", useDefault: true) } )
-            }.asAny
+                }, label: { Image.symbol("plus") } )
+            }.any
         }
     }
     
@@ -171,13 +280,18 @@ struct GalleryContainer: View {
             }), .default(Text("Paste"), action: {
                 if let image = UIPasteboard.general.data(forPasteboardType: "com.compuserve.gif") {
                     withAnimation {
-                        self.gallery.add(data: image)
+                        let _ = self.gallery.add(data: image)
                     }
-                    
-                    //                    if let gif = GIF(image: try? UIImage(gifData: image)) {
-                    //                        self.selectedGIF = gif
-                    //                        self.showingPreview = true
-                    //                    }
+                } else if let url = UIPasteboard.general.url, url.absoluteString.lowercased().contains(".gif"), let data = try? Data(contentsOf: url), data.count > 0 {
+                    let _ = self.gallery.add(data: data)
+                } else {
+                    for item in UIPasteboard.general.items {
+                        for value in item.values {
+                            if value is Data {
+                                let _ = self.gallery.add(data: value as! Data)
+                            }
+                        }
+                    }
                 }
             }), .cancel({
                 self.showingActionSheet = false
@@ -197,90 +311,6 @@ struct GalleryContainer: View {
     }
 }
 
-struct GalleryView: View {
-    
-    struct GIFRow: Identifiable {
-        let id: Int
-        let items: [GIF]
-    }
-    
-    @State var animatingGIF: GIF? = nil
-    
-    @Binding var gifs: [GIF]
-        
-    @Binding var selectedGIFs: [GIF]
-    
-    @Binding var selectionMode: Bool
-    
-    var body: some View {
-        
-        var currentRow = [GIF]()
-        var rows = [GIFRow]()
-        
-        for gif in self.gifs {
-            if currentRow.count == 3 {
-                rows.append(GIFRow(id: rows.count, items: currentRow))
-                currentRow = []
-                
-            } else {
-                currentRow.append(gif)
-                
-                if self.gifs.last == gif {
-                    rows.append(GIFRow(id: rows.count, items: currentRow))
-                    currentRow = []
-                }
-            }
-        }
-        
-        let itemSpacing:CGFloat = 4
-        return GeometryReader { metrics in
-            
-            ScrollView {
-                VStack(spacing: itemSpacing) {
-                    ForEach(rows) { row in
-                        HStack(spacing: itemSpacing) {
-                            ForEach(row.items) { gif in
-                                GeometryReader { itemMetrics in
-                                    Group {
-                                        GIFImageView(isAnimating: false, gif: gif, contentMode: .scaleAspectFill)
-                                        
-                                        
-                                        if self.selectionMode {
-                                            Circle()
-                                                .stroke(Color.white, lineWidth: 2)
-                                                .frame(width: 20, height: 20)
-                                                .background(self.selectedGIFs.contains(gif) ? Color.blue : Color.clear)
-                                                .position(x: itemMetrics.size.width - 18, y: itemMetrics.size.height - 18)
-                                                
-                                                .shadow(radius: 2)
-                                        }
-                                    }
-                                }.onTapGesture {
-                                    if self.selectionMode {
-                                        if let index = self.selectedGIFs.firstIndex(of: gif) {
-                                            self.selectedGIFs.remove(at: index)
-                                        } else {
-                                            self.selectedGIFs.append(gif)
-                                        }
-                                    } else {
-                                        self.selectedGIFs = [gif]
-                                    }
-                                }
-                            }
-                        }.frame(height: (metrics.size.width / 3) - (itemSpacing * 2))
-                    }
-                }
-                //                Spacer()
-                
-            }
-        }
-    }
-    
-}
 
-struct GalleryView_Previews: PreviewProvider {
-    @State static var activePopover: ActivePopover? = nil
-    static var previews: some View {
-        GalleryContainer(activePopover: $activePopover).environmentObject(Gallery())
-    }
-}
+
+

@@ -69,91 +69,6 @@ extension CGFloat {
     }
 }
 
-enum Alignment {
-    case leadingTop
-    case trailingBottom
-}
-
-extension View {
-
-    
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape( RoundedCorner(radius: radius, corners: corners) )
-    }
-    
-    var asAny: AnyView {
-        return AnyView(self)
-    }
-    
-    func centered(_ axis: Axis = .horizontal) -> some View {
-        Stack(axis) {
-            Spacer()
-            self
-            Spacer()
-        }
-    }
-    
-    func align(_ axis: Axis, _ alignment: Alignment) -> some View {
-        if alignment == .leadingTop {
-            return Stack(axis) {
-                self
-                Spacer()
-                Spacer()
-            }.asAny
-        } else {
-            return Stack(axis) {
-                Spacer()
-                Spacer()
-                self
-            }.asAny
-        }
-    }
-}
-
-struct RoundedCorner: Shape {
-
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
-        return Path(path.cgPath)
-    }
-}
-
-extension Image {
-    
-    static func symbol(_ named: String, useDefault: Bool = false) -> Self {
-        let config = UIImage.SymbolConfiguration(pointSize: 20)
-        let img = UIImage(systemName: named, withConfiguration: useDefault ? .unspecified : config)
-        
-        return Image(uiImage: img ?? UIImage())
-    }
-}
-
-struct WrappedUIView<V: UIView>: UIViewRepresentable {
-    
-    let initBlock: ()->V
-    let updateBlock: ((_ uiView: V, _ context: UIViewRepresentableContext<WrappedUIView<V>>) -> Void)?
-    
-    init(initBlock: @escaping ()->V, _ updateBlock:((_ uiView: V, _ context: UIViewRepresentableContext<WrappedUIView<V>>) -> Void)?) {
-        self.initBlock = initBlock
-        self.updateBlock = updateBlock
-    }
-    
-    func makeUIView(context: UIViewRepresentableContext<WrappedUIView<V>>) -> V {
-        return initBlock()
-    }
-    
-    func updateUIView(_ uiView: V, context: UIViewRepresentableContext<WrappedUIView<V>>) {
-        self.updateBlock?(uiView, context)
-    }
-    
-    typealias UIViewType = V
-
-}
-
-
 final class DeviceDetails: ObservableObject {
     enum Orientation {
         case portrait
@@ -223,8 +138,13 @@ struct GlobalPreviewView: View {
     @State var generator = GifGenerator.init(video: Video.preview)
     @State var visualState = VisualState()
     var body: some View {
-        EditorView(gifGenerator: $generator, visualState: $visualState).environmentObject(Video.preview).environment(\.colorScheme, .dark).background(Color.background).accentColor(Color.white)
+        EditorView(gifGenerator: $generator, visualState: $visualState).environmentObject(Video.preview).background(Color.background).accentColor(Color.text)
 
     }
     
+}
+
+public func ExtrapolateValue(from:CGFloat, to:CGFloat, percent:CGFloat) -> CGFloat {
+    let value = from + ((to - from) * percent)
+    return value
 }

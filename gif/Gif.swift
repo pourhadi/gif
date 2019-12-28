@@ -254,20 +254,27 @@ class GifGenerator: ObservableObject {
         }.eraseToAnyPublisher()
     }
     
-    func generateGif(photos: [UIImage], filename: String, frameDelay: Double) -> Bool {
-        let documentsDirectoryPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
-        let path = documentsDirectoryPath.appending(filename)
-        let fileProperties = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFLoopCount as String: 0]]
-        let gifProperties = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFDelayTime as String: frameDelay]]
-        let cfURL = URL(fileURLWithPath: path) as CFURL
-        if let destination = CGImageDestinationCreateWithURL(cfURL, kUTTypeGIF, photos.count, nil) {
+    func generateGif(photos: [UIImage], filename: String, frameDelay: Double) -> AnyPublisher<URL?, Never> {
+        
+        return Future<URL?, Never> { (promise) in
+            let documentsDirectoryPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
+            let path = documentsDirectoryPath.appending(filename)
+            let fileProperties = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFLoopCount as String: 0]]
+            let gifProperties = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFDelayTime as String: frameDelay]]
+            let cfURL = URL(fileURLWithPath: path) as CFURL
+            if let destination = CGImageDestinationCreateWithURL(cfURL, kUTTypeGIF, photos.count, nil) {
                 CGImageDestinationSetProperties(destination, fileProperties as CFDictionary?)
                 for photo in photos {
                     CGImageDestinationAddImage(destination, photo.cgImage!, gifProperties as CFDictionary?)
                 }
-                return CGImageDestinationFinalize(destination)
+                if (CGImageDestinationFinalize(destination)) {
+                    promise(.success(cfURL as URL))
+                    return
+                }
             }
-        return false
+            promise(.success(nil))
+        }.eraseToAnyPublisher()
+        
     }
     
 }

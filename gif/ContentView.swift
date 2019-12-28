@@ -31,6 +31,10 @@ struct TopControlView: View {
     @Binding var activeView: ActiveView
     @Binding var ready: Bool
     
+    
+    @EnvironmentObject var globalState: GlobalState
+
+    let generator: GifGenerator
     var body: some View {
         VStack {
             Spacer(minLength: 40)
@@ -42,6 +46,20 @@ struct TopControlView: View {
                 }, label: { Text("Cancel") } )
                 Spacer()
                 Button(action: {
+
+                    /*
+                     
+                     60 frames, 30fps = 2 seconds, frame delay 1/30
+                     
+                     */
+                    
+                    let _ = self.globalState.gifGenerator.getFrames(preview: false)
+                        .flatMap { images in
+                            return self.globalState.gifGenerator.generateGif(photos: images, filename: "tmp", frameDelay: Double(1 / Double(self.globalState.video.gifConfig.adjustedFps)))
+                    }.sink { val in
+                        
+                        
+                    }
                     
                 }, label: { Text("Create GIF") } ).disabled(!self.ready)
             }.padding(.bottom, 10)
@@ -63,7 +81,7 @@ class GlobalState: ObservableObject {
     
     @Published var video: Video = Video.empty()
     @Published var visualState = VisualState()
-    @Published var gallery = Gallery()
+    @Published var galleryStore: GalleryStore = GalleryStore()
     var gifGenerator: GifGenerator = GifGenerator(video: Video.empty())
 
     var cancellables = Set<AnyCancellable>()
@@ -130,18 +148,19 @@ struct ContentView: View {
                         self.activeView = .editor
                     }
                 }
-            }.asAny
+            }.any
+            
         case .gifSettings:
             return GifSettingsView().environmentObject(self.globalState.video.gifConfig).onDisappear {
                 self.activePopover = nil
                 self.globalState.video.gifConfig.visible = false
-            }.asAny
+            }.any
         case .preview:
-            return PreviewModal(activePopover: self.$activePopover).environmentObject(self.globalState.gifGenerator).asAny
-            case .docBrowser:
-                return DocumentBrowserView().asAny
+            return PreviewModal(activePopover: self.$activePopover).environmentObject(self.globalState.gifGenerator).any
+        case .docBrowser:
+            return DocumentBrowserView(activePopover: self.$activePopover).any
         case .none:
-            return EmptyView().asAny
+            return EmptyView().any
         }
         
     }
@@ -152,7 +171,8 @@ struct ContentView: View {
                 if !(self.globalState.visualState.compact) {
                     TopControlView(activePopover: self.$activePopover,
                                    activeView: self.$activeView,
-                                   ready: self.$globalState.video.ready)
+                                   ready: self.$globalState.video.ready,
+                                   generator: self.globalState.gifGenerator)
                         .background(Color.background)
                         .frame(height:80)
                 }
@@ -168,7 +188,7 @@ struct ContentView: View {
     
     
     func getMain() -> some View {
-        return GalleryContainer(activePopover: self.$activePopover).environmentObject(self.globalState.gallery)
+        return GalleryContainer(activePopover: self.$activePopover, galleryStore: self.$globalState.galleryStore)
         
     }
 }

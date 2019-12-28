@@ -36,14 +36,14 @@ struct ScrollViewTest: View {
             self.scrollViewContent
         }//.content.offset(y: self.$offset.wrappedValue)
         
-//        var scrollViewAsView = scrollView.asAny
+//        var scrollViewAsView = scrollView.any
 //        if let setOffset = self.setOffset {
-//            scrollViewAsView = scrollView.content.offset(y: setOffset).asAny
+//            scrollViewAsView = scrollView.content.offset(y: setOffset).any
 //            DispatchQueue.main.async {
 //                self.setOffset = nil
 //            }
 //        } else {
-////            scrollViewAsView = scrollView.content.offset().asAny
+////            scrollViewAsView = scrollView.content.offset().any
 //        }
         
         
