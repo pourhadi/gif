@@ -12,6 +12,9 @@ import Combine
 import UIKit
 import SwiftUI
 import AVFoundation
+import mobileffmpeg
+import YYImage
+import Drawsana
 
 public enum VideoMode {
     case playhead
@@ -20,24 +23,48 @@ public enum VideoMode {
 }
 
 
-struct PlayState: Equatable {
-    var startTime: CGFloat = 0
-    var endTime: CGFloat = 0
+struct PlayState {
     var currentPlayhead: CGFloat = 0
     
     var playing: Bool = false
     
     var previewing = false
-    
-    func gifSelectionEqual(_ other: Self?) -> Bool {
-        return self.startTime == other?.startTime && self.endTime == other?.endTime
-    }
 }
 
+
+//class PlayState: ObservableObject, Equatable {
+//    static func == (lhs: PlayState, rhs: PlayState) -> Bool {
+//        return lhs.currentPlayhead == rhs.currentPlayhead
+//    }
+//
+//    var startTime: CGFloat = 0
+//    var endTime: CGFloat = 0
+//
+//    @Published var currentPlayhead: CGFloat = 0
+//
+//    @Published var playing: Bool = false
+//
+//    @Published var previewing = false
+//
+//    func gifSelectionEqual(_ other: PlayState?) -> Bool {
+//        return self.startTime == other?.startTime && self.endTime == other?.endTime
+//    }
+//
+//    var cancellable: AnyCancellable? = nil
+//    init() {
+//
+//        self.cancellable = $currentPlayhead
+//            .combineLatest($playing)
+//            .combineLatest($previewing).sink { _ in
+//                self.objectWillChange.send()
+//        }
+//    }
+//}
+
 struct AssetInfo {
-    let fps: Float
-    let duration: Double
-    let size: CGSize
+    var fps: Float
+    var duration: Double
+    var size: CGSize
     
     var unitFrameIncrement: CGFloat {
         let totalFrames = fps * Float(duration)
@@ -49,42 +76,269 @@ struct AssetInfo {
     }
 }
 
+class TextContext : ObservableObject {
+    
+    @Published var selection: GifConfig.Selection = GifConfig.Selection()
+    
+    var drawsanaView: DrawsanaView = DrawsanaView()
+    
+}
 
 
-class Video: ObservableObject {
+class ContextStore {
+    
+    static var context: AnyObject?
+    
+}
+
+class EditingContext<Generator>: ObservableObject where Generator : GifGenerator {
+
+    @Published var textFormat = TextFormat()
+    
+    var drawsanaView: DrawsanaView? = nil
+
+    @Published var editingText = false
+    
+    var avPlayer: AVPlayer? = nil
+    
+    enum Mode {
+        case trim
+        case text
+    }
+    
+//    var unwrappedActiveSelection : GifConfig.Selection {
+//        get {
+//            return self.activeSelection
+//        }
+//        set {
+//            switch self.mode {
+//            case .text: self.textContext.selection = newValue
+//            case .trim: self.gifConfig.selection = newValue
+//            }
+//        }
+//    }
+        
+    lazy var cropState: CropState = {
+       let state = CropState()
+        state.aspectRatio = self.size.width / self.size.height
+        return state
+    }()
+    
+//    @Published var activeSelection: GifConfig.Selection = GifConfig.Selection()
+    
+    
+    @Published var mode: Mode = .trim
+    
+    @Published var generator: Generator
+    
+    var thumbGenerator: ThumbGenerator
+    
+    @Published var playState: PlayState
+    
+    var timelineItems: [TimelineItem] = []
+
+    @Published var gifConfig: GifConfig
+    
+    @Published var createdGIF: GIF? = nil
+    
+    var item: Editable
+    
+    var unwrappedGifConfig: GifConfig {
+        get {
+            self.gifConfig
+        }
+        set {
+            self.gifConfig = newValue
+        }
+    }
+    
+    let frameIncrement: CGFloat
+    
+    let size: CGSize
+    
+    var cancellables = Set<AnyCancellable>()
+    
+    var activeSelectionCancellable: AnyCancellable?
+    init(item: Editable,
+         gifConfig: GifConfig,
+         playState: PlayState,
+         frameIncrement: CGFloat,
+         size: CGSize,
+         generator: Generator,
+         thumbGenerator: ThumbGenerator) {
+        self.item = item
+        self.gifConfig = gifConfig
+        self.playState = playState
+        self.frameIncrement = frameIncrement
+        self.size = size
+        self.generator = generator
+        self.thumbGenerator = thumbGenerator
+        
+//        self.$mode.map {
+//            switch $0 {
+//            case .trim: return self.gifConfig.selection
+//            case .text: return self.textContext.selection
+//            }
+//        }.assign(to: \.activeSelection, on: self)
+//            .store(in: &self.cancellables)
+//
+//        self.gifConfig.$selection
+//            .combineLatest(self.textContext.$selection)
+//            .map { (trimSelection, textSelection) in
+//                if self.mode == .trim {
+//                    return trimSelection
+//                }
+//
+//                return textSelection
+//        }
+//        .assign(to: \.activeSelection, on: self)
+//        .store(in: &self.cancellables)
+        
+    }
+}
+
+protocol Editable {
+    var url: URL { get }
+    
+}
+
+extension Video {
+    var unwrappedGifConfig: GifConfig {
+        set {
+            self.gifConfig = newValue
+        }
+        
+        get {
+            return self.gifConfig
+        }
+    }
+    
+    var frameIncrement: CGFloat {
+        return self.assetInfo.unitFrameIncrement
+    }
+    
+    var size: CGSize {
+        return (self.videoTrack?.naturalSize ?? CGSize.zero).applying(self.videoTrack?.preferredTransform ?? CGAffineTransform.identity)
+    }
+}
+
+class Video: ObservableObject, Identifiable, Editable {
+    
+    func reset() {
+        self.timelineItems = []
+    }
+    
+    var editingContext: EditingContext<VideoGifGenerator> {
+        if let context = ContextStore.context as? EditingContext<VideoGifGenerator> {
+            return context
+        }
+        
+        let config = self.gifConfig
+        let playState = PlayState()
+        let context = EditingContext(item: self, gifConfig: config, playState: playState, frameIncrement: self.frameIncrement, size: self.size, generator: VideoGifGenerator(gifConfig: gifConfig, playState: playState, asset: self.asset), thumbGenerator: ThumbGenerator(item: self))
+        
+        ContextStore.context = context
+        return context
+    }
+    
+    var id = UUID()
+    
     var data: Data?
     
-    var isValid: Bool {
-        return asset.isReadable
-    }
+    @Published var isValid:Bool? = nil
+    
+    var readyToEdit = PassthroughSubject<Bool?, Never>()
     
     let url: URL
     
-    @Published var playState = PlayState()
-    @Published var timelineItems = [TimelineItem]()
+    var playState = PlayState()
+    var timelineItems = [TimelineItem]()
     
-    @Published var ready = false
-        
+    var ready = false
+    
     let asset: AVURLAsset
     
-    let assetInfo: AssetInfo
+    var assetInfo: AssetInfo = AssetInfo.empty
     
-    @Published var gifConfig: GifConfig
-
+    @Published var createdGIF: GIF? = nil
+    
+    @Published var gifConfig: GifConfig = GifConfig(assetInfo: AssetInfo.empty)
+    
     init(data: Data?, url: URL) {
         self.data = data
         self.url = url
         
-        let asset = AVURLAsset(url: url)
+        let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+        self.asset = asset
         
-        if let track = asset.tracks(withMediaType: .video).last {
-            self.assetInfo = AssetInfo(fps: track.nominalFrameRate, duration: asset.duration.seconds, size: track.naturalSize.applying(track.preferredTransform).absolute())
-        } else {
-            self.assetInfo = AssetInfo.empty
+        self.asset.loadValuesAsynchronously(forKeys: ["readable", "duration"]) {
+            if let track = asset.tracks(withMediaType: .video).last {
+                self.assetInfo = AssetInfo(fps: track.nominalFrameRate, duration: asset.duration.seconds, size: track.naturalSize.applying(track.preferredTransform).absolute())
+            } else {
+                self.assetInfo = AssetInfo.empty
+                
+                self.gifConfig = GifConfig(assetInfo: self.assetInfo)
+                
+                self.isValid = false
+                return
+            }
+
+        self.gifConfig = GifConfig(assetInfo: self.assetInfo)
+        
+        Delayed(0.2) {
+            if asset.isReadable {
+                    self.isValid = true
+                    self.readyToEdit.send(true)
+                    GlobalPublishers.default.videoReady.send(self)
+                } else {
+                    self.isValid = false
+                    self.readyToEdit.send(false)
+                }
+            }
+            
         }
         
-        self.asset = asset
-        self.gifConfig = GifConfig(assetInfo: self.assetInfo)
+        
+        
+    }
+    
+    static func createFromGIF(url: URL, completion: (Video?) -> Void) {
+        let tmpDirURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmpVideo.mp4")
+        
+        let localGIFURL = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+        
+        do {
+            
+            if FileManager.default.fileExists(atPath: tmpDirURL.path) {
+                try FileManager.default.removeItem(at: tmpDirURL)
+            }
+            
+            if FileManager.default.fileExists(atPath: localGIFURL.path) {
+                try FileManager.default.removeItem(at: localGIFURL)
+            }
+            
+        } catch { }
+        
+        do {
+            
+            try FileManager.default.copyItem(at: url, to: localGIFURL)
+            
+            if MobileFFmpeg.execute("-i \(localGIFURL.path) -pix_fmt yuv420p -vf \"crop=trunc(iw/2)*2:trunc(ih/2)*2\" \(tmpDirURL.path)") == 0 {
+                
+                let video = Video(data: nil, url: tmpDirURL)
+                let selection = GifConfig.Selection(startTime: 0, endTime: 1)
+                video.gifConfig.selection = selection
+                video.gifConfig.animationQuality = .high
+                completion(video)
+            } else {
+                completion(nil)
+            }
+            
+        } catch {
+            
+            completion(nil)
+        }
+        
     }
     
     static func empty() -> Video {
@@ -107,30 +361,73 @@ struct TimelineThumb {
 
 class ThumbGenerator {
     
-    let generator: AVAssetImageGenerator
-    let asset: AVAsset
-    init(url: URL) {
-        self.asset = AVAsset(url: url)
-        self.generator = AVAssetImageGenerator(asset: self.asset)
-        self.generator.appliesPreferredTrackTransform = true
-        self.generator.maximumSize = CGSize(width: 100, height: 100)
+    let generator: AVAssetImageGenerator?
+    let asset: AVAsset?
+    
+    var gif: GIF? = nil
+    
+    init(item: Editable) {
+        
+        if item is GIF {
+            self.generator = nil
+            self.asset = nil
+            self.gif = item as? GIF
+        } else {
+
+
+            let url = (item as! Video).url
+            
+            self.asset = AVAsset(url: url)
+            self.generator = AVAssetImageGenerator(asset: self.asset!)
+            self.generator?.appliesPreferredTrackTransform = true
+            self.generator?.maximumSize = CGSize(width: 100, height: 100)
+        }
     }
     
-    func getThumbs(for video: URL, multiplier: CGFloat = 1) -> Future<[TimelineThumb], Never> {
-        
-        self.generator.cancelAllCGImageGeneration()
+    init(url: URL) {
+        self.asset = AVAsset(url: url)
+        self.generator = AVAssetImageGenerator(asset: self.asset!)
+        self.generator?.appliesPreferredTrackTransform = true
+        self.generator?.maximumSize = CGSize(width: 100, height: 100)
+    }
+    
+    func getThumbs(for item: Editable, multiplier: CGFloat = 1) ->
+        AnyPublisher<[TimelineThumb], Never> {
+            
+//            guar/d self.asset != nil else { return Just([]).eraseToAnyPublisher() }
+        self.generator?.cancelAllCGImageGeneration()
         
         return Future { (doneBlock) in
+            if let gif = self.gif, let animatedImages = gif.animatedImage?.images {
+                DispatchQueue.global().async {
+                    
+                    var results = [TimelineThumb]()
+
+                    results = animatedImages.map { img in
+                        
+                        
+                        return TimelineThumb(image: img, time: CMTime.zero)
+                    }
+                    
+                    doneBlock(.success(results))
+                }
+                
+                return
+    
+            }
+            
+            
+            
             var times = [NSValue]()
             
-            for x in stride(from: 0, through: self.asset.duration.seconds, by: Double(1 / multiplier)) {
+            for x in stride(from: 0, through: self.asset!.duration.seconds, by: Double(1 / multiplier)) {
                 times.append(NSValue(time: CMTime(seconds: ((x)), preferredTimescale: CMTimeScale(1))))
-
+                
             }
-
+            
             var results = [TimelineThumb]()
             
-            self.generator.generateCGImagesAsynchronously(forTimes: times as [NSValue]) { (requested, cgImage, actual, result, error) in
+            self.generator!.generateCGImagesAsynchronously(forTimes: times as [NSValue]) { (requested, cgImage, actual, result, error) in
                 
                 if let _ = error {
                     doneBlock(.success(results))
@@ -148,7 +445,7 @@ class ThumbGenerator {
                 }
                 
             }
-        }
+        }.eraseToAnyPublisher()
         
     }
     
@@ -156,7 +453,7 @@ class ThumbGenerator {
 
 struct ImagePickerController: UIViewControllerRepresentable {
     
-//     var selectedVideo: CurrentValueSubject<Video?, Never>
+    //     var selectedVideo: CurrentValueSubject<Video?, Never>
     @Binding var video: Video
     
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePickerController>) {
@@ -166,7 +463,7 @@ struct ImagePickerController: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-
+    
     
     typealias UIViewControllerType = UIImagePickerController
     
@@ -174,6 +471,7 @@ struct ImagePickerController: UIViewControllerRepresentable {
         let vc = UIImagePickerController()
         vc.delegate = context.coordinator
         vc.mediaTypes = ["public.movie"]
+        //        vc.videoQuality = .typeLow
         return vc
     }
     
@@ -195,4 +493,49 @@ struct ImagePickerController: UIViewControllerRepresentable {
             picker.dismiss(animated: true, completion: nil)
         }
     }
+}
+
+class Converter {
+    
+    static var exportSession: AVAssetExportSession?
+    
+    static func convert(url: URL, done: @escaping (URL?) -> Void) {
+        
+        let anAsset = AVURLAsset(url: url)
+        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmpvid.mp4")
+         
+        do {
+            try FileManager.default.removeItem(at: outputURL)
+        } catch {
+            
+        }
+        
+        // These settings will encode using H.264.
+        let preset = AVAssetExportPreset1280x720
+        let outFileType = AVFileType.mp4
+        
+        AVAssetExportSession.determineCompatibility(ofExportPreset: preset, with: anAsset, outputFileType: outFileType, completionHandler: { (isCompatible) in
+            if !isCompatible {
+                return
+        }})
+        
+        exportSession = AVAssetExportSession(asset: anAsset, presetName: preset)
+        
+        guard let export = exportSession else {
+            return
+        }
+
+        export.outputFileType = outFileType
+        export.outputURL = outputURL
+        export.exportAsynchronously { [unowned export] () -> Void in
+           
+            if export.status == .cancelled || export.status == .failed {
+                done(nil)
+            } else if export.status == .completed {
+                done(outputURL)
+            }
+            
+        }
+    }
+    
 }

@@ -10,6 +10,49 @@ import SwiftUI
 import UIKit
 import MobileCoreServices
 
+
+struct DocumentPickerUIView: UIViewControllerRepresentable {
+    
+    @Binding var video: Video
+    
+    let cancelBlock: () -> Void
+    
+    func makeCoordinator() -> DocumentPickerUIView.Coordinator {
+        return Coordinator(self)
+    }
+    
+    func makeUIViewController(context: UIViewControllerRepresentableContext<DocumentPickerUIView>) -> UIDocumentPickerViewController {
+        let vc = UIDocumentPickerViewController(documentTypes: [kUTTypeMovie as String], in: .import)
+        vc.delegate = context.coordinator
+        return vc
+    }
+    
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: UIViewControllerRepresentableContext<DocumentPickerUIView>) {
+        
+    }
+    
+    typealias UIViewControllerType = UIDocumentPickerViewController
+    
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let parent: DocumentPickerUIView
+        
+        init(_ parent: DocumentPickerUIView) {
+            self.parent = parent
+        }
+        
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            GlobalPublishers.default.prepVideo.send(urls[0])
+//            self.parent.video = Video(data: nil, url: urls[0])
+        }
+        
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            self.parent.cancelBlock()
+        }
+    }
+    
+    
+}
+
 struct DocumentBrowserView: UIViewControllerRepresentable {
     
     @Binding var activePopover: ActivePopover?
@@ -19,7 +62,7 @@ struct DocumentBrowserView: UIViewControllerRepresentable {
     }
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<DocumentBrowserView>) -> UIDocumentBrowserViewController {
-        let vc = UIDocumentBrowserViewController(forOpeningFilesWithContentTypes: [(kUTTypeMovie as String), "com.compuserve.gif"])
+        let vc = UIDocumentBrowserViewController(forOpeningFilesWithContentTypes: nil)
         vc.delegate = context.coordinator
         vc.allowsDocumentCreation = false
         vc.allowsPickingMultipleItems = false

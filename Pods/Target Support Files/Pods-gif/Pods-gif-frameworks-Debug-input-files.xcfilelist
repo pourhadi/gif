@@ -1,5 +1,10 @@
 ${PODS_ROOT}/Target Support Files/Pods-gif/Pods-gif-frameworks.sh
+${BUILT_PRODUCTS_DIR}/Drawsana/Drawsana.framework
 ${BUILT_PRODUCTS_DIR}/Gifu/Gifu.framework
+${BUILT_PRODUCTS_DIR}/IGColorPicker/IGColorPicker.framework
+${BUILT_PRODUCTS_DIR}/Introspect/Introspect.framework
+${BUILT_PRODUCTS_DIR}/M13Checkbox/M13Checkbox.framework
 ${BUILT_PRODUCTS_DIR}/SnapKit/SnapKit.framework
 ${BUILT_PRODUCTS_DIR}/SwiftDate/SwiftDate.framework
-${BUILT_PRODUCTS_DIR}/SwiftyGif/SwiftyGif.framework
+${BUILT_PRODUCTS_DIR}/YYImage/YYImage.framework
+${BUILT_PRODUCTS_DIR}/iCloudSync/iCloudSync.framework

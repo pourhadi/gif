@@ -6,10 +6,12 @@
 //  Copyright © 2019 dan. All rights reserved.
 //
 
-import SwiftUI
 import AVFoundation
-import UIKit
 import Combine
+import SnapKit
+import SwiftUI
+import UIKit
+import YYImage
 
 class CustomPlayerView: UIView {
     var player: AVPlayer? {
@@ -21,49 +23,74 @@ class CustomPlayerView: UIView {
         }
     }
     
-    override class var layerClass: AnyClass { return  AVPlayerLayer.self }
+    override class var layerClass: AnyClass { return AVPlayerLayer.self }
 }
 
 struct UIPlayerView: UIViewRepresentable {
+    
+    let playerType: PlayerType
+    
+    @Environment(\.timelineState) var timelineState: TimelineState
+
     
     @Binding var timestamp: CGFloat
     @Binding var playing: Bool
     let url: URL
     let videoGravity: AVLayerVideoGravity
     
-    
     func makeUIView(context: UIViewRepresentableContext<UIPlayerView>) -> CustomPlayerView {
         let v = CustomPlayerView()
         v.isOpaque = false
-        let player = AVPlayer(url: url)
-        v.player = player
+        if let player = EditorStore.players[self.playerType] {
+            v.player = player
+        } else {
+            let player = AVPlayer(url: self.url)
+            EditorStore.players[self.playerType] = player
+            v.player = player
+        }
         v.clipsToBounds = true
-        (v.layer as! AVPlayerLayer).videoGravity = videoGravity
-        context.coordinator.player = player
+        (v.layer as! AVPlayerLayer).videoGravity = self.videoGravity
+        context.coordinator.player = v.player
+        
+        Delayed(0.1) {
+            if let duration = v.player?.currentItem?.duration, !duration.isIndefinite, context.coordinator.prevTimestamp != self.$timestamp.wrappedValue, !self.playing {
+                context.coordinator.prevTimestamp = self.$timestamp.wrappedValue
+//                let scaled = CMTimeValue(CGFloat(duration.seconds) * self.$timestamp.wrappedValue * 30)
+                
+                let time = duration.seconds * Double(self.timestamp)
+                let cmTime = CMTime(seconds: time, preferredTimescale: 1000)
+                
+                v.player?.seek(to: cmTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero, completionHandler: { _ in })
+            }
+        }
+        
         return v
     }
     
     func updateUIView(_ uiView: CustomPlayerView, context: UIViewRepresentableContext<UIPlayerView>) {
-        
         if let player = uiView.player {
             if player.rate < 1 {
-                if playing {
+                if self.playing {
                     player.rate = 1
                 }
             } else {
-                if !playing {
+                if !self.playing {
                     player.rate = 0
                 }
             }
         }
         
         if let duration = uiView.player?.currentItem?.duration, !duration.isIndefinite, context.coordinator.prevTimestamp != $timestamp.wrappedValue, !playing {
-            
             context.coordinator.prevTimestamp = $timestamp.wrappedValue
-            let scaled = CMTimeValue(CGFloat(duration.seconds) * $timestamp.wrappedValue * 30)
+            let time = duration.seconds * Double(self.timestamp)
+            let cmTime = CMTime(seconds: time, preferredTimescale: 1000)
             
             DispatchQueue.main.async {
-                uiView.player?.seek(to: CMTime(value: scaled, timescale: 30), toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero, completionHandler: { _ in })
+                if self.timelineState.isDragging {
+                    uiView.player?.seek(to: cmTime, toleranceBefore: CMTime(value: 5, timescale: 30), toleranceAfter: CMTime(value: 5, timescale: 30), completionHandler: { _ in })
+                } else {
+                    uiView.player?.seek(to: cmTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero, completionHandler: { _ in })
+                }
             }
         }
     }
@@ -79,17 +106,12 @@ struct UIPlayerView: UIViewRepresentable {
         var parent: UIPlayerView
         var prevTimestamp: CGFloat = -1
         
-        unowned var player: AVPlayer? = nil {
+        var player: AVPlayer? {
             didSet {
-                if let oldValue = oldValue, let oldObserver = observer {
-                    oldValue.removeTimeObserver(oldObserver)
-                }
-                
-                if let player = player {
-                    observer = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 30), queue: DispatchQueue.init(label: "playerTimeObserver.queue"), using: { [weak self] (time) in
-                        if let weakSelf = self, let duration = weakSelf.player?.currentItem?.duration {
+                if let player = player, EditorStore.playerObservers[self.parent.playerType] == nil {
+                    EditorStore.playerObservers[self.parent.playerType] = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 30), queue: DispatchQueue(label: "playerTimeObserver.queue"), using: { [weak self] time in
+                        if let weakSelf = self, let duration = EditorStore.players[weakSelf.parent.playerType]?.currentItem?.duration {
                             if weakSelf.parent.playing {
-                                
                                 DispatchQueue.main.async {
                                     weakSelf.parent.timestamp = CGFloat(time.seconds / duration.seconds)
                                 }
@@ -99,115 +121,331 @@ struct UIPlayerView: UIViewRepresentable {
                 }
             }
         }
+        
         var observer: Any?
         
         init(_ parent: UIPlayerView) {
             self.parent = parent
         }
         
-        deinit {
-            if let player = player, let observer = observer {
-                player.removeTimeObserver(observer)
+
+    }
+}
+
+enum PlayerType: Hashable {
+    case playhead
+    case start
+    case end
+}
+
+protocol PlayerView: View {
+    
+    var playerType: PlayerType { get }
+    
+    var timestamp: CGFloat { get nonmutating set }
+    
+    var playing: Bool { get nonmutating set }
+    
+    var contentMode: ContentMode { get }
+    
+    init(item: Editable, timestamp: Binding<CGFloat>, playing: Binding<Bool>, contentMode: ContentMode, playerType: PlayerType)
+}
+
+struct FrameImageView: UIViewRepresentable {
+    func makeCoordinator() -> FrameImageView.Coordinator {
+        return Coordinator(self)
+    }
+    
+    let gif: GIF
+    
+    let contentMode: ContentMode
+    
+    @Binding var timestamp: CGFloat
+    
+    @Binding var playing: Bool
+    
+    func makeUIView(context: UIViewRepresentableContext<FrameImageView>) -> FrameImageUIView {
+        let v = FrameImageUIView()
+        if let img = self.gif.animatedImage {
+            context.coordinator.numberOfFrames = (img.images?.count ?? 1) - 1
+            
+            Delayed(0.2) {
+                if !self.timestamp.isInfinite {
+                    let currentFrame = Int(CGFloat(context.coordinator.numberOfFrames) * self.timestamp)
+                    v.imageView.image = self.gif.animatedImage?.images?[currentFrame]
+                }
+            }
+        }
+        return v
+    }
+    
+    func updateUIView(_ uiView: FrameImageUIView, context: UIViewRepresentableContext<FrameImageView>) {
+        uiView.imageView.contentMode = self.contentMode == .fit ? UIView.ContentMode.scaleAspectFit : .scaleAspectFill
+        
+        if self.playing {
+            if !uiView.imageView.isAnimating {
+                uiView.imageView.animationImages = self.gif.animatedImage?.images
+                uiView.imageView.animationDuration = self.gif.animatedImage?.duration ?? 0
+                uiView.imageView.startAnimating()
+            }
+        } else {
+            uiView.imageView.stopAnimating()
+            if !self.timestamp.isInfinite {
+                let currentFrame = Int(CGFloat(context.coordinator.numberOfFrames) * self.timestamp)
+                uiView.imageView.image = self.gif.animatedImage?.images?[currentFrame]
             }
         }
     }
     
+    typealias UIViewType = FrameImageUIView
     
+    class Coordinator {
+        var numberOfFrames: Int = 0
+        let parent: FrameImageView
+        
+        init(_ parent: FrameImageView) {
+            self.parent = parent
+        }
+    }
 }
 
-struct PlayerView: View {
+class FrameImageUIView: UIView {
+    let imageView = UIImageView()
     
-    let url: URL
-    @Binding var timestamp: CGFloat
-    @Binding var playing: Bool
+    init() {
+        super.init(frame: CGRect.zero)
+        
+        addSubview(self.imageView)
+        self.imageView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        
+        self.clipsToBounds = true
+        self.imageView.clipsToBounds = true
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+extension PlayerView {
+    init(item: Editable, timestamp: Binding<CGFloat>, playing: Binding<Bool>, playerType: PlayerType) {
+        self.init(item: item, timestamp: timestamp, playing: playing, contentMode: .fit, playerType: playerType)
+    }
+}
+
+public struct TextPlayerView : PlayerView {
+    
+    var contentMode: ContentMode
+    let playerType: PlayerType
+    let gif: GIF
+    @Binding internal var timestamp: CGFloat
+    @Binding public var playing: Bool
+    
+    init(item: Editable, timestamp: Binding<CGFloat>, playing: Binding<Bool>, contentMode: ContentMode, playerType: PlayerType) {
+        self.gif = item as! GIF
+        self._timestamp = timestamp
+        self._playing = playing
+        self.contentMode = contentMode
+        self.playerType = playerType
+    }
+    
+    var showText: Bool {
+        if self.playerType == .playhead && self.timestamp >= gif.textEditingContext.gifConfig.selection.startTime && self.timestamp <= gif.textEditingContext.gifConfig.selection.endTime {
+            return true
+        }
+        
+        return false
+    }
+    
+    var textAdded : Bool {
+        return self.gif.textEditingContext.generator.drawsana.drawing.shapes.count > 0
+    }
+    
+    public var body: some View {
+        FrameImageView(gif: self.gif, contentMode: self.contentMode, timestamp: self.$timestamp, playing: self.$playing)
+                .zIndex(0)
+                .overlay(GeometryReader { metrics in
+                    
+                    self.getOverlay(metrics: metrics)
+                })
+        
+            
+    }
+    
+    
+    func getOverlay(metrics: GeometryProxy) -> some View {
+//        let size = self.gif.size
+//        let frameSize = metrics.size
+//        
+//        let scaleW = frameSize.width / size.width
+//        let scaleH = frameSize.height / size.height
+        
+        return Group {
+            if self.showText {
+                DrawsanaContainerView(drawsanaView: self.gif.textEditingContext.generator.drawsana).environmentObject(self.gif.textEditingContext)
+                    .aspectRatio(self.gif.aspectRatio, contentMode: .fit)
+                    .frame(width: metrics.size.width, height: metrics.size.height, alignment: .center)
+//                    .scaleEffect(CGSize(width: scaleW, height: scaleH))
+                
+                if !self.textAdded {
+                    Text("Tap to add text").foregroundColor(Color.white)
+                        .padding(5)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.2)))
+                        .frame(width: metrics.size.width, height: metrics.size.height, alignment: .center)
+                    .allowsHitTesting(false)
+
+                }
+            }
+        }
+        
+    }
+}
+
+public struct FramePlayerView: PlayerView {
+    var contentMode: ContentMode
+    let playerType: PlayerType
+    let gif: GIF
+    @Binding internal var timestamp: CGFloat
+    @Binding public var playing: Bool
+    
+    init(item: Editable, timestamp: Binding<CGFloat>, playing: Binding<Bool>, contentMode: ContentMode, playerType: PlayerType) {
+        self.gif = item as! GIF
+        self._timestamp = timestamp
+        self._playing = playing
+        self.contentMode = contentMode
+        self.playerType = playerType
+    }
+    
+    public var body: some View {
+        FrameImageView(gif: self.gif, contentMode: self.contentMode, timestamp: self.$timestamp, playing: self.$playing)
+    }
+}
+
+public struct VideoPlayerView: PlayerView {
+    
+    let playerType: PlayerType
+    
+    init(item: Editable, timestamp: Binding<CGFloat>, playing: Binding<Bool>, contentMode: ContentMode, playerType: PlayerType) {
+        self.url = item.url
+        self._timestamp = timestamp
+        self._playing = playing
+        self.contentMode = contentMode
+        self.playerType = playerType
+    }
+
+    
+    var contentMode: ContentMode
+    
+    public let url: URL
+    @Binding internal var timestamp: CGFloat
+    @Binding public var playing: Bool
     
     let stepForward = Empty<Any, Never>(completeImmediately: false)
     
-    var body: some View {
-        UIPlayerView(timestamp: $timestamp,
+    public var body: some View {
+        UIPlayerView(playerType: self.playerType,
+            timestamp: $timestamp,
                      playing: $playing,
                      url: url,
-                     videoGravity: .resizeAspect)
+                     videoGravity: contentMode == .fit ? .resizeAspect : .resizeAspectFill)
         //        .background(BlurredPlayerView(playerView: UIPlayerView(timestamp: $timestamp,
         //                                                               playing: $playing,
         //                                                               url: url,
         //                                                               videoGravity: .resizeAspectFill)
-        //))
+        // ))
     }
-    
-    
 }
 
 struct StepperView: View {
-    
     let stepForward: () -> Void
     let stepBackward: () -> Void
     
     var body: some View {
-        HStack {
-            Button(action: {
-                self.stepBackward()
-            }, label: { self.backView })
+        VStack {
             Spacer()
-            Button(action: {
-                self.stepForward()
-            }, label: { self.forwardView })
-        }.padding(20)
+            
+            HStack {
+                Button(action: {
+                    self.stepBackward()
+                }, label: { self.backView.frame(width: 40, height: 40) })
+                Spacer()
+                Button(action: {
+                    self.stepForward()
+                }, label: { self.forwardView.frame(width: 40, height: 40) })
+            }.padding(10)
+            Spacer()
+        }
     }
     
     var backView: some View {
-        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image(systemName: "backward.fill").frame(alignment: .center)).shadow(radius: 2)
+        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("backward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
     }
     
     var forwardView: some View {
-        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image(systemName: "forward.fill").frame(alignment: .center)).shadow(radius: 2)
+        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("forward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
     }
 }
 
-struct BlurredPlayerView: View {
-    let playerView: UIPlayerView
+struct BlurredPlayerView<Player>: View where Player: PlayerView {
+    let playerView: Player
     
     let effect: UIBlurEffect
     var body: some View {
         ZStack {
             playerView
             VisualEffectView(effect: effect)
-            
         }
     }
-    
 }
 
-struct PlayerLabelView: View {
+struct OpacityModifier: ViewModifier {
+    @Binding var controlsVisible: Bool
+    
+    func body(content: Content) -> some View {
+        content.opacity(self.controlsVisible ? 1 : 0)
+    }
+}
+
+struct PlayerLabelView<Player>: View where Player: PlayerView {
     let borderColor = Color.gray
     
-    let playerView: PlayerView
+    let playerView: Player
     let label: String
-    let assetInfo: AssetInfo
+    let frameIncrement: CGFloat
+    @Environment(\.deviceDetails) var deviceDetails: DeviceDetails
+
+    @ObservedObject var controlsState: ControlsState
+    
+    let adjustedTime: (CGFloat) -> Void
     
     var body: some View {
         Group {
             GeometryReader { metrics in
-                
-//                    .frame(width: metrics.size.width, height: metrics.size.height)
-                
-                self.playerView.background(BlurredPlayerView(playerView:
-                UIPlayerView(timestamp: self.playerView.$timestamp,
-                             playing: self.playerView.$playing,
-                             url: self.playerView.url,
-                             videoGravity: .resizeAspectFill),
-                              effect: .init(style: .systemThinMaterial)))
-                
-                self.text
-                    .frame(width: metrics.size.width, height: metrics.size.height)
-                    .shadow(color: Color.black, radius: 2, x: 0, y: 1)
-                
-                self.playerView
-                    .mask(self.text
-                        .frame(width: metrics.size.width, height: metrics.size.height)
-                        .compositingGroup())
-                    .brightness(0.3)
- 
+                ZStack {
+                    self.playerView
+                        .zIndex(1)
+                    
+                    Group {
+                        self.text
+                            .frame(width: metrics.size.width, height: metrics.size.height)
+                            .shadow(color: Color.black, radius: 2, x: 0, y: 1)
+                        
+                        self.playerView
+                            .mask(self.text
+                                .frame(width: metrics.size.width,
+                                       height: metrics.size.height)
+                            )
+                            .brightness(0.3)
+                        
+                        StepperView(stepForward: self.stepForward,
+                                    stepBackward: self.stepBackward)
+                    }
+                    .opacity(self.controlsState.controlsVisible ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3))
+                    .zIndex(2)
+                }
             }
         }
     }
@@ -215,24 +453,24 @@ struct PlayerLabelView: View {
     var text: Text {
         Text(self.label.uppercased())
             .font(.system(size: 20))
-        .fontWeight(.bold)
-        .foregroundColor(Color.text)
+            .fontWeight(.bold)
+            .foregroundColor(Color.text)
     }
     
     func stepForward() {
-        self.playerView.timestamp = self.playerView.timestamp + assetInfo.unitFrameIncrement
-        
+        self.controlsState.resetTimer()
+        self.playerView.timestamp = self.playerView.timestamp + self.frameIncrement
+        self.adjustedTime(self.playerView.timestamp)
     }
     
     func stepBackward() {
-        self.playerView.timestamp = self.playerView.timestamp - assetInfo.unitFrameIncrement
-        
+        self.controlsState.resetTimer()
+        self.playerView.timestamp = self.playerView.timestamp - self.frameIncrement
+        self.adjustedTime(self.playerView.timestamp)
     }
 }
 
 struct PlayerView_Previews: PreviewProvider {
-    @State static var generator = GifGenerator.init(video: Video.preview)
-    
     static var previews: some View {
         //        VStack {
         
@@ -242,7 +480,6 @@ struct PlayerView_Previews: PreviewProvider {
         //        }
     }
 }
-
 
 /*
  
@@ -257,7 +494,6 @@ struct PlayerView_Previews: PreviewProvider {
  
  .align(.vertical, .trailingBottom)
  */
-
 
 /*
  

@@ -8,60 +8,48 @@
 
 import SwiftUI
 import Combine
+import SnapKit
 
-
-struct Run: View {
-    let block: () -> Void
-
-    var body: some View {
-        DispatchQueue.main.async(execute: block)
-        return AnyView(EmptyView())
-    }
-}
 
 enum ScrollAction {
     case none
     case set(CGFloat)
 }
 
+struct OffsetVal {
+    
+    var leading: Anchor<CGPoint>? = nil
+    
+}
+
+struct OffsetKey: PreferenceKey {
+    static var defaultValue: OffsetVal = OffsetVal()
+    
+    static func reduce(value: inout OffsetVal, nextValue: () -> OffsetVal) {
+        let next = nextValue()
+        if let nextLeading = next.leading {
+            value.leading = nextLeading
+        }
+    }
+    
+    typealias Value = OffsetVal
+    
+    
+}
+
 struct ScrollViewTest: View {
 
-    @State var offset: CGFloat = 700
+    @State var offset: CGFloat = 0
+    @State var contentOffset: CGPoint = CGPoint.zero
     @State var setOffset: CGFloat? = nil
     @State var disableUpdate = false
     
+    
     var body: some View {
         
-        let scrollView = ScrollView(.horizontal) {
-            self.scrollViewContent
-        }//.content.offset(y: self.$offset.wrappedValue)
-        
-//        var scrollViewAsView = scrollView.any
-//        if let setOffset = self.setOffset {
-//            scrollViewAsView = scrollView.content.offset(y: setOffset).any
-//            DispatchQueue.main.async {
-//                self.setOffset = nil
-//            }
-//        } else {
-////            scrollViewAsView = scrollView.content.offset().any
-//        }
-        
-        
-        return GeometryReader { metrics in
-            VStack {
-                
-                Text("\(self.offset)")
-                
-                scrollView
-                Button(action: {
-                    //                    withAnimation {
-                    self.disableUpdate = true
-                    self.offset = 500
-                    self.disableUpdate = false
-                    //                    }
-                }, label: { Text("Set Offset") } )
-            }
-        }
+        ScrollView(.horizontal, showsIndicators: true, content: {
+            Rectangle().fill(Color.blue).frame(width: CGFloat.greatestFiniteMagnitude)
+        })
     }
     
     var scrollViewContent: some View {
@@ -71,19 +59,73 @@ struct ScrollViewTest: View {
             Rectangle().foregroundColor(Color.blue).frame(width: 300)
             Rectangle().foregroundColor(Color.green).frame(width: 300)
             
-            GeometryReader { scrollMetrics in
-                
-                Run {
-                    if !self.disableUpdate {
-                        self.$offset.wrappedValue = scrollMetrics.frame(in: .global).origin.x
-                    }
-                }
-                
-            }.frame(width: 0, height: 0)
-            
         }
+
         .frame(height: 100)
+        .transformAnchorPreference(key: OffsetKey.self, value: .leading) { (val, anchor) in
+            val.leading = anchor
+        }.offset(x: self.offset)
         
+    }
+    
+}
+
+struct ScrollUIView: UIViewRepresentable{
+    func makeCoordinator() -> ScrollUIView.Coordinator {
+        return Coordinator(self)
+    }
+    
+    @Binding var offset: CGPoint
+    
+    init(offset: Binding<CGPoint>, @ViewBuilder content: @escaping () -> AnyView) {
+        self.content = content
+        self._offset = offset
+    }
+    
+    let content: () -> AnyView
+    
+    func makeUIView(context: UIViewRepresentableContext<ScrollUIView>) -> CustomScrollView {
+        let v = CustomScrollView(contentHost: UIHostingController(rootView: content()).view)
+        v.delegate = context.coordinator
+        return v
+    }
+    
+    func updateUIView(_ uiView: CustomScrollView, context: UIViewRepresentableContext<ScrollUIView>) {
+        
+        uiView.contentOffset = self.offset
+    }
+    
+    typealias UIViewType = CustomScrollView
+
+    class Coordinator: NSObject, UIScrollViewDelegate {
+        let parent: ScrollUIView
+        
+        init(_ parent: ScrollUIView) {
+            self.parent = parent
+        }
+        
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            self.parent.offset = scrollView.contentOffset
+        }
+    }
+}
+
+class CustomScrollView : UIScrollView {
+    
+    let contentHost : UIView
+    
+    init(contentHost: UIView) {
+        self.contentHost = contentHost
+        super.init(frame: CGRect.zero)
+        
+        addSubview(self.contentHost)
+        self.contentHost.snp.makeConstraints { (make) in
+            make.edges.equalToSuperview()
+        }
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
 }

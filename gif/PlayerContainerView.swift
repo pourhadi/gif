@@ -7,99 +7,209 @@
 //  Copyright © 2019 dan. All rights reserved.
 //
 
+import Combine
 import SwiftUI
 import SwiftUI_Utils
 
-struct PlayerContainerView: View {
+class ControlsState: ObservableObject {
+    var timer: Timer?
     
-    @EnvironmentObject var video: Video
+    func resetTimer() {
+        self.timer?.invalidate()
+        
+        self.timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: false, block: { _ in
+            
+            self.controlsVisible = false
+        })
+    }
     
-    @Binding var gifGenerator: GifGenerator
-    @Binding var selectedMode: VideoMode
+    @Published var controlsVisible = false
+    
+    var cancellable: AnyCancellable?
+    init() {
+        self.cancellable = $controlsVisible.sink { _ in
+            self.objectWillChange.send()
+        }
+    }
+}
+
+struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generator: GifGenerator {
+    @EnvironmentObject var context: EditingContext<Generator>
+    
+    var showText: Bool {
+
+        
+        return false
+    }
+    
+    var body: some View {
+        Group {
+            if self.context.playState.previewing {
+                PreviewView<Generator>().zIndex(0).environmentObject(self.context.generator)
+            } else {
+                Player(item: self.context.item,
+                       timestamp: self.$context.playState.currentPlayhead,
+                       playing: self.$context.playState.playing,
+                       playerType: .playhead)
+                    
+                    /*.background(BlurredPlayerView(playerView:
+                        Player(item: self.context.item,
+                               timestamp: self.$context.playState.currentPlayhead,
+                               playing: self.$context.playState.playing, contentMode: .fill),
+                                                  effect: .init(style: .systemThinMaterial)))*/
+                    .overlay(
+                        ZStack {
+                            EmptyView().zIndex(0)
+                            
+                            if !(self.context.mode == .text) {
+                                Button(action: {
+                                    self.context.playState.playing.toggle()
+                                }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70).zIndex(1)
+                            }
+                            
+                            
+                        }
+                )
+                    
+                 
+            }
+        }
+    }
+}
+
+struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Generator: GifGenerator {
+    @ObservedObject var controlsState: ControlsState
+    
+    @EnvironmentObject var context: EditingContext<Generator>
+    
+    @Binding var previewing: Bool
     
     @State var dummyPlayable = false
     
-    @State var showingPreview = false
-    
-    @Binding var visualState: VisualState
     
     @Binding var playersHeight: CGFloat?
     
+    @Environment(\.deviceDetails) var deviceDetails: DeviceDetails
+    
+    var editorHeight: CGFloat
+    
     var body: some View {
         let spacing: CGFloat = 6
-
-        if self.visualState.compact {
+        
+        if self.deviceDetails.compact || (deviceDetails.uiIdiom == .pad && deviceDetails.orientation == .landscape) {
             return HStack {
-                self.getStartFrameView()
-                self.getMainView()
-                self.getEndFrameView()
+                self.getStartFrameView().shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+                self.getMainView().shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+                self.getEndFrameView().shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
             }.any
         }
         
         var outer = Axis.horizontal
         var inner = Axis.vertical
         
-        let videoSize = (video.videoTrack?.naturalSize ?? CGSize(width: 0, height: 1)).applying(video.videoTrack?.preferredTransform ?? CGAffineTransform.identity)
+        let videoSize = context.size
         if videoSize.width > videoSize.height {
             outer = .vertical
             inner = .horizontal
-            
-            
         }
-        
         
         return GeometryReader { metrics in
             Run {
                 if videoSize.width > videoSize.height {
-                    self.playersHeight = self.size(for: metrics.size,
-                                                   videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0)
+                    let height = self.size(for: metrics.size,
+                                           videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0)
+                    if height != self.playersHeight {
+                        self.playersHeight = height
+                    }
                 }
             }
             
             Stack(outer, spacing: spacing) {
-                
                 self.getMainView()
                     .frame(width: self.size(for: metrics.size,
                                             videoSize: videoSize).width,
                            height: self.size(for: metrics.size,
                                              videoSize: videoSize).height)
+                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
+                        val.mainPlayerCenter = anchor
+                }
+                .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+                        val.mainPlayerBounds = anchor
+                }
+                    //.shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
                 
                 Stack(inner, spacing: spacing) {
-                    self.getStartFrameView()
-                    self.getEndFrameView()
+                    self.getStartFrameView().transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
+                            val.startPlayerCenter = anchor
+                    }
+                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+                            val.startPlayerBounds = anchor
+                    } // .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+                   
+                    
+                    self.getEndFrameView().transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
+                            val.endPlayerCenter = anchor
+                    }
+                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+                            val.endPlayerBounds = anchor
+                    } // .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
                 }.frame(height: self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize))
                 
             }.frame(height: inner == .horizontal ? self.size(for: metrics.size,
                                                              videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0) : nil)
-        }.any
+                .backgroundPreferenceValue(EditorPreferencesKey.self, { (val: EditorPreferences) in
+                    GeometryReader { metrics in
+                        self.getShadowBackground(metrics: metrics, values: val)
+                       
+                    }
+                })
+        }.onAppear(perform: {
+            self.controlsState.resetTimer()
+            
+        }).any
+    }
+    
+    func getShadowBackground(metrics: GeometryProxy, values: EditorPreferences) -> some View {
+        let mainPlayerCenter = metrics[values.mainPlayerCenter!]
+        let mainPlayerBounds = metrics[values.mainPlayerBounds!]
+        let startPlayerCenter = metrics[values.startPlayerCenter!]
+        let startPlayerBounds = metrics[values.startPlayerBounds!]
+        let endPlayerCenter = metrics[values.endPlayerCenter!]
+        let endPlayerBounds = metrics[values.endPlayerBounds!]
+        
+        return Group {
+            
+            Rectangle()
+                .foregroundColor(Color.black.opacity(0.4))
+                .frame(width: mainPlayerBounds.width, height: mainPlayerBounds.height)
+            .position(mainPlayerCenter)
+            
+            Rectangle()
+                .foregroundColor(Color.black.opacity(0.4))
+
+                .frame(width: startPlayerBounds.width, height: startPlayerBounds.height)
+            .position(startPlayerCenter)
+            
+            Rectangle()
+                .foregroundColor(Color.black.opacity(0.4))
+
+                .frame(width: endPlayerBounds.width, height: endPlayerBounds.height)
+            .position(endPlayerCenter)
+        }
+//        .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+            .shadow(color: Color.black, radius: 8, x: 0, y: 0)
     }
     
     func getEndFrameView() -> some View {
-        return self.playerView(self.$video.gifConfig.selection.endTime, forMode: .end)
+        return self.playerView(self.$context.gifConfig.selection.endTime, forMode: .end)
     }
     
     func getStartFrameView() -> some View {
-        return self.playerView(self.$video.gifConfig.selection.startTime, forMode: .start)
+        return self.playerView(self.$context.gifConfig.selection.startTime, forMode: .start)
     }
-
+    
     func getMainView() -> some View {
-        if self.video.playState.previewing {
-            return PreviewView().environmentObject(self.gifGenerator).any
-        } else {
-            return PlayerView(url: self.video.url,
-                              timestamp: self.$video.playState.currentPlayhead,
-                              playing: self.$video.playState.playing)
-            .background( BlurredPlayerView(playerView:
-                UIPlayerView(timestamp: self.$video.playState.currentPlayhead,
-                                            playing: self.$video.playState.playing,
-                                            url: self.video.url,
-                                            videoGravity: .resizeAspectFill),
-                                             effect: .init(style: .systemThinMaterial)))
-                .overlay(Button(action: {
-                    self.selectedMode = .playhead
-                    self.$video.playState.playing.wrappedValue.toggle()
-                }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70)).any
-        }
+        return MainPlayerView<Player, Generator>().environmentObject(self.context)
     }
     
     func heightForSecondary(for width: CGFloat, videoSize: CGSize) -> CGFloat? {
@@ -109,44 +219,52 @@ struct PlayerContainerView: View {
     }
     
     func size(for metricsSize: CGSize, videoSize: CGSize) -> CGSize {
-        
         let width: CGFloat
         let height: CGFloat
         if videoSize.width > videoSize.height {
-            height = videoSize.scaledToFit(metricsSize).height
+            height = videoSize.scaledToFit(metricsSize).height.clamp(min: 0, max: self.editorHeight / 3)
             width = metricsSize.width
         } else {
             height = metricsSize.height
-            width = videoSize.fittingHeight(metricsSize.height).width
+            width = videoSize.fittingHeight(metricsSize.height).width.clamp(min: 0, max: metricsSize.width * 0.6)
         }
         
         return CGSize(width: width, height: height)
     }
     
     func playerView(_ time: Binding<CGFloat>, forMode: VideoMode) -> some View {
+        let startGrad = LinearGradient(gradient: Gradient(colors: [Color.green.opacity(0.8), Color.green.opacity(0.2)]), startPoint: .top, endPoint: .bottom)
+        let endGrad = LinearGradient(gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.2)]), startPoint: .top, endPoint: .bottom)
         
-        
-        let startGrad = LinearGradient(gradient:Gradient(colors: [Color.green.opacity(0.8), Color.green.opacity(0.2)]), startPoint: .top, endPoint: .bottom)
-        let endGrad = LinearGradient(gradient:Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.2)]), startPoint: .top, endPoint: .bottom)
-        
-        return PlayerLabelView(playerView: PlayerView(url: self.video.url, timestamp: time, playing: $dummyPlayable), label: forMode == .start ? "Start" : "End", assetInfo: self.video.assetInfo).onTapGesture {
-            self.selectedMode = forMode
+        return PlayerLabelView(playerView: Player(item: self.context.item,
+                                                  timestamp: time,
+                                                  playing: $dummyPlayable,
+                                                  playerType: forMode == .start ? .start : .end),
+                               label: forMode == .start ? "Start" : "End",
+                               frameIncrement: self.context.frameIncrement,
+                               controlsState: self.controlsState,
+                               adjustedTime: { time in
+                                self.context.playState.currentPlayhead = time
+        })
+            .onTapGesture {
+                if !self.controlsState.controlsVisible {
+                    self.controlsState.controlsVisible = true
+                }
         }
         //        .background(Color(white: 0.1))
         //    .background((forMode == .start ? startGrad : endGrad))
         //        .clipShape(RoundedRectangle(cornerRadius: 20))
         //        .background(RoundedRectangle(cornerRadius: 20)
         //            .fill(forMode == .start ? startGrad : endGrad))
-        
     }
 }
 
 struct PlayerContainerView_Previews: PreviewProvider {
-//    @State static var generator = GifGenerator.init(video: Video.preview)
+    //    @State static var generator = GifGenerator.init(video: context.preview)
     
     //    @State static var selectedMode = VideoMode.playhead
     static var previews: some View {
-//        EditorView(gifGenerator: $generator).environmentObject(Video.preview).environment(\.colorScheme, .dark).background(Color.black).accentColor(Color.white)
+        //        EditorView(gifGenerator: $generator).environmentObject(context.preview).environment(\.colorScheme, .dark).background(Color.black).accentColor(Color.white)
         
         GlobalPreviewView()
     }

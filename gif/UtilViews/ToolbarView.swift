@@ -17,25 +17,32 @@ struct ToolbarView<Content>: View where Content: View {
     
     let bottomAdjustment: CGFloat?
     
-    init(metrics: GeometryProxy, bottomAdjustment: CGFloat? = nil, background: AnyView, @ViewBuilder content: () -> Content) {
+    let hideDivider: Bool
+    
+    init(metrics: GeometryProxy, bottomAdjustment: CGFloat? = nil, background: AnyView, hideDivider: Bool = false, @ViewBuilder content: () -> Content) {
         self.items = content()
         self.metrics = metrics
         self.background = background
+        self.hideDivider = hideDivider
         self.bottomAdjustment = bottomAdjustment
     }
     
     var body: some View {
         Group {
             VStack {
+                if !self.hideDivider {
+                Divider()
+                }
                 HStack {
                     self.items
-                }
+                }.padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
+                Spacer()
                 Spacer(minLength: self.bottomAdjustment)
             }
             .background(self.background)
             .frame(height: 40 + (self.bottomAdjustment ?? 0))
-        }.frame(height: metrics.size.height, alignment: .bottom)
-            .offset(y: self.bottomAdjustment ?? 0)
+        }
+//            .offset(y: self.bottomAdjustment != nil ? -(self.bottomAdjustment!) : 0)
     }
 }
 

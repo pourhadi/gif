@@ -1,0 +1,6 @@
+framework module Drawsana {
+  umbrella header "Drawsana-umbrella.h"
+
+  export *
+  module * { export * }
+}

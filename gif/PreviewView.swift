@@ -9,24 +9,26 @@
 import SwiftUI
 import SnapKit
 
-struct PreviewModal: View {
+struct PreviewModal<Generator>: View where Generator : GifGenerator {
     @Binding var activePopover: ActivePopover?
     
     var body: some View {
         NavigationView {
             GeometryReader { metrics in
-                PreviewView().frame(width: metrics.size.width - 20, height: metrics.size.height - 20).scaledToFit().clipped().centered()
+                PreviewView<Generator>().frame(width: metrics.size.width - 20, height: metrics.size.height - 20).scaledToFit().clipped().centered()
             }
         }.navigationBarTitle("Preview GIF")
+            .navigationViewStyle(StackNavigationViewStyle())
+
             .navigationBarItems(trailing: Button(action: {
                 self.activePopover = nil
             }, label: { Text("Done") } ))
     }
 }
 
-struct PreviewView: View {
+struct PreviewView<Generator>: View where Generator : GifGenerator {
     
-    @EnvironmentObject var generator: GifGenerator
+    @EnvironmentObject var generator: Generator
 
     var body: some View {
         GeometryReader { metrics in

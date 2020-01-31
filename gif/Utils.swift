@@ -10,6 +10,16 @@ import Foundation
 import UIKit
 import SwiftUI
 
+public func Delayed(_ seconds: Double, _ block: @escaping () -> Void) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+        block()
+    }
+}
+
+public func Async(_ block: @escaping () -> Void) {
+    DispatchQueue.main.async(execute: block)
+}
+
 extension CGSize {
     
     func scaledToFit(_ other: CGSize) -> CGSize {
@@ -69,12 +79,16 @@ extension CGFloat {
     }
 }
 
-final class DeviceDetails: ObservableObject {
+final class DeviceDetails {
     enum Orientation {
         case portrait
         case landscape
     }
       
+    var compact: Bool {
+        return self.uiIdiom == .phone && self.orientation == .landscape
+    }
+    
     @Published var orientation: Orientation
     
     public var uiIdiom: UIUserInterfaceIdiom {
@@ -93,15 +107,15 @@ final class DeviceDetails: ObservableObject {
         }
           
         // unowned self because we unregister before self becomes invalid
-        _observer = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [unowned self] note in
+        _observer = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [weak self] note in
             guard let device = note.object as? UIDevice else {
                 return
             }
             if device.orientation.isPortrait {
-                self.orientation = .portrait
+                self?.orientation = .portrait
             }
             else if device.orientation.isLandscape {
-                self.orientation = .landscape
+                self?.orientation = .landscape
             }
         }
     }
@@ -113,6 +127,31 @@ final class DeviceDetails: ObservableObject {
     }
 }  
 
+extension Alignment {
+    
+    var unitPoint: UnitPoint {
+        var point = UnitPoint()
+        
+        switch self.horizontal {
+        case .center: point.x = 0.5
+        case .leading: point.x = 0
+        case .trailing: point.x = 1
+        default:
+            break
+        }
+        
+        switch self.vertical {
+        case .center: point.y = 0.5
+        case .top: point.y = 0
+        case .bottom: point.y = 1
+        default:
+            break
+        }
+        
+        return point
+    }
+    
+}
 //struct GlobalPreviewView: View {
 //
 //    @State var ready = true
@@ -133,18 +172,64 @@ final class DeviceDetails: ObservableObject {
 //    }
 //}
 
+extension URL {
+    
+    static var empty: URL {
+        return URL(fileURLWithPath: "")
+    }
+}
 
+#if MAIN_TARGET
 struct GlobalPreviewView: View {
-    @State var generator = GifGenerator.init(video: Video.preview)
     @State var visualState = VisualState()
     var body: some View {
-        EditorView(gifGenerator: $generator, visualState: $visualState).environmentObject(Video.preview).background(Color.background).accentColor(Color.text)
+        EditorView<VideoPlayerView, VideoGifGenerator>().environment(\.colorScheme, .dark).environmentObject(Video.preview.editingContext).background(Color.background).accentColor(Color.text)
 
     }
     
 }
+#endif
 
 public func ExtrapolateValue(from:CGFloat, to:CGFloat, percent:CGFloat) -> CGFloat {
     let value = from + ((to - from) * percent)
     return value
+}
+
+public func CalculatePercentComplete(start:CGFloat, end:CGFloat, current:CGFloat) -> CGFloat {
+    let x = end - start
+    return (current - start) / x
+}
+
+enum Scaled {
+    case toFit
+    case toFill
+}
+
+
+extension View {
+    
+    func scaled(_ how: Scaled) -> some View {
+        switch how {
+        case .toFill:
+            return self.scaledToFill().any
+        case .toFit:
+            return self.scaledToFit().any
+        }
+    }
+    
+}
+
+extension CGRect {
+    
+    static func *= ( lhs: inout CGRect, rhs: CGSize) {
+        lhs.origin.x *= rhs.width
+        lhs.origin.y *= rhs.height
+        lhs.size.width *= rhs.width
+        lhs.size.height *= rhs.height
+    }
+    
+    var center: CGPoint {
+        return CGPoint(x: self.midX, y: self.midY)
+    }
+    
 }

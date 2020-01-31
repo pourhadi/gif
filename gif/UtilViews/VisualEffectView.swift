@@ -28,9 +28,21 @@ struct VisualEffectView: UIViewRepresentable {
     
 }
 
-struct VisualEffectView_Previews: PreviewProvider {
-    @State static var effect = UIBlurEffect.init(style: .regular)
-    static var previews: some View {
-        VisualEffectView(effect: effect)
-    }
-}
+//struct TestBlurView : View {
+//    
+//    var body : some View {
+//        
+//        Rectangle().fill(Color.black.opacity(0.8)).blur(radius: 10, opaque: false)
+//    }
+//}
+//
+//struct VisualEffectView_Previews: PreviewProvider {
+//    @State static var effect = UIBlurEffect.init(style: .regular)
+//    static var previews: some View {
+////        VisualEffectView(effect: effect)
+//        ZStack {
+//            GlobalPreviewView().zIndex(0)
+//            TestBlurView().zIndex(1)
+//        }
+//    }
+//}

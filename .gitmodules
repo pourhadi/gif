@@ -1,0 +1,3 @@
+[submodule "Dawsana"]
+	path = Dawsana
+	url = git@github.com:Asana/Drawsana.git

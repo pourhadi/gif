@@ -11,84 +11,99 @@ import AVFoundation
 import UIKit
 import SnapKit
 
-struct TimelineControlsView: View {
+struct TimelineControlsView<Generator>: View where Generator : GifGenerator {
     
     @State var showSettings = false
-    @EnvironmentObject var video: Video
+    @ObservedObject var context: EditingContext<Generator>
+    @Binding var previewing: Bool
+    
     
     var body: some View {
         HStack {
             Button(action: {
-                self.video.playState.previewing.toggle()
+                self.$previewing.animation().wrappedValue.toggle()
             }, label: { Text("Preview").padding(10) } )
-                .background(self.video.playState.previewing ? Color(white: 0.4) : Color.clear)
+                .background(self.previewing ? Color(white: 0.4) : Color.clear)
                 .cornerRadius(6)
                 .padding(10)
+//            Spacer()
+//            Button(action: {
+//                self.context.cropState.visible = true
+//            }, label: { Image.symbol("crop") } )
+//            Spacer()
+//            Spacer()
+//            Button(action: {
+//                self.$context.mode.animation().wrappedValue = (self.context.mode == .text ? .trim : .text)
+//            }, label: { Text("Text").padding(10) } )
+//                .background(self.context.mode == .text ? Color(white: 0.4) : Color.clear)
+//                .cornerRadius(6)
+//                .padding(10)
             Spacer()
             Button(action: {
-                self.video.gifConfig.visible = true
-            }, label: { Image.symbol("gear").padding(20) } )
+                Async {
+                    self.$context.gifConfig.visible.animation().wrappedValue = true
+                }
+            }, label: { Image.symbol("gear").padding(20) } ).transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+                val.settingsButtonRect = anchor
+            }
         }
     }
 }
 
-struct TimelineView: View {
-    @EnvironmentObject var video: Video
+struct TimelineView<Generator>: View where Generator : GifGenerator {
+    @EnvironmentObject var context: EditingContext<Generator>
     
     @Binding var selection: GifConfig.Selection
     @Binding var playState: PlayState
-    @Binding var videoMode: VideoMode
-    @Binding var visualState: VisualState
     
     @State var thumbnailMultiplier: CGFloat = 1
     
     var body: some View {
         GeometryReader { metrics in
             VStack(spacing: 0) {
-                if !self.visualState.compact {
-                    TimelineControlsView()
-                }
-                TimelineUIView(selection: self.$selection,
-                               playState: self.$playState,
-                               videoMode: self.$videoMode,
-                               visualState: self.$visualState,
+//                if !self.visualState.compact {
+                    TimelineControlsView(context: self.context, previewing: self.$context.playState.previewing)
+//                }
+                TimelineUIView<Generator>(selection: self.$selection,
+                               playState: self.playState,
+                               currentPlayhead: self.$playState.currentPlayhead,
                                thumbnailMultiplier: self.$thumbnailMultiplier)
             }
 
             Rectangle()
                 .background(Color.text)
-                .frame(width: 2, height: metrics.size.height - 10)
-                .offset(x: (metrics.size.width - 2) / 2, y: 5)
+                .frame(width: 2, height: metrics.size.height - 20)
+                .offset(x: (metrics.size.width - 2) / 2, y: 20)
         }
         .gesture(MagnificationGesture().onChanged({ (value) in
-            let m = value < 0.5 ? 0.5 : floorf(Float(value * 2)) / 2
+            let m = value < 0.25 ? 0.25 : floorf(Float(value * 4)) / 4
             print(m)
-            self.thumbnailMultiplier = CGFloat(m)
+            self.$thumbnailMultiplier.animation(Animation.easeInOut(duration: 0.3)).wrappedValue = CGFloat(m)
         }))
     }
 }
 
-struct TimelineUIView: UIViewRepresentable {
+struct TimelineUIView<Generator>: UIViewRepresentable where Generator : GifGenerator {
     
     
-    @EnvironmentObject var video: Video
+    @EnvironmentObject var context: EditingContext<Generator>
     
     @Binding var selection: GifConfig.Selection
-    @Binding var playState: PlayState
-    @Binding var videoMode: VideoMode
-    @Binding var visualState: VisualState
+    var playState: PlayState
+    @Binding var currentPlayhead: CGFloat
     @Binding var thumbnailMultiplier: CGFloat
 
+    @Environment(\.timelineState) var timelineState: TimelineState
     
-    lazy var thumbGenerator = ThumbGenerator(url: self.video.url)
+    lazy var thumbGenerator = self.context.thumbGenerator
     func makeUIView(context: UIViewRepresentableContext<TimelineUIView>) -> TimelineContainerView {
-        return TimelineContainerView(scrollPercentChanged: context.coordinator.scrollPercentChanged(_:))
+        return TimelineContainerView(timelineState: self.timelineState, scrollPercentChanged: context.coordinator.scrollPercentChanged(_:))
     }
     
     func updateUIView(_ uiView: TimelineContainerView, context: UIViewRepresentableContext<TimelineUIView>) {
         if context.coordinator.obj == nil || self.thumbnailMultiplier != context.coordinator.lastThumbnailMultipler {
             context.coordinator.lastThumbnailMultipler = self.thumbnailMultiplier
-            context.coordinator.obj = context.coordinator.thumbGenerator.getThumbs(for: video.url, multiplier: self.thumbnailMultiplier).sink { results in
+            context.coordinator.obj = context.coordinator.thumbGenerator.getThumbs(for: self.context.item, multiplier: self.thumbnailMultiplier).sink { results in
                 DispatchQueue.main.async {
                     uiView.timelineItems = results.map { TimelineItem(image: $0.image, time: $0.time) }
                 }
@@ -99,14 +114,14 @@ struct TimelineUIView: UIViewRepresentable {
             context.coordinator.updated = false
         } else {
             let time: CGFloat
-            time = playState.currentPlayhead
+            time = currentPlayhead
 
             guard !time.isNaN else { return }
             uiView.setPercent(percent: CGFloat(time))
         }
         
+        uiView.duration = self.context.gifConfig.assetInfo.duration
         uiView.selection = selection
-        uiView.visualState = self.visualState
     }
     
     func makeCoordinator() -> Coordinator {
@@ -117,7 +132,7 @@ struct TimelineUIView: UIViewRepresentable {
     typealias UIViewType = TimelineContainerView
     
     class Coordinator: NSObject {
-        let thumbGenerator: ThumbGenerator
+        lazy var thumbGenerator = self.parent.context.thumbGenerator
         var parent: TimelineUIView
         var obj: AnyObject?
         var lastThumbnailMultipler: CGFloat = -1
@@ -125,13 +140,12 @@ struct TimelineUIView: UIViewRepresentable {
         var updated = false
         init(_ parent: TimelineUIView) {
             self.parent = parent
-            self.thumbGenerator = ThumbGenerator(url: parent.video.url)
         }
         
         func scrollPercentChanged(_ percent: CGFloat) -> Void {
             let time = percent
             self.updated = true
-            parent.playState.currentPlayhead = time
+            parent.currentPlayhead = time
 
         }
     }
@@ -161,7 +175,8 @@ class TimelineItem: Identifiable {
 
 class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
-    var visualState = VisualState()
+    var duration : Double = 0
+    
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return self.timelineItems.count
@@ -175,6 +190,17 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
         return cell
     }
     
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        self.timelineState.isDragging = true
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        self.timelineState.isDragging = false
+    }
+    
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        self.timelineState.isDragging = false
+    }
     
     var timelineItems = [TimelineItem]() {
         didSet {
@@ -199,9 +225,12 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
     
     let collectionView: UICollectionView
     let scrollPercentChanged: (CGFloat) -> Void
-    let selectionView = SelectionView()
+    let selectionView = [SelectionView()]
     let playheadLine = UIView()
-    init(scrollPercentChanged: @escaping (CGFloat) -> Void) {
+    let timelineState: TimelineState
+    
+    init(timelineState: TimelineState, scrollPercentChanged: @escaping (CGFloat) -> Void) {
+        self.timelineState = timelineState
         self.scrollPercentChanged = scrollPercentChanged
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
@@ -226,8 +255,8 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
         self.backgroundColor = UIColor.clear
         self.collectionView.backgroundColor = UIColor.clear
         
-        self.collectionView.addSubview(selectionView)
-        selectionView.layer.zPosition = 100
+        self.collectionView.addSubview(selectionView[0])
+        selectionView[0].layer.zPosition = 100
 
     }
     
@@ -240,7 +269,9 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
     }
     
     var insets: UIEdgeInsets {
-        var vInset: CGFloat = self.visualState.compact ? (20) : self.frame.size.height / 2.5
+//        var vInset: CGFloat = self.visualState.compact ? (20) : self.frame.size.height / 2.5
+        var vInset: CGFloat = self.frame.size.height / 2.5
+
         vInset = vInset < 0 ? 0 : vInset
         return UIEdgeInsets(top: vInset, left: 0, bottom: vInset, right: 0)
 
@@ -282,41 +313,67 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
         
     }
     
-    var selection: GifConfig.Selection? {
+    var selection = GifConfig.Selection() {
         didSet {
-            guard let selection = selection, selection != oldValue else { return }
             
             redrawSelectionView()
-
+            
         }
     }
     
     func redrawSelectionView() {
-        guard let selection = selection else { return }
+        
         let insetWidth = self.collectionView.contentSize.width
-
+        
         let startX = (selection.startTime.clamp() * insetWidth)
         let endX = (selection.endTime.clamp() * insetWidth)
         
-        let height = visualState.compact ? self.frame.size.height - 30 : (self.frame.size.height / 2)
+        //            let height = visualState.compact ? self.frame.size.height - 30 : (self.frame.size.height / 2)
+        let height = (self.frame.size.height / 2)
+        
         let y = (self.frame.size.height - height) / 2
         let frame = CGRect(x: startX, y: y, width: endX - startX, height: height)
-        selectionView.frame = frame
+        selectionView[0].frame = frame
+        
+        let s = self.selection.seconds(for: self.duration)
+        let formatted = String(format: "%.1fs", s)
+        selectionView[0].label.text = formatted
     }
-
+    
 }
 
 class SelectionView: UIView {
     
+    let labelContainer = UIView()
+    let label = UILabel()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        self.layer.borderColor = UIColor(hue: 0.55, saturation: 0.62, brightness: 0.96, alpha: 1.00).cgColor
+        self.layer.borderColor = _accent.cgColor
         self.layer.borderWidth = 2
-        self.layer.cornerRadius = 6
+        self.layer.cornerRadius = 20
         
-        self.backgroundColor = UIColor(hue: 0.55, saturation: 0.62, brightness: 0.96, alpha: 0.10)
+        self.backgroundColor = _accent.withAlphaComponent(0.05)
         self.isOpaque = false
+        
+        addSubview(labelContainer)
+        labelContainer.addSubview(label)
+        
+        labelContainer.snp.makeConstraints { (make) in
+            make.center.equalToSuperview()
+        }
+        
+        label.snp.makeConstraints { (make) in
+            make.edges.equalToSuperview().inset(10)
+        }
+        
+        labelContainer.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        labelContainer.layer.cornerRadius = 5
+        
+        label.textColor = UIColor.white
+        label.textAlignment = .center
+        
         
 //        self.translatesAutoresizingMaskIntoConstraints = false
         
