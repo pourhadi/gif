@@ -154,31 +154,38 @@ struct ContentView: View {
     
     //    @State var hudMessage: HUDAlertMessage = HUDAlertMessage.empty
     var body: some View {
-        GeometryReader { metrics in
+//        GeometryReader { metrics in
             
             //            ZStack {
             self.getMain()
-                .frame(width: metrics.size.width, height: metrics.size.height).zIndex(0)
-            
+//                .frame(width: metrics.size.width, height: metrics.size.height).zIndex(0)
+//                .overlay(Color.background                .opacity(self.displayedEditor == nil ? 0 : 1).animation(Animation.linear(duration: 0.1).delay(0.5)).edgesIgnoringSafeArea(.all))
             
             
             
             //            }
-        }
-        .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+//        }
+//        .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
         .sheet(item: self.$globalState.activePopover, content: { _ in
             self.getPopover()
         })
             .onReceive(self.globalState.video.unwrappedGifConfig.$visible) { s in
                 self.globalState.activePopover = s ? .gifSettings : nil
-        }.onReceive(self.globalState.$video) { v in
+        }.onReceive(self.globalState.video.updated.receive(on: DispatchQueue.main)) { v in
             if self.globalState.activePopover == .videoPicker {
                 if v.isValid ?? false {
                     self.globalState.activePopover = nil
                 }
             }
         }.onReceive(GlobalPublishers.default.created) { gif in
-            self.displayedEditor = .editor(gif)
+            
+            
+            Delayed(0.1) {
+                self.$displayedEditor.animation(Animation.default).wrappedValue = .editor(gif)
+                self.globalState.video.reset()
+                
+                self.activeView = .pickVideo
+            }
             
             //            self.$createdGIF.animation(Animation.spring(dampingFraction: 0.7)).wrappedValue = gif
         }.onReceive(self.globalState.video.readyToEdit, perform: { valid in
@@ -205,7 +212,7 @@ struct ContentView: View {
                 self.displayedEditor = .crop(gif)
             })
             .onReceive(GlobalPublishers.default.edit, perform: { gif in
-                self.displayedEditor = .editor(gif)
+                self.$displayedEditor.animation(Animation.easeIn(duration: 0.3)).wrappedValue = .editor(gif)
             })
             
             .onReceive(GlobalPublishers.default.showShare) { gif in
@@ -225,7 +232,7 @@ struct ContentView: View {
             .onReceive(GlobalPublishers.default.dismissEditor) { (_) in
                 self.dismissEditor()
         }
-        .overlay(Group {
+        .overlay(ZStack {
             
             if self.activeView == .editor {
                 self.getEditor()
@@ -236,17 +243,21 @@ struct ContentView: View {
             if self.displayedEditor != nil {
                 
                 self.getDisplayedEditor()
-                    .transition(AnyTransition.scale(scale: 1.2).combined(with: .opacity).animation(Animation.easeInOut(duration: 0.3).delay(0.2)))
+                    .background(Color.background.edgesIgnoringSafeArea(.all))
+                    .transition(AnyTransition.opacity.animation(Animation.easeIn(duration: 0.3).delay(0.2)))
                     .zIndex(2)
             }
-        })
+            })
+            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
     }
     
     func dismissEditor() {
         self.displayedEditor?.reset()
         self.$displayedEditor.animation().wrappedValue = nil
         
-        self.globalState.video = Video.empty()
+        self.globalState.video.reset()
+        
+        self.activeView = .pickVideo
     }
     
     func cropEditor(gif: GIF) -> some View {
@@ -296,7 +307,8 @@ struct ContentView: View {
                     .onDisappear(perform: {
                         self.createdGIF = nil
                     })
-                    .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState)).accentColor(Color.accent)
+//                    .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+                    .accentColor(Color.accent)
                     .zIndex(5)
                     .transition(AnyTransition.move(edge: .bottom).animation(Animation.spring(dampingFraction: 0.7)))
             }
@@ -310,7 +322,7 @@ struct ContentView: View {
             EditContainerView(gif: gif, dismissBlock: {
                 self.dismissEditor()
             })
-                .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+//                .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
                 
                 .navigationBarItems(leading: Button(action: {
                     self.displayedEditor = .none
@@ -401,11 +413,25 @@ struct ContentView: View {
                     Async {
                         self.globalState.hudAlertState.showLoadingIndicator = true
                         Async {
-                            self.globalState.hudAlertState.loadingMessage = "processing video"
+                            self.globalState.hudAlertState.loadingMessage = ("processing video", {
+                                Downloader.instance.cancellables.forEach { $0.cancel() }
+                            })
                         }
                     }
                     Downloader.instance.getVideo(url: url)
                         .receive(on: DispatchQueue.main)
+                        .handleEvents(receiveCancel: {
+                            Delayed(0.2) {
+                                withAnimation(Animation.default) {
+                                    if Downloader.instance.failed {
+                                        self.globalState.hudAlertState.show(.error("something went wrong"))
+
+                                    } else {
+                                    self.globalState.hudAlertState.show(.error("cancelled"))
+                                    }
+                                }
+                            }
+                        })
                         .sink { video in
                             if let video = video {
                                 Async {
@@ -413,14 +439,17 @@ struct ContentView: View {
                                     
                                     //                                    Delayed(0.3) {
                                     
-                                    self.$globalState.video.animation(Animation.default).wrappedValue = video
+                                    self.$globalState.video.animation(Animation.default).wrappedValue.reset(video)
                                     
                                     //                                    }
                                     
                                 }
                             } else {
-                                Async {
-                                    self.globalState.hudAlertState.show(.error("something went wrong"))
+                                Delayed(0.2) {
+                                    withAnimation(Animation.default) {
+                                        
+                                        self.globalState.hudAlertState.show(.error("something went wrong"))
+                                    }
                                 }
                                 print("no video")
                             }
@@ -448,7 +477,7 @@ struct ContentView: View {
                 }, label: { Text("Create GIF") }))
         }
             //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
-            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+//            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
             .environmentObject(gif.textEditingContext)
             .background(Color.background)
             .navigationViewStyle(StackNavigationViewStyle())
@@ -469,7 +498,7 @@ struct ContentView: View {
                 }, label: { Text("Create GIF") }))
         }
             //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
-            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+//            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
             .environmentObject(self.globalState.video.editingContext)
             .background(Color.background)
             .navigationViewStyle(StackNavigationViewStyle())

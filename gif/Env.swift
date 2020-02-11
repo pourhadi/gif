@@ -19,7 +19,7 @@ import Combine
 //    static var defaultValue: Self.Value { get }
 //}
 
-extension Alignment: Hashable {
+extension ViewAlignment: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine("\(self)")
     }
@@ -59,15 +59,7 @@ extension View {
     func saveAnchorFrame<K>(to key: K.Type = K.self, condition: Bool = true) -> some View where K : AnchoredFrameKey {
         
         return self
-            .anchorPreference(key: K.self, value: .center, transform: { anchor  in
-                var val = AnchoredFrame()
-                if condition {
-                    val.center = anchor
-                } else {
-                    val.center = nil
-                }
-                return val
-            })
+ 
             .anchorPreference(key: K.self, value: .bounds, transform: { anchor  in
                 var val = AnchoredFrame()
                 if condition {
@@ -235,6 +227,7 @@ extension EnvironmentValues {
     }
 }
 
+
 struct DeviceDetailsKey: EnvironmentKey {
     static let defaultValue: DeviceDetails = DeviceDetails()
 }
@@ -322,3 +315,15 @@ class HapticController {
     
 }
 
+
+struct AuthorizedPreferenceKey: PreferenceKey {
+    static var defaultValue: Bool = false
+    
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = nextValue()
+    }
+    
+    typealias Value = Bool
+    
+    
+}

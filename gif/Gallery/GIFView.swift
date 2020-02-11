@@ -119,6 +119,7 @@ struct GIFView: View {
             bounds.origin = metrics.frame(in: .global).origin
             bounds = bounds.applying(self.transitionAnimation.isInProgress ? self.currentTransform : .identity)
             
+            bounds.origin.y += 3
 //            if self.transitionAnimation.isComplete {
 //                bounds.origin.x += self.imageOffset.x
 //                bounds.origin.y += self.imageOffset.y
@@ -135,6 +136,8 @@ struct GIFView: View {
 //                self.scroller()
                 
                 AnimatedGIFView(gif: self.transitionAnimation.activeGIF, animated: self.$transitionAnimation.isComplete, contentMode: self.transitionAnimation.isInProgress ? .fit : .fill)
+//                    .drawingGroup(opaque: true, colorMode: .extendedLinear)
+//                    .compositingGroup()
                     .aspectRatio(contentMode: self.transitionAnimation.isInProgress ? .fit : .fill)
                     .frame(width: bounds.size.width, height: bounds.size.height)
                     .mask(Rectangle().size(width: bounds.size.width,
@@ -145,15 +148,15 @@ struct GIFView: View {
                     .edgesIgnoringSafeArea(self.transitionAnimation.isInProgress ? [.top, .bottom] : [])
 
                     .onAppear {
-                        withAnimation(Animation.bouncy1) {
+                        withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.6)) {
                             self.transitionAnimation.isInProgress = true
                         }
                         
-                        Delayed(0.4) {
-                            self.transitionAnimation.isComplete = true
+                        Delayed(0.5) {
+                            self.$transitionAnimation.isComplete.animation(Animation.linear(duration: 0.1)).wrappedValue = true
                         }
                         
-                        Delayed(0.5) {
+                        Delayed(0.6) {
                             self.transitionContext.disableAnimation = false
 
                         }
@@ -250,7 +253,7 @@ struct GIFView: View {
             }
             
         }
-        .background((self.transitionAnimation.isInProgress ?  Color.black.opacity(self.opacity) : Color.clear).edgesIgnoringSafeArea([.top, .bottom]))
+        .background((self.transitionAnimation.isInProgress ?  self.transitionContext.fullscreen ? Color.black.opacity(self.opacity) : Color.background.opacity(self.opacity) : Color.clear).edgesIgnoringSafeArea(.all))
     }
     
     func getPopover(metrics: GeometryProxy, values: PopoverPrefs) -> some View {
@@ -296,7 +299,7 @@ struct GIFView: View {
             .background(Color.background)
     }
     
-    func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .systemChromeMaterialDark)) .any) -> AnyView {
+    func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .systemChromeMaterial)) .any) -> AnyView {
         return ToolbarView(metrics: metrics, bottomAdjustment: metrics.safeAreaInsets.bottom, background: background) {
             //            self.gallery.viewConfig.toolbarContent(self.gallery, self.$selectedGIFs, self.$gifViewState)
             
@@ -427,13 +430,13 @@ struct GIFImageScrollerView: UIViewRepresentable {
         } else {
 //            self.$opacity.animation(.easeInOut(duration: 0.3)).wrappedValue = Double(CalculatePercentComplete(start: 1, end: 0, current: percent))
             
-            if percent >= 1 {
-                Delayed(0.15) {
-//                    self.$selectedGIFs.animation().wrappedValue = []
-                    self.$animationInProgress.animation().wrappedValue = false
-
-                }
-            }
+//            if percent >= 1 {
+//                Delayed(0.15) {
+////                    self.$selectedGIFs.animation().wrappedValue = []
+//                    self.$animationInProgress.animation().wrappedValue = false
+//
+//                }
+//            }
         }
     }
     
@@ -562,22 +565,22 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
             
         } else {
             if self.dragGesture.state == .ended {
-                if self.dragGesture.velocity(in: self).y > 500 {
+                if self.dragGesture.velocity(in: self).y > 0 {
                     self.disableAnimation = true
                     let totalDistance = self.frame.size.height - self.imageViews[1].center.y
                     let animVel = totalDistance / self.dragGesture.velocity(in: self).y
                     let scale = ExtrapolateValue(from: 1, to: 0.5, percent: 1)
                     
-                    self.dragDismissBlock(2, false)
+                    self.dragDismissBlock(2, true)
                     
-                    UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: animVel, options: [], animations: {
-                        //                        self.imageViews[1].transform = CGAffineTransform(translationX: 0, y: totalDistance).scaledBy(x: scale, y: scale)
-                        
-                    }, completion: { _ in
-                        
-                        self.dragDismissBlock(2, true)
-                    })
-                    
+//                    UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: animVel, options: [], animations: {
+//                        //                        self.imageViews[1].transform = CGAffineTransform(translationX: 0, y: totalDistance).scaledBy(x: scale, y: scale)
+//
+//                    }, completion: { _ in
+//
+//                        self.dragDismissBlock(2, true)
+//                    })
+//
                     return
                 }
             }

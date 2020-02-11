@@ -57,7 +57,7 @@ struct GifCreatedView: View {
 //                    .blur(radius: 60, opaque: true)
                         .zIndex(1)
                     
-                    VisualEffectView.blur(.systemThickMaterialDark).zIndex(2)
+                    VisualEffectView.blur(.systemThickMaterial).zIndex(2)
 
                 })
                     .cornerRadius(10, corners: [.topLeft, .topRight])

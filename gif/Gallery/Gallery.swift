@@ -82,6 +82,8 @@ extension GIF {
 class GIF: Identifiable, Equatable, Editable {
     var isDeletable = true
     
+    var confirmedExists = false
+    
     @Published var cropState: CropState?
     
     enum PreferredSource {
@@ -306,7 +308,7 @@ class GIF: Identifiable, Equatable, Editable {
                 if context.textFormat.shadow {
                     shadow.shadowColor = context.textFormat.shadowColor
                     shadow.shadowOffset = CGSize(width: 0, height: context.textFormat.shadowMeasure)
-                    shadow.shadowBlurRadius = 0
+                    shadow.shadowBlurRadius = CGFloat(context.textFormat.shadowMeasure)
                 } else {
                     shadow.shadowColor = UIColor.clear
                     shadow.shadowOffset = CGSize(width: 0, height: 0)
@@ -339,8 +341,22 @@ class GIF: Identifiable, Equatable, Editable {
         context.gifConfig.selection.endTime = 1
         context.gifConfig.hideAnimationQuality = true
         context.gifConfig.assetInfo.size = self.size
-        context.gifConfig.assetInfo.duration = self.animatedImage?.duration ?? 0
+        context.gifConfig.assetInfo.duration = self.duration
         
+        /*
+         
+         70 frames
+         
+         2.5s
+         
+         fps = 70 / 2.5 = 28
+         
+         */
+        
+        if let animated = self.animatedImage {
+            let inc = CalculatePercentComplete(start: 0, end: CGFloat((animated.images ?? []).count), current: 1)
+            context.frameIncrement = inc
+        }
         let fiveSeconds = 5 / context.gifConfig.assetInfo.duration
         context.gifConfig.selection.fiveSecondValue = CGFloat(fiveSeconds)
         ContextStore.context = context
@@ -358,11 +374,40 @@ class GIF: Identifiable, Equatable, Editable {
     var _data: Data?
     var data: Data?
     
+    var resizedThumb: UIImage?
+    
     var asset: PHAsset?
     
     @Published var editing = false
     
     @Published var gifConfig: GifConfig = GifConfig(assetInfo: AssetInfo.empty)
+    
+    func thumb(size: CGSize, mode: ContentMode) -> UIImage {
+        if let resized = resizedThumb { return resized }
+        guard let thumb = self.thumbnail else { fatalError() }
+        
+        if thumb.size == size {
+            resizedThumb = thumb
+            return thumb
+        }
+        
+        UIGraphicsBeginImageContextWithOptions(size, false, 0)
+        let imageFrame = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+        if mode == .fill {
+            var r = CGRect(x: 0, y: 0, width: thumb.size.width, height: thumb.size.height)
+            r.center = imageFrame.center
+            thumb.draw(in: r)
+        } else {
+            let scaled = thumb.size.scaledToFit(size)
+            var r = CGRect(x: 0, y: 0, width: scaled.width, height: scaled.height)
+            r.center = imageFrame.center
+            thumb.draw(in: r)
+        }
+        let image = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        self.resizedThumb = image
+        return image
+    }
     
     var aspectRatio: CGFloat? {
         if let thumb = self.thumbnail {
@@ -486,17 +531,17 @@ class GIFFile: GIF {
             if _thumbnail != nil { return _thumbnail }
             
             if let asset = asset, let cacheManager = cacheManager {
-                let opts = PHImageRequestOptions()
-                opts.isSynchronous = true
-                opts.deliveryMode = .fastFormat
-                opts.isNetworkAccessAllowed = true
-                
-                var image: UIImage?
-                cacheManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts) { imageResult, _ in
-                    image = imageResult
-                }
-                
-                return image
+//                let opts = PHImageRequestOptions()
+//                opts.isSynchronous = true
+//                opts.deliveryMode = .fastFormat
+//                opts.isNetworkAccessAllowed = true
+//
+//                var image: UIImage?
+//                cacheManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts) { imageResult, _ in
+//                    image = imageResult
+//                }
+//
+//                return image
             } else if let data = self.data, let thumb = UIImage(data: data) {
                 _thumbnail = thumb
                 return thumb
@@ -715,40 +760,54 @@ final class LibraryGallery: Gallery {
                 
                 return
             }
-            
-            //            PHPhotoLibrary.shared().register(self.changeObserver)
-            let opts = PHImageRequestOptions()
-            opts.isSynchronous = true
-            opts.deliveryMode = .fastFormat
-            opts.isNetworkAccessAllowed = true
-            let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumAnimated, options: nil)
-            if let result = smartAlbums.firstObject {
-                let allPhotosOptions = PHFetchOptions()
-                allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-                
-                let assets = PHAsset.fetchAssets(in: result, options: allPhotosOptions)
-                var assetArray = [PHAsset]()
+            DispatchQueue.global().async {
                 var gifs = [GIF]()
-                assets.enumerateObjects { asset, x, _ in
-                    assetArray.append(asset)
+
+                //            PHPhotoLibrary.shared().register(self.changeObserver)
+                let opts = PHImageRequestOptions()
+                opts.deliveryMode = .fastFormat
+                opts.isNetworkAccessAllowed = true
+                opts.resizeMode = .fast
+                opts.isSynchronous = true
+                let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumAnimated, options: nil)
+                if let result = smartAlbums.firstObject {
+                    let allPhotosOptions = PHFetchOptions()
+                    allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
                     
-                    PHImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts) { image, _ in
-                        if let gif = GIFFile(url: URL(fileURLWithPath: asset.localIdentifier), thumbnail: image, asset: asset, id: "\(x)") {
-                            //                            gif.cacheManager = self.cachingManager
-                            
-                            gif.isDeletable = false
-                            gifs.append(gif)
-                            
-                            if gifs.count == assets.count {
-                                DispatchQueue.main.async {
-                                    self.gifs = gifs
-                                }
+                    let assets = PHAsset.fetchAssets(in: result, options: allPhotosOptions)
+                    var assetArray = [PHAsset]()
+                    
+                    var reqs = [PHImageRequestID]()
+                    var doneCount = 0
+                    assets.enumerateObjects { asset, x, _ in
+                        assetArray.append(asset)
+                        
+                        reqs.append(PHImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts) { image, _ in
+                            if let gif = GIFFile(url: URL(fileURLWithPath: asset.localIdentifier), thumbnail: image, asset: asset, id: asset.localIdentifier) {
+                                //                            gif.cacheManager = self.cachingManager
+                                
+                                gif.isDeletable = false
+                                
+//                                DispatchQueue.main.async {
+                                gifs.append(gif)
+//                                    self.gifs.append(gif)
+//                                }
                             }
-                        }
+                            
+                            doneCount += 1
+//                            if doneCount >= reqs.count {
+//                                print("done")
+//                            }
+                        })
                     }
+                    
+                    //                self.cachingManager.startCachingImages(for: assetArray, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts)
                 }
                 
-                //                self.cachingManager.startCachingImages(for: assetArray, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts)
+
+                Async {
+                    self.gifs = gifs
+                }
             }
         }
         
@@ -800,15 +859,28 @@ final class FileGallery: Gallery, FileGalleryUtils {
     }
     
     class iCloudObserver: NSObject, iCloudDelegate {
+        var initialized = false
+        
+        func iCloudDidFinishInitializing(with ubiquityToken: UbiquityIdentityToken?, with ubiquityContainer: URL?) {
+            self.initialized = true
+        }
+        
+        var iCloudQueryLimitedToFileExtension: [String] {
+            get {
+                return ["gif"]
+            }
+            
+            set {}
+        }
+        
         let parent: FileGallery
         
         func iCloudFileConflictBetweenCloudFile(_ cloudFile: [String: Any]?, with localFile: [String: Any]?) {
             print("conflict, local: \(localFile), cloud: \(cloudFile)")
         }
-
+        
         var iCloudUpdating = false
         func iCloudFileUpdateDidBegin() {
-            iCloudUpdating = true
             print("icloud begin update")
         }
         
@@ -818,32 +890,68 @@ final class FileGallery: Gallery, FileGalleryUtils {
 //        }
         
         func iCloudFilesDidChange(_ files: [NSMetadataItem], with filenames: [String]) {
+            if !self.initialized { return }
+            
             print("icloud list changed")
-            if self.parent.updating { return }
-            if !self.iCloudUpdating { return }
+//            if self.parent.updating { return }
+            if self.iCloudUpdating || iCloud.shared.query.isGathering { return }
+            
+            self.iCloudUpdating = true
+            
             print("number of icloud files: \(files.count)")
+            
+            print("list cloud files: \(iCloud.shared.listCloudFiles?.count ?? 0)")
+            self.parent.downloadingGIFs = []
+            
+            let filenames = ((iCloud.shared.query.results as? [NSMetadataItem]) ?? []).map { ($0.value(forAttribute: NSMetadataItemFSNameKey) as? String) ?? "" }
+            
+            print("query gathering? \(iCloud.shared.query.isGathering ? "true" : "false")")
+            print("query started? \(iCloud.shared.query.isStarted ? "true" : "false")")
+            
             DispatchQueue.global().async {
                 var gifs = [GIF]()
-                for file in files {
-                    let filename = file.value(forAttribute: NSMetadataItemFSNameKey) as! String
-                    let creationDate = file.value(forAttribute: NSMetadataItemFSCreationDateKey) as! Date
+                
+                var fileDownloading = [String]()
+                for file in (iCloud.shared.query.results as? [NSMetadataItem]) ?? [] {
+                    let filename = file.value(forAttribute: NSMetadataItemFSNameKey) as? String ?? ""
+                    let creationDate = file.value(forAttribute: NSMetadataItemFSCreationDateKey) as? Date ?? Date()
+                    let url = file.value(forAttribute: NSMetadataItemURLKey) as! URL
+                    
+//                    iCloud.shared.deleteDocument(filename)
+//                    continue
                     
                     let gif: GIF
                     
                     if !FileManager.default.fileExists(atPath: self.parent.gifURL.appendingPathComponent(filename).path) {
-                        print("need to copy: \(filename)")
+//                        print("need to copy: \(filename)")
                         do {
-                            let url = file.value(forAttribute: NSMetadataItemURLKey) as! URL
                             try FileManager.default.copyItem(at: url, to: self.parent.gifURL.appendingPathComponent(filename))
                             
                             gif = GIFFile(id: filename.replacingOccurrences(of: ".gif", with: ""), url: self.parent.gifURL.appendingPathComponent(filename))
                             gif.creationDate = creationDate
+                            
+//                            print("copied \(filename)")
                         } catch {
-                            print("error copying gif")
+//                            print("error copying gif")
                             gif = CloudGIF(name: filename, data: nil, creationDate: creationDate)
+                            
+                            if let downloadState = file.value(forAttribute: NSMetadataUbiquitousItemDownloadingStatusKey) as? String, downloadState == NSMetadataUbiquitousItemIsDownloadingKey || downloadState == NSMetadataUbiquitousItemDownloadingStatusNotDownloaded {
+                                Async {
+                                    if fileDownloading.count < 5 {
+                                        fileDownloading.append(filename)
+                                        do {
+                                            try iCloud.shared.fileManager.startDownloadingUbiquitousItem(at: url)
+                                            
+                                        } catch {
+                                            print(error)
+                                        }
+                                    }
+                                    
+                                    self.parent.downloadingGIFs.append(gif)
+                                }
+                            }
                         }
                     } else {
-                        
                         gif = GIFFile(id: filename.replacingOccurrences(of: ".gif", with: ""), url: self.parent.gifURL.appendingPathComponent(filename))
                         gif.creationDate = creationDate
                     }
@@ -854,47 +962,49 @@ final class FileGallery: Gallery, FileGalleryUtils {
                         gif.thumbnail = thumbImage
                         
                     } catch {
-                        let semaphore = DispatchSemaphore(value: 0)
-                        _ = gif.getData { data, _, _ in
-                            if let data = data, let thumb = try? self.parent.createThumb(data: data, id: gif.id) {
-                                gif.thumbnail = thumb
-                            } else {
-                                gif.thumbnail = UIImage(systemName: "questionmark.circle.fill")
-                            }
-                            semaphore.signal()
-                        }
+//                        print("create thumb")
                         
-                        semaphore.wait()
+                        let data = gif.getDataSync()
+                        if let data = data, let thumb = try? self.parent.createThumb(data: data, id: gif.id) {
+                            gif.thumbnail = thumb
+                        } else {
+                            gif.thumbnail = UIImage(systemName: "questionmark.circle.fill")
+                        }
                     }
-                    
                     gifs.append(gif)
                 }
+                
+                print("after thumbs")
                 
                 gifs.sort { (lhs, rhs) -> Bool in
                     lhs.creationDate ?? Date() > rhs.creationDate ?? Date()
                 }
-
+                
                 do {
                     let local = try FileManager.default.contentsOfDirectory(atPath: self.parent.gifURL.path)
-
+                    
                     for file in local {
                         if !filenames.contains(file) {
-                            print("deleting local document")
+                            print("deleting local document \(file)")
                             try FileManager.default.removeItem(at: self.parent.gifURL.appendingPathComponent(file))
                         }
                     }
-
+                    
                 } catch {}
+                
+                print("parent reload")
+                self.parent.load()
+                
+                self.iCloudUpdating = false
             }
-            
-            self.parent.load()
-            self.iCloudUpdating = false
         }
         
         init(_ parent: FileGallery) {
             self.parent = parent
         }
     }
+    
+    var downloadingGIFs = [GIF]()
     
     lazy var icloudObserver = iCloudObserver(self)
     
@@ -918,6 +1028,18 @@ final class FileGallery: Gallery, FileGalleryUtils {
         } catch {
             print(error)
         }
+        
+//
+//            let files = try? FileManager.default.contentsOfDirectory(atPath: self.gifURL.path)
+//            for file in files ?? [] {
+//                try? FileManager.default.removeItem(at: self.gifURL.appendingPathComponent(file))
+//            }
+//
+//            let thumbs = try? FileManager.default.contentsOfDirectory(atPath: self.thumbURL.path)
+//        for file in thumbs ?? [] {
+//            try? FileManager.default.removeItem(at: self.thumbURL.appendingPathComponent(file))
+//
+//        }
         
 //        do {
 //            try FileManager.default.createDirectory(at: gifURL, withIntermediateDirectories: true, attributes: nil)
@@ -952,12 +1074,14 @@ final class FileGallery: Gallery, FileGalleryUtils {
                 .padding(12).any
         })
         
+        iCloud.shared.delegate = self.icloudObserver
+        
         iCloud.shared.setupiCloud(nil)
         
         if self.cloudAvailable {
-            iCloud.shared.updateFiles()
-            iCloud.shared.delegate = self.icloudObserver
-
+            iCloud.shared.verboseLogging = true
+            
+//            iCloud.shared.updateFiles()
         }
         
         self.load()
@@ -966,57 +1090,66 @@ final class FileGallery: Gallery, FileGalleryUtils {
     func add(url: URL) {}
     
     override func remove(_ gifs: [GIF]) {
-        var finished = 0 {
-            didSet {
-                if finished == gifs.count {
-                    self.updating = false
-                    Async {
-                    self.load()
-                    }
-                }
-            }
-        }
-        //        DispatchQueue.global().async {
-        self.updating = true
         
-        for gif in gifs {
-            do {
-                try FileManager.default.removeItem(at: self.thumbURL.appendingPathComponent("\(gif.id)").appendingPathExtension("jpg"))
-            } catch {
-                print(error)
-            }
+        DispatchQueue.global().async {
             
-            do {
-                try FileManager.default
-                    .removeItem(at: self.gifURL.appendingPathComponent("\(gif.id)")
-                        .appendingPathExtension("gif"))
-            } catch {}
-            if self.cloudAvailable {
-                if let localUrl = iCloud.shared.localDocumentsURL?.appendingPathComponent("\(gif.id).gif") {
-                    do {
-                        try FileManager.default.removeItem(at: localUrl)
-                    } catch {
-                        print(error)
+            
+            var finished = 0 {
+                didSet {
+                    if finished == gifs.count {
+                        self.updating = false
+                        Async {
+                            self.load()
+                        }
                     }
                 }
-                //                    let semaphore = DispatchSemaphore(value: 0)
-                iCloud.shared.deleteDocument("\(gif.id).gif") { _ in
-                    //                        semaphore.signal()
+            }
+            //        DispatchQueue.global().async {
+            self.updating = true
+            
+            for gif in gifs {
+                do {
+                    try FileManager.default.removeItem(at: self.thumbURL.appendingPathComponent("\(gif.id)").appendingPathExtension("jpg"))
+                } catch {
+                    print(error)
+                }
+                
+                if self.cloudAvailable {
+                    let semaphore = DispatchSemaphore(value: 0)
                     
+                    iCloud.shared.deleteDocument("\(gif.id).gif") { error in
+                        
+                        if let error = error {
+                            print(error)
+                        }
+                        
+                        do {
+                            try FileManager.default
+                                .removeItem(at: self.gifURL.appendingPathComponent("\(gif.id)")
+                                    .appendingPathExtension("gif"))
+                        } catch {
+                            print("ERROR REMOVING LOCAL FILE")
+                        }
+                        finished += 1
+                        semaphore.signal()
+                    }
+                    semaphore.wait()
+                    
+                    //                    semaphore.wait()
+                    
+                } else {
+                    do {
+                        try FileManager.default
+                            .removeItem(at: self.gifURL.appendingPathComponent("\(gif.id)")
+                                .appendingPathExtension("gif"))
+                    } catch {
+                        print("ERROR REMOVING LOCAL FILE")
+                    }
                     finished += 1
                 }
-                
-                //                    semaphore.wait()
-                
-            } else {
-                self.updating = false
-                
-                DispatchQueue.main.async {
-                    self.gifs.removeAll { $0 == gif }
-                }
             }
         }
-        
+
         //        }
     }
     
@@ -1040,8 +1173,8 @@ final class FileGallery: Gallery, FileGalleryUtils {
     
     override func add(data: Data, _ completion: ((String?, Error?) -> Void)? = nil) {
         self.updating = true
-
-        _galleryAdd(data: data) { (id, error) in
+        
+        _galleryAdd(data: data) { id, error in
             self.updating = false
             Async {
                 completion?(id, error)
@@ -1095,22 +1228,42 @@ final class FileGallery: Gallery, FileGalleryUtils {
     }
     
     func load() {
-        Async {
+        DispatchQueue.global().async {
             do {
+                var gifsToAdd = [GIF]()
                 let files = try FileManager.default.contentsOfDirectory(atPath: self.gifURL.path)
                 print("number of local files: \(files.count)")
-                self.gifs = files.compactMap { file in
+                for file in files {
                     do {
                         let thumbData = try Data(contentsOf: self.thumbURL.appendingPathComponent(file.replacingOccurrences(of: ".gif", with: ".jpg")))
                         let thumbImage = UIImage(data: thumbData)!
                         
-                        return GIFFile(url: self.gifURL.appendingPathComponent(file), thumbnail: thumbImage, id: file.replacingOccurrences(of: ".gif", with: ""))
+                        if let gif = GIFFile(url: self.gifURL.appendingPathComponent(file), thumbnail: thumbImage, id: file.replacingOccurrences(of: ".gif", with: "")) {
+                            gifsToAdd.append(gif)
+                        }
                     } catch {
-                        return nil
+                        print("thumb error?")
                     }
-                }.sorted(by: { (lhs, rhs) -> Bool in
+                }
+                
+                gifsToAdd.sort { (lhs, rhs) -> Bool in
                     lhs.creationDate ?? Date() > rhs.creationDate ?? Date()
-                })
+                }
+                
+                gifsToAdd += self.downloadingGIFs
+                
+                Async {
+                    withAnimation(Animation.default) {
+                        if self.gifs != gifsToAdd {
+                            self.gifs = gifsToAdd
+                        }
+                    }
+                }
+                
+                //                .sorted(by: { (lhs, rhs) -> Bool in
+                //                    lhs.creationDate ?? Date() > rhs.creationDate ?? Date()
+                //                }) + self.downloadingGIFs
+                
             } catch {
                 print(error)
             }

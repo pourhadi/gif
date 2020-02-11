@@ -50,17 +50,47 @@ struct MenuItem: Equatable {
 extension Animation {
     
     static var bouncy1 : Animation {
-        return Animation.interpolatingSpring(stiffness: 300, damping: 18).speed(0.8)
+        return Animation.interpolatingSpring(stiffness: 300, damping: 19).speed(0.8)
     }
     
     static var bouncy2 : Animation {
         return Animation.interpolatingSpring(stiffness: 300, damping: 15).speed(0.8)
+    }
+    
+    static var bouncy3 : Animation {
+        return Animation.spring()
     }
 }
 
 extension AnyTransition {
     static func pop(delayed: Double = 0) -> AnyTransition { AnyTransition.scale.combined(with: .opacity).animation(Animation.bouncy1.delay(delayed))
     }
+}
+
+struct ConditionallyStacked<Content> : View where Content : View {
+    
+    let content: () -> Content
+    let hStacked: Bool
+    
+    init(hStacked: Bool, @ViewBuilder content: @escaping () -> Content) {
+        self.hStacked = hStacked
+        self.content = content
+    }
+    
+    var body: some View{
+        Group {
+            if hStacked {
+                HStack(spacing: 10) {
+                    self.content()
+                }
+            } else {
+                self.content()
+            }
+            
+        }
+        
+    }
+    
 }
 
 struct MenuView: View {
@@ -76,6 +106,8 @@ struct MenuView: View {
     
     @State var dismissingMenuItem : MenuItem?
     
+    @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
+    
     var bouncyAnimation : Animation {
         return Animation.bouncy1
     }
@@ -83,10 +115,11 @@ struct MenuView: View {
     let cancelAction: () -> Void
     var body: some View {
         ZStack {
-            VisualEffectView.blur(.systemChromeMaterialDark)
+            VisualEffectView.blur(.regular)
                 .brightness(-0.1)
                 .transition(.opacity)
                 .opacity(self.dismissing ? 0 : 1)
+                .edgesIgnoringSafeArea(.all)
             VStack(spacing: 20) {
                 if self.subMenu != nil {
                     if self.title != nil {
@@ -95,27 +128,35 @@ struct MenuView: View {
                             Divider()
                         }.transition(AnyTransition.pop())
                     }
-                    ForEach(0..<self.subMenu!.count) { x in
-                        self.button(self.subMenu![x])
-                            .scaleEffect(self.subVisible ? 1 : 0.25)
-                            .opacity(self.subVisible ? 1 : 0)
-                            .animation(self.bouncyAnimation.delay(Double(x) * Double(0.2) + 0.2))
-                        .transformEffect(self.dismissingMenuItem == self.subMenu![x] ? .init(scaleX: 0.95, y: 0.95) : .identity)
-
-                    }.onAppear {
-                        self.$subVisible.animation(self.bouncyAnimation).wrappedValue = true
+                    
+                    ConditionallyStacked(hStacked: self.verticalSizeClass == .compact) {
+                        ForEach(0..<self.subMenu!.count) { x in
+                            self.button(self.subMenu![x])
+                                .scaleEffect(self.subVisible ? 1 : 0.25)
+                                .opacity(self.subVisible ? 1 : 0)
+                                .animation(self.bouncyAnimation.delay(Double(x) * Double(0.2) + 0.2))
+                                .transformEffect(self.dismissingMenuItem == self.subMenu![x] ? .init(scaleX: 0.95, y: 0.95) : .identity)
+                            
+                        }.onAppear {
+                            self.$subVisible.animation(self.bouncyAnimation).wrappedValue = true
+                        }
                     }
+                    
                 } else {
-                    ForEach(0..<self.menuItems.count) { x in
-                        self.button(self.menuItems[x])
-                            .scaleEffect(self.buttonsVisible ? 1 : 0.25)
-                            .opacity(self.buttonsVisible ? 1 : 0)
-                            .animation(self.bouncyAnimation.delay(Double(x) * Double(0.2)))
-                            .transition(AnyTransition.pop(delayed: Double(x) * Double(0.2)))
-                            .transformEffect(self.dismissingMenuItem == self.menuItems[x] ? .init(scaleX: 0.95, y: 0.95) : .identity)
-                    }.onAppear {
-                        Delayed(0.2) {
-                            self.$buttonsVisible.animation(self.bouncyAnimation).wrappedValue = true
+                    
+                    ConditionallyStacked(hStacked: self.verticalSizeClass == .compact) {
+                        
+                        ForEach(0..<self.menuItems.count) { x in
+                            self.button(self.menuItems[x])
+                                .scaleEffect(self.buttonsVisible ? 1 : 0.25)
+                                .opacity(self.buttonsVisible ? 1 : 0)
+                                .animation(self.bouncyAnimation.delay(Double(x) * Double(0.2)))
+                                .transition(AnyTransition.pop(delayed: Double(x) * Double(0.2)))
+                                .transformEffect(self.dismissingMenuItem == self.menuItems[x] ? .init(scaleX: 0.95, y: 0.95) : .identity)
+                        }.onAppear {
+                            Delayed(0.2) {
+                                self.$buttonsVisible.animation(self.bouncyAnimation).wrappedValue = true
+                            }
                         }
                     }
                 }
@@ -134,7 +175,6 @@ struct MenuView: View {
         }
         .edgesIgnoringSafeArea([.top, .bottom])
         .accentColor(Color.accent)
-        .preferredColorScheme(.dark)
         .onTapGesture {
             self.dismiss()
             self.cancelAction()
@@ -153,11 +193,14 @@ struct MenuView: View {
     
     func button(_ item: MenuItem) -> some View {
         BouncyButton(content: {
-            HStack(spacing: 20) {
+            Stack(self.verticalSizeClass == .compact ? .vertical : .horizontal, spacing: 20) {
+                
+            
+//            HStack(spacing: 20) {
                 item.image
-                item.text
+                item.text.minimumScaleFactor(0.9)
             }
-            .padding(30)
+            .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color.white.opacity(0.15)))

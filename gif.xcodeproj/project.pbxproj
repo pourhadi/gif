@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 52;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -34,6 +34,15 @@
 		47E7EC8984E4C81B0670EF7B /* Pods_gif.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E62278685D2C1A10C337E8B /* Pods_gif.framework */; };
 		DC0156DD23C0D3DA00E993D2 /* GifCreatedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0156DC23C0D3DA00E993D2 /* GifCreatedView.swift */; };
 		DC04EB0423C276BC00B109AC /* CollectionView_Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC04EB0323C276BC00B109AC /* CollectionView_Utils.swift */; };
+		DC1ED73523ECFCA90082D16E /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73023ECFCA90082D16E /* View.swift */; };
+		DC1ED73623ECFCA90082D16E /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73023ECFCA90082D16E /* View.swift */; };
+		DC1ED73723ECFCA90082D16E /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73123ECFCA90082D16E /* Image.swift */; };
+		DC1ED73823ECFCA90082D16E /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73123ECFCA90082D16E /* Image.swift */; };
+		DC1ED73923ECFCA90082D16E /* Stack.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73323ECFCA90082D16E /* Stack.swift */; };
+		DC1ED73A23ECFCA90082D16E /* Stack.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73323ECFCA90082D16E /* Stack.swift */; };
+		DC1ED73B23ECFCA90082D16E /* WrappedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73423ECFCA90082D16E /* WrappedView.swift */; };
+		DC1ED73C23ECFCA90082D16E /* WrappedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73423ECFCA90082D16E /* WrappedView.swift */; };
+		DC23D6D423F25E7C00224CB6 /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC23D6D323F25E7C00224CB6 /* Test.swift */; };
 		DC3DB1B923AF9D45004F706F /* ToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3DB1B823AF9D45004F706F /* ToolbarView.swift */; };
 		DC3DB1BB23B3D30D004F706F /* TransitionTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3DB1BA23B3D30D004F706F /* TransitionTest.swift */; };
 		DC3DB1C123B41D00004F706F /* 4.gif in Resources */ = {isa = PBXBuildFile; fileRef = DC3DB1BC23B41CFE004F706F /* 4.gif */; };
@@ -52,7 +61,6 @@
 		DC4894D623D7202500E4C865 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37AC0E1F239D1AA10073A1FD /* Colors.swift */; };
 		DC4894DA23D7219100E4C865 /* FileGalleryUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4894D923D7219100E4C865 /* FileGalleryUtils.swift */; };
 		DC4894DB23D723C100E4C865 /* FileGalleryUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4894D923D7219100E4C865 /* FileGalleryUtils.swift */; };
-		DC4894DD23D7246000E4C865 /* SwiftUI-Utils in Frameworks */ = {isa = PBXBuildFile; productRef = DC4894DC23D7246000E4C865 /* SwiftUI-Utils */; };
 		DC4894DE23D7246D00E4C865 /* HUDAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCB9DDFC23B8E85C005B8741 /* HUDAlertView.swift */; };
 		DC4894DF23D7250B00E4C865 /* ActivityIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EDBD4823A1A26800166CD9 /* ActivityIndicatorView.swift */; };
 		DC4894E023D7251400E4C865 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FD5A03238F989E00CB098E /* Utils.swift */; };
@@ -67,14 +75,16 @@
 		DC821EA123AF719D0015C0FE /* GIFView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC821EA023AF719D0015C0FE /* GIFView.swift */; };
 		DCA355D523C4851800A28C69 /* DrawingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA355D423C4851800A28C69 /* DrawingView.swift */; };
 		DCA355D723C4B53B00A28C69 /* State.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA355D623C4B53B00A28C69 /* State.swift */; };
-		DCB9DDF423B72CF6005B8741 /* SwiftUI-Utils in Frameworks */ = {isa = PBXBuildFile; productRef = DCB9DDF323B72CF6005B8741 /* SwiftUI-Utils */; };
+		DCB388E723ED06D500561B73 /* AdjustmentSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCB388E623ED06D500561B73 /* AdjustmentSelector.swift */; };
 		DCB9DDF723B734F3005B8741 /* CollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCB9DDF623B734F3005B8741 /* CollectionView.swift */; };
 		DCB9DDF923B83F68005B8741 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCB9DDF823B83F68005B8741 /* SettingsView.swift */; };
 		DCB9DDFB23B85142005B8741 /* CustomTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCB9DDFA23B85142005B8741 /* CustomTabView.swift */; };
 		DCB9DDFD23B8E85C005B8741 /* HUDAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCB9DDFC23B8E85C005B8741 /* HUDAlertView.swift */; };
 		DCC7FF4823C80EB100E2D0B2 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7FF4723C80EB100E2D0B2 /* ActivityView.swift */; };
+		DCCF1A3523E9A80F00940D6F /* LoadingCircleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCF1A3423E9A80F00940D6F /* LoadingCircleView.swift */; };
 		DCE7965023CB92CD000BCEBF /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCE7964F23CB92CD000BCEBF /* MenuView.swift */; };
 		DCE7965223CD562D000BCEBF /* TextFormatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCE7965123CD562D000BCEBF /* TextFormatView.swift */; };
+		DCFAD61E23EE16BF0045A32A /* LoadingCircleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCF1A3423E9A80F00940D6F /* LoadingCircleView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -134,6 +144,11 @@
 		8E62278685D2C1A10C337E8B /* Pods_gif.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_gif.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC0156DC23C0D3DA00E993D2 /* GifCreatedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GifCreatedView.swift; sourceTree = "<group>"; };
 		DC04EB0323C276BC00B109AC /* CollectionView_Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionView_Utils.swift; sourceTree = "<group>"; };
+		DC1ED73023ECFCA90082D16E /* View.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
+		DC1ED73123ECFCA90082D16E /* Image.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
+		DC1ED73323ECFCA90082D16E /* Stack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Stack.swift; sourceTree = "<group>"; };
+		DC1ED73423ECFCA90082D16E /* WrappedView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WrappedView.swift; sourceTree = "<group>"; };
+		DC23D6D323F25E7C00224CB6 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
 		DC3DB1B823AF9D45004F706F /* ToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarView.swift; sourceTree = "<group>"; };
 		DC3DB1BA23B3D30D004F706F /* TransitionTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionTest.swift; sourceTree = "<group>"; };
 		DC3DB1BC23B41CFE004F706F /* 4.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 4.gif; sourceTree = "<group>"; };
@@ -164,11 +179,13 @@
 		DC821EA023AF719D0015C0FE /* GIFView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFView.swift; sourceTree = "<group>"; };
 		DCA355D423C4851800A28C69 /* DrawingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingView.swift; sourceTree = "<group>"; };
 		DCA355D623C4B53B00A28C69 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
+		DCB388E623ED06D500561B73 /* AdjustmentSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdjustmentSelector.swift; sourceTree = "<group>"; };
 		DCB9DDF623B734F3005B8741 /* CollectionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionView.swift; sourceTree = "<group>"; };
 		DCB9DDF823B83F68005B8741 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DCB9DDFA23B85142005B8741 /* CustomTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabView.swift; sourceTree = "<group>"; };
 		DCB9DDFC23B8E85C005B8741 /* HUDAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDAlertView.swift; sourceTree = "<group>"; };
 		DCC7FF4723C80EB100E2D0B2 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
+		DCCF1A3423E9A80F00940D6F /* LoadingCircleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingCircleView.swift; sourceTree = "<group>"; };
 		DCE7964F23CB92CD000BCEBF /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuView.swift; sourceTree = "<group>"; };
 		DCE7965123CD562D000BCEBF /* TextFormatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFormatView.swift; sourceTree = "<group>"; };
 		E20DCA0E6064189C75193E65 /* Pods-share.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.release.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.release.xcconfig"; sourceTree = "<group>"; };
@@ -179,7 +196,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DCB9DDF423B72CF6005B8741 /* SwiftUI-Utils in Frameworks */,
 				47E7EC8984E4C81B0670EF7B /* Pods_gif.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -188,7 +204,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DC4894DD23D7246000E4C865 /* SwiftUI-Utils in Frameworks */,
 				3E9897A40B0758E53C9DF9C4 /* Pods_share.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -240,6 +255,7 @@
 		37A7A950238087A000BBCADB /* gif */ = {
 			isa = PBXGroup;
 			children = (
+				DC1ED72E23ECFCA90082D16E /* SwiftUI-Utils */,
 				DC81FDBA23E2A54300017FAE /* Download */,
 				DC7F920523C5D62900A959A4 /* Editing */,
 				DCA355D323C4850900A28C69 /* Drawing */,
@@ -270,6 +286,7 @@
 				37EDBD4A23A7DB6700166CD9 /* DocumentPickerView.swift */,
 				37EDBD4D23A7FE8E00166CD9 /* Env.swift */,
 				DCB9DDF823B83F68005B8741 /* SettingsView.swift */,
+				DC23D6D323F25E7C00224CB6 /* Test.swift */,
 				DCA355D623C4B53B00A28C69 /* State.swift */,
 			);
 			path = gif;
@@ -302,8 +319,37 @@
 				DCC7FF4723C80EB100E2D0B2 /* ActivityView.swift */,
 				DCE7964F23CB92CD000BCEBF /* MenuView.swift */,
 				DC81FDB823E076E800017FAE /* CustomNavView.swift */,
+				DCCF1A3423E9A80F00940D6F /* LoadingCircleView.swift */,
 			);
 			path = UtilViews;
+			sourceTree = "<group>";
+		};
+		DC1ED72E23ECFCA90082D16E /* SwiftUI-Utils */ = {
+			isa = PBXGroup;
+			children = (
+				DC1ED72F23ECFCA90082D16E /* Extensions */,
+				DC1ED73223ECFCA90082D16E /* Views */,
+			);
+			name = "SwiftUI-Utils";
+			path = "../../SwiftUI-Utils/Sources/SwiftUI-Utils";
+			sourceTree = "<group>";
+		};
+		DC1ED72F23ECFCA90082D16E /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				DC1ED73023ECFCA90082D16E /* View.swift */,
+				DC1ED73123ECFCA90082D16E /* Image.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		DC1ED73223ECFCA90082D16E /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DC1ED73323ECFCA90082D16E /* Stack.swift */,
+				DC1ED73423ECFCA90082D16E /* WrappedView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		DC4894C823D6FD7900E4C865 /* share */ = {
@@ -325,6 +371,7 @@
 				DC488FF723D3D3EE00E4C865 /* EditContainerView.swift */,
 				DC488FF923D3DB7700E4C865 /* GifEditor.swift */,
 				DC488FFB23D46D5700E4C865 /* ImageAdjustmentView.swift */,
+				DCB388E623ED06D500561B73 /* AdjustmentSelector.swift */,
 			);
 			path = Editing;
 			sourceTree = "<group>";
@@ -390,7 +437,6 @@
 			);
 			name = gif;
 			packageProductDependencies = (
-				DCB9DDF323B72CF6005B8741 /* SwiftUI-Utils */,
 			);
 			productName = gif;
 			productReference = 37A7A94E238087A000BBCADB /* gif.app */;
@@ -411,7 +457,6 @@
 			);
 			name = share;
 			packageProductDependencies = (
-				DC4894DC23D7246000E4C865 /* SwiftUI-Utils */,
 			);
 			productName = share;
 			productReference = DC4894C723D6FD7900E4C865 /* share.appex */;
@@ -445,7 +490,6 @@
 			);
 			mainGroup = 37A7A945238087A000BBCADB;
 			packageReferences = (
-				DCB9DDF223B72CF6005B8741 /* XCRemoteSwiftPackageReference "swiftui-utils" */,
 			);
 			productRefGroup = 37A7A94F238087A000BBCADB /* Products */;
 			projectDirPath = "";
@@ -563,6 +607,7 @@
 				37AC0E20239D1AA10073A1FD /* Colors.swift in Sources */,
 				DCE7965023CB92CD000BCEBF /* MenuView.swift in Sources */,
 				DC4894DA23D7219100E4C865 /* FileGalleryUtils.swift in Sources */,
+				DC1ED73923ECFCA90082D16E /* Stack.swift in Sources */,
 				DCC7FF4823C80EB100E2D0B2 /* ActivityView.swift in Sources */,
 				37AC0E22239D92270073A1FD /* GifSettingsView.swift in Sources */,
 				DC488FFC23D46D5700E4C865 /* ImageAdjustmentView.swift in Sources */,
@@ -570,17 +615,21 @@
 				DCB9DDFD23B8E85C005B8741 /* HUDAlertView.swift in Sources */,
 				37FD5A02238C878400CB098E /* ScrollViewUtils.swift in Sources */,
 				DCA355D523C4851800A28C69 /* DrawingView.swift in Sources */,
+				DC1ED73523ECFCA90082D16E /* View.swift in Sources */,
 				DC488FF823D3D3EE00E4C865 /* EditContainerView.swift in Sources */,
 				3757E6602381059E00D9E953 /* TimelineView.swift in Sources */,
 				3757E662238744E000D9E953 /* PlayerContainerView.swift in Sources */,
+				DCCF1A3523E9A80F00940D6F /* LoadingCircleView.swift in Sources */,
 				DC821E9E23AF519B0015C0FE /* GIFImageView.swift in Sources */,
 				DCA355D723C4B53B00A28C69 /* State.swift in Sources */,
 				3757E66423877DE000D9E953 /* PlayerView.swift in Sources */,
 				DC3DB1B923AF9D45004F706F /* ToolbarView.swift in Sources */,
+				DC1ED73723ECFCA90082D16E /* Image.swift in Sources */,
 				37FD5A08239A078700CB098E /* VisualEffectView.swift in Sources */,
 				37FD5A04238F989E00CB098E /* Utils.swift in Sources */,
 				37A7A952238087A000BBCADB /* AppDelegate.swift in Sources */,
 				37A7A966238089EB00BBCADB /* EditorView.swift in Sources */,
+				DCB388E723ED06D500561B73 /* AdjustmentSelector.swift in Sources */,
 				DC821E9723AD8AA80015C0FE /* ScrollViewTest.swift in Sources */,
 				DCB9DDF723B734F3005B8741 /* CollectionView.swift in Sources */,
 				3707E1D923A1517800ABC970 /* PreviewView.swift in Sources */,
@@ -594,8 +643,10 @@
 				DC821E9C23AF50BE0015C0FE /* Gallery.swift in Sources */,
 				DC81FDBC23E2A55000017FAE /* EnterURLView.swift in Sources */,
 				37AC0E1E239CB54A0073A1FD /* Gif.swift in Sources */,
+				DC23D6D423F25E7C00224CB6 /* Test.swift in Sources */,
 				37FD5A0623902EFA00CB098E /* ControlsView.swift in Sources */,
 				DC0156DD23C0D3DA00E993D2 /* GifCreatedView.swift in Sources */,
+				DC1ED73B23ECFCA90082D16E /* WrappedView.swift in Sources */,
 				DCE7965223CD562D000BCEBF /* TextFormatView.swift in Sources */,
 				DC7F920723C5D6E500A959A4 /* Cropping.swift in Sources */,
 				DC488FFA23D3DB7700E4C865 /* GifEditor.swift in Sources */,
@@ -606,11 +657,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DC1ED73623ECFCA90082D16E /* View.swift in Sources */,
+				DCFAD61E23EE16BF0045A32A /* LoadingCircleView.swift in Sources */,
+				DC1ED73823ECFCA90082D16E /* Image.swift in Sources */,
 				DC4894CA23D6FD7900E4C865 /* ShareViewController.swift in Sources */,
 				DC4894D623D7202500E4C865 /* Colors.swift in Sources */,
 				DC4894DE23D7246D00E4C865 /* HUDAlertView.swift in Sources */,
 				DC4894E023D7251400E4C865 /* Utils.swift in Sources */,
+				DC1ED73A23ECFCA90082D16E /* Stack.swift in Sources */,
 				DC4894DF23D7250B00E4C865 /* ActivityIndicatorView.swift in Sources */,
+				DC1ED73C23ECFCA90082D16E /* WrappedView.swift in Sources */,
 				DC4894DB23D723C100E4C865 /* FileGalleryUtils.swift in Sources */,
 				DC4894D523D7158600E4C865 /* VisualEffectView.swift in Sources */,
 			);
@@ -891,30 +947,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		DCB9DDF223B72CF6005B8741 /* XCRemoteSwiftPackageReference "swiftui-utils" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:pourhadi/swiftui-utils.git";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		DC4894DC23D7246000E4C865 /* SwiftUI-Utils */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DCB9DDF223B72CF6005B8741 /* XCRemoteSwiftPackageReference "swiftui-utils" */;
-			productName = "SwiftUI-Utils";
-		};
-		DCB9DDF323B72CF6005B8741 /* SwiftUI-Utils */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DCB9DDF223B72CF6005B8741 /* XCRemoteSwiftPackageReference "swiftui-utils" */;
-			productName = "SwiftUI-Utils";
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 37A7A946238087A000BBCADB /* Project object */;
 }

@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import SwiftUI_Utils
 import IGColorPicker
 
 
@@ -204,6 +203,7 @@ class TextFormat: ObservableObject {
     
     @Published var shadowMeasure = 1
     
+    @Published var shadowRadius = 1
 }
 
 
@@ -321,7 +321,7 @@ struct TextFormatView: View {
                                 Circle()
                                     .stroke(Color.black, lineWidth: 4)
                                     .foregroundColor(Color.clear)
-                                    .background(Circle().fill(Color.black))
+                                    .background(Circle().fill(Color.background))
                                     .frame(width: 20, height: 20)
                                     .overlay(self.textFormat.shadowColor == UIColor.black ? Circle().inset(by: -2).stroke(Color.accent, lineWidth: 2).foregroundColor(Color.clear).any : EmptyView().any)
                             })
@@ -338,16 +338,42 @@ struct TextFormatView: View {
                                     .overlay(self.textFormat.shadowColor == UIColor.white ? Circle().inset(by: -3).stroke(Color.accent, lineWidth: 2).foregroundColor(Color.clear).any : EmptyView().any)
                             })
                             
-                            Stepper(onIncrement: {
+                            
+                            VStack {
                                 
-                                self.textFormat.shadowMeasure += 1
                                 
-                            }, onDecrement: {
-                                self.textFormat.shadowMeasure -= 1
-
-                            }, label: {
-                                EmptyView()
+                                Text("Offset")
+                                
+                                Stepper(onIncrement: {
+                                    
+                                    self.textFormat.shadowMeasure += 1
+                                    
+                                }, onDecrement: {
+                                    self.textFormat.shadowMeasure -= 1
+                                    
+                                }, label: {
+                                    EmptyView()
                                 }).labelsHidden()
+                                
+                                Text("Radius")
+
+                                
+                                Stepper(onIncrement: {
+                                    
+                                    self.textFormat.shadowRadius += 1
+                                    
+                                }, onDecrement: {
+                                    self.textFormat.shadowRadius -= 1
+                                    
+                                }, label: {
+                                    EmptyView()
+                                }).labelsHidden()
+                                
+                                
+                                
+                            }
+                            
+                            
                             
                         }
                     }

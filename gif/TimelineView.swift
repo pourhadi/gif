@@ -68,6 +68,7 @@ struct TimelineView<Generator>: View where Generator : GifGenerator {
                                playState: self.playState,
                                currentPlayhead: self.$playState.currentPlayhead,
                                thumbnailMultiplier: self.$thumbnailMultiplier)
+                    .fadedEdges(0.05)
             }
 
             Rectangle()
@@ -77,8 +78,8 @@ struct TimelineView<Generator>: View where Generator : GifGenerator {
         }
         .gesture(MagnificationGesture().onChanged({ (value) in
             let m = value < 0.25 ? 0.25 : floorf(Float(value * 4)) / 4
-            print(m)
-            self.$thumbnailMultiplier.animation(Animation.easeInOut(duration: 0.3)).wrappedValue = CGFloat(m)
+            print(value)
+            self.$thumbnailMultiplier.animation(Animation.easeInOut(duration: 0.3)).wrappedValue = CGFloat(value)
         }))
     }
 }
@@ -329,8 +330,8 @@ class TimelineContainerView: UIView, UICollectionViewDelegate, UICollectionViewD
         let endX = (selection.endTime.clamp() * insetWidth)
         
         //            let height = visualState.compact ? self.frame.size.height - 30 : (self.frame.size.height / 2)
-        let height = (self.frame.size.height / 2)
-        
+//        let height = (self.frame.size.height / 2)
+        let height = self.cellSize.height + 8
         let y = (self.frame.size.height - height) / 2
         let frame = CGRect(x: startX, y: y, width: endX - startX, height: height)
         selectionView[0].frame = frame
@@ -351,10 +352,10 @@ class SelectionView: UIView {
         super.init(frame: frame)
         
         self.layer.borderColor = _accent.cgColor
-        self.layer.borderWidth = 2
-        self.layer.cornerRadius = 20
+        self.layer.borderWidth = 3
+        self.layer.cornerRadius = 10
         
-        self.backgroundColor = _accent.withAlphaComponent(0.05)
+        self.backgroundColor = _accent.withAlphaComponent(0.1)
         self.isOpaque = false
         
         addSubview(labelContainer)
@@ -369,7 +370,7 @@ class SelectionView: UIView {
         }
         
         labelContainer.backgroundColor = UIColor.black.withAlphaComponent(0.8)
-        labelContainer.layer.cornerRadius = 5
+        labelContainer.layer.cornerRadius = 4
         
         label.textColor = UIColor.white
         label.textAlignment = .center

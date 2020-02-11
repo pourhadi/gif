@@ -47,7 +47,7 @@ extension Collection where Element == GifConfig.Selection {
 
 @propertyWrapper
 struct Clamped {
-    private var number: CGFloat = 0
+    var number: CGFloat = 0
     var wrappedValue: CGFloat {
         get { return number }
         set { number = newValue.clamp() }
@@ -72,9 +72,23 @@ class GifConfig: ObservableObject, Equatable {
         
     }
     
-    @Published var regenerateFlag: UUID = UUID()
+    @Published var imageQuality: Float = 1 {
+        didSet {
+            self.sendValues()
+        }
+    }
     
-    @Published var animationType = AnimationType.regular
+    @Published var regenerateFlag: UUID = UUID() {
+        didSet {
+            self.sendValues()
+        }
+    }
+    
+    @Published var animationType = AnimationType.regular {
+        didSet {
+            self.sendValues()
+        }
+    }
     
     struct Selection: Equatable {
         static func == (lhs: GifConfig.Selection, rhs: GifConfig.Selection) -> Bool {
@@ -163,14 +177,36 @@ class GifConfig: ObservableObject, Equatable {
     
     
     
-    @Published var animationQuality: AnimationQuality = .medium
-    @Published var speed: CGFloat = 1.0
-    @Published var sizeScale: CGFloat = 1.0
+    @Published var animationQuality: AnimationQuality = .medium {
+        didSet {
+            self.sendValues()
+        }
+    }
     
-    @Published var selections = [Selection()]
+    @Published var speed: CGFloat = 1.0 {
+        didSet {
+            self.sendValues()
+        }
+    }
+    
+    @Published var sizeScale: CGFloat = 1.0 {
+        didSet {
+            self.sendValues()
+        }
+    }
+    
+    @Published var selections = [Selection()] {
+        didSet {
+            self.sendValues()
+        }
+    }
     
     
-    @Published var selection = Selection()
+    @Published var selection = Selection() {
+        didSet {
+            self.sendValues()
+        }
+    }
     
     @Published var visible = false
     
@@ -183,8 +219,9 @@ class GifConfig: ObservableObject, Equatable {
         let selection: Selection
         let animationType: AnimationType
         let regenerate: UUID
+        let imageQuality: Double
         static var empty: Self {
-            return Values(animationQuality: .high, speed: 0, sizeScale: 0, selection: Selection(), animationType: .regular, regenerate: UUID())
+            return Values(animationQuality: .high, speed: 0, sizeScale: 0, selection: Selection(), animationType: .regular, regenerate: UUID(), imageQuality: 1)
         }
         
         func diff(_ other: Self) -> GifConfigDiff {
@@ -192,7 +229,7 @@ class GifConfig: ObservableObject, Equatable {
             
             var settingsChanged = animationQuality != other.animationQuality || speed != other.speed || sizeScale != other.sizeScale
             
-            var framesChanged = animationQuality != other.animationQuality || sizeScale != other.sizeScale || selectionChanged || animationType != other.animationType
+            var framesChanged = animationQuality != other.animationQuality || sizeScale != other.sizeScale || selectionChanged || animationType != other.animationType || imageQuality != other.imageQuality
             
             if self.regenerate != other.regenerate {
                 selectionChanged = true
@@ -204,16 +241,25 @@ class GifConfig: ObservableObject, Equatable {
         }
     }
     
+    
+    func sendValues() {
+        self._values.send(Values(animationQuality: animationQuality, speed: speed, sizeScale: sizeScale, selection: selection, animationType: animationType, regenerate: regenerateFlag, imageQuality: Double(imageQuality)))
+    }
+    
+    var _values = PassthroughSubject<GifConfig.Values, Never>()
+    
     var values: AnyPublisher<GifConfig.Values, Never> {
-        return $animationQuality.combineLatest($speed, $sizeScale, $selection).combineLatest($animationType).combineLatest($regenerateFlag)
-            .map { (arg0, arg1) in
-                let animationQuality = arg0.0.0
-                let speed = arg0.0.1
-                let sizeScale = arg0.0.2
-                let selection = arg0.0.3
-                let regenerate = arg1
-                
-                return Values(animationQuality: animationQuality, speed: speed, sizeScale: sizeScale, selection: selection, animationType: arg0.1, regenerate: regenerate) }.eraseToAnyPublisher()
+        return _values.eraseToAnyPublisher()
+//        return $animationQuality.combineLatest($speed, $sizeScale, $selection).combineLatest($animationType).combineLatest($regenerateFlag).combineLatest($imageQuality)
+//            .map { (arg0, arg1) in
+//                let animationQuality = arg0.0.0
+//                let speed = arg0.0.1
+//                let sizeScale = arg0.0.2
+//                let selection = arg0.0.3
+//                let regenerate = arg1
+//                let imageQuality = arg
+//
+//                return Values(animationQuality: animationQuality, speed: speed, sizeScale: sizeScale, selection: selection, animationType: arg0.1, regenerate: regenerate, imageQuality: ) }.eraseToAnyPublisher()
     }
     
     var assetInfo: AssetInfo
@@ -248,6 +294,31 @@ protocol GifGenerator : ObservableObject {
     var reloading: Bool { get set}
     
     func getFrames(preview: Bool) -> AnyPublisher<[UIImage], Never>
+}
+
+func generateGif(urls: [URL], filename: String, frameDelay: Double) -> AnyPublisher<URL?, Never> {
+    
+    return Future<URL?, Never> { (promise) in
+        let path = NSTemporaryDirectory().appending("/\(filename)")
+        
+        try? FileManager.default.removeItem(atPath: path)
+        
+        if let encoder = YYImageEncoder(type: .GIF) {
+            
+            for image in urls {
+                encoder.addImage(withFile: image.absoluteString, duration: frameDelay)
+            }
+            
+            if encoder.encode(toFile: path) {
+                promise(.success(URL(fileURLWithPath: path)))
+                return
+            }
+            
+        }
+        
+        promise(.success(nil))
+    }.eraseToAnyPublisher()
+    
 }
 
 func generateGif(photos: [UIImage], filename: String, frameDelay: Double) -> AnyPublisher<URL?, Never> {
@@ -643,7 +714,7 @@ class VideoGifGenerator: GifGenerator {
                 
                 let image = UIImage(cgImage: cgImage)
                 
-                    if let data = image.jpegData(compressionQuality: preview ? 0.5 : self.config.animationQuality.jpegQuality) {
+                if let data = image.jpegData(compressionQuality: preview ? 0.5 : CGFloat(self.config.imageQuality)) {
                         if let image = UIImage(data: data) {
                             results.append(image)
                         }

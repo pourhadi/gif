@@ -123,7 +123,7 @@ struct CropControlView<Content>: View where Content: View {
             ZStack {
                 GeometryReader { _ in
                     
-                    self.content().mask(Color.black.padding(self.gestureState ?? self.state.inset).cornerRadius(15))
+                    self.content().mask(Color.background.padding(self.gestureState ?? self.state.inset).cornerRadius(15))
                     //                .position(x: outmetrics.size.width / 2, y: outmetrics.size.height / 2)
                     
                     GeometryReader { metrics in
@@ -291,7 +291,7 @@ struct GIFCroppingView: View {
             
             AnimatedGIFView(gif: self.croppingGIF!, animated: self.$animating).blur(radius: 5)
             
-            Rectangle().fill(Color.black.opacity(0.6)).zIndex(1)
+            Rectangle().fill(Color.background.opacity(0.6)).zIndex(1)
             
             CropControlView(touchDownBlock: { down in
                 

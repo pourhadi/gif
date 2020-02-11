@@ -72,6 +72,15 @@ class GlobalState: ObservableObject {
     
     static let instance = GlobalState()
     
+    var previousURL: URL? {
+        set {
+            UserDefaults.standard.set(newValue, forKey: "_previousURL")
+        }
+        get {
+            return UserDefaults.standard.url(forKey: "_previousURL")
+        }
+    }
+    
     @Published var video: Video = Video.empty()
     var visualState = VisualState()
     var galleryStore: GalleryStore = GalleryStore()
@@ -88,7 +97,7 @@ class GlobalState: ObservableObject {
     
     let deviceDetails = DeviceDetails()
     
-    var urlEntry: URL? = nil
+    @Published var urlEntry: URL? = nil
     
     init() {
         self.deviceDetails.$orientation.map {
@@ -105,28 +114,28 @@ class GlobalState: ObservableObject {
         }.store(in: &self.cancellables)
         
         GlobalPublishers.default.prepVideo.sink { url in
-            self.hudAlertState.showLoadingIndicator = true
             
-            Async {
-                
-                
-                
-                Converter.convert(url: url) { (newUrl) in
-                    if let newUrl = newUrl {
-                        
-                        Async {
-                            
-                            self.video = Video(data: nil, url: newUrl)
-                        }
-                        
-                    } else {
-                        Async {
-                            self.hudAlertState.show(.error("Error loading video"))
-                        }
-                    }
+            Delayed(0.2) {
+                self.hudAlertState.showLoadingIndicator = true
+                            }
                     
-                }
-            }
+                    
+                    
+                    Converter.convert(url: url) { (newUrl) in
+                        if let newUrl = newUrl {
+                            
+                            Async {
+                                
+                                self.video.reset(newUrl)
+                            }
+                            
+                        } else {
+                            Async {
+                                self.hudAlertState.show(.error("Error loading video"))
+                            }
+                        }
+                        
+                    }
             
         }.store(in: &self.cancellables)
     }
@@ -200,6 +209,9 @@ class GlobalState: ObservableObject {
         }
     }
     
+    enum GenerationError : Error {
+        case error
+    }
   
     func saveGeneratedGIF(gif: GIF, done: ((Bool) -> Void)?) {
         guard let data = gif.data else { return }
@@ -207,6 +219,8 @@ class GlobalState: ObservableObject {
         DispatchQueue.main.async {
             self.hudAlertState.showLoadingIndicator = true
         }
+        
+        
         
         self.galleryStore
             .fileGallery
@@ -217,16 +231,29 @@ class GlobalState: ObservableObject {
                 self.galleryStore
                     .fileGallery
                     .$gifs
-                    .dropFirst(1)
-                    .first()
-                    .map { (array) -> Bool in
-                        array.contains { (gif) -> Bool in
+
+                    .debounce(for: 0.5, scheduler: DispatchQueue.main)
+                    .tryMap({ (array) -> Bool in
+                        print("retry")
+                        let good = array.contains { (gif) -> Bool in
                             return gif.id == id
                         }
-                }
+                        
+                        if good { return true }
+                        throw GenerationError.error
+                    })
+                .retry(5)
+                .replaceError(with: false)
+                .first()
+//                    .map { (array) -> Bool in
+//                        array.contains { (gif) -> Bool in
+//                            return gif.id == id
+//                        }
+//                }
                 
-        }.sink(receiveValue: { success in
-            Delayed(0.5) {
+        }
+        .sink(receiveValue: { success in
+            Delayed(0.1) {
                 
                 if success {
                     self.hudAlertState.hudAlertMessage = [HUDAlertMessage(text: "Saved to My GIFs!", symbolName: "checkmark")]

@@ -12,6 +12,14 @@ import Combine
 import SwiftUI
 import SwiftDate
 
+
+struct PrivacySettings: Codable {
+    
+    var passcodeEnabled: Bool
+    
+    
+}
+
 class Settings: ObservableObject {
     @Published var icloudEnabled = false
     
@@ -52,7 +60,12 @@ enum GIFAddError: Error {
    
 extension FileGalleryUtils {
     
-    var thumbURL: URL { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.pourhadi.gif")!.appendingPathComponent("thumbs") }
+    var thumbURL: URL {
+        
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.pourhadi.gif")!.appendingPathComponent("thumbs")
+        
+        
+    }
      var gifURL: URL {
          if self.cloudAvailable {
              return iCloud.shared.localDocumentsURL!

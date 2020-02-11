@@ -9,7 +9,6 @@
 
 import Combine
 import SwiftUI
-import SwiftUI_Utils
 
 class ControlsState: ObservableObject {
     var timer: Timer?
@@ -59,7 +58,6 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
                                                   effect: .init(style: .systemThinMaterial)))*/
                     .overlay(
                         ZStack {
-                            EmptyView().zIndex(0)
                             
                             if !(self.context.mode == .text) {
                                 Button(action: {
@@ -67,12 +65,30 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
                                 }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70).zIndex(1)
                             }
                             
-                            
+                            self.getTimestampLabel().zIndex(2)
                         }
                 )
+                   
                     
                  
             }
+        }
+    }
+    
+    func getTimestampLabel() -> some View{
+        let duration = self.context.gifConfig.assetInfo.duration
+        let seconds = duration * Double(self.context.playState.currentPlayhead)
+        
+        let formatted = seconds.secondsToFormattedTimestamp()
+        
+        return VStack {
+            Spacer()
+            Text(formatted)
+            .fontWeight(.medium)
+                .shadow(color: Color.black, radius: 2, x: 0, y: 0)
+            .scaledToFill()
+            .padding(.bottom, 12)
+            .frame(alignment: .bottom)
         }
     }
 }
@@ -236,6 +252,8 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
         let startGrad = LinearGradient(gradient: Gradient(colors: [Color.green.opacity(0.8), Color.green.opacity(0.2)]), startPoint: .top, endPoint: .bottom)
         let endGrad = LinearGradient(gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.2)]), startPoint: .top, endPoint: .bottom)
         
+        let duration = self.context.gifConfig.assetInfo.duration
+        
         return PlayerLabelView(playerView: Player(item: self.context.item,
                                                   timestamp: time,
                                                   playing: $dummyPlayable,
@@ -245,7 +263,7 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
                                controlsState: self.controlsState,
                                adjustedTime: { time in
                                 self.context.playState.currentPlayhead = time
-        })
+        }, duration: duration, timestamp: time)
             .onTapGesture {
                 if !self.controlsState.controlsVisible {
                     self.controlsState.controlsVisible = true

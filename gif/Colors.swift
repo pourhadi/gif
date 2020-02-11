@@ -8,8 +8,8 @@
 
 import Foundation
 import SwiftUI
-
 let _accent = UIColor(red: 0.94, green: 0.70, blue: 0.18, alpha: 1.00)
+//let _accent = UIColor(hue: 0.80, saturation: 0.72, brightness: 0.75, alpha: 1.00)
 extension Color {
     
     static var accent = Color(_accent)

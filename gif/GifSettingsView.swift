@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import SwiftUI_Utils
 
 struct GifSettingsView: View {
     
@@ -24,6 +23,11 @@ struct GifSettingsView: View {
                                 Text((q as GifConfig.AnimationQuality).name).tag(q)
                             }
                         }.pickerStyle(SegmentedPickerStyle())
+                    }
+                    
+                    Section(header: Text("Image Quality")) {
+                        Text("\(Int(self.settings.imageQuality * 100))%").centered()
+                        Slider(value: self.$settings.imageQuality)
                     }
                 }
                 Section(header: Text("Speed")) {

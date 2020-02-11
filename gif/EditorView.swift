@@ -141,7 +141,7 @@ struct EditorView<Player, Generator>: View where Player : PlayerView, Generator 
                 VStack {
                     Spacer(minLength: mainBounds.size.height)
                     ZStack {
-                        Rectangle().fill(Color.black.opacity(0.95)).zIndex(0)
+                        Rectangle().fill(Color.background.opacity(0.95)).zIndex(0)
                         VStack { TextFormatView().environmentObject(self.context.textFormat).zIndex(1).frame(height: 50)
                             Spacer()
                         }
@@ -166,9 +166,10 @@ struct BlurredPlayerBackgroundModifier<Player>: ViewModifier where Player : Play
             Player(item: self.item, timestamp: self.$playState.currentPlayhead, playing: self.$playing, contentMode: .fill, playerType: .playhead)
             
             
-            , effect: .init(style: .systemThickMaterialDark))
+            , effect: .init(style: .systemThickMaterial))
             .brightness(-0.05)
-            .edgesIgnoringSafeArea([.top, .bottom]))
+//            .saturation(1.5)
+            .edgesIgnoringSafeArea(.all))
     }
 }
 

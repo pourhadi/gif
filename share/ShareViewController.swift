@@ -261,7 +261,7 @@ struct ShareView: View {
         .onReceive(self.context.image) { (image) in
             self.image = image
             self.readCount += 1
-        }.colorScheme(.dark)
+        }
 
     }
     func saveButton() -> some View {

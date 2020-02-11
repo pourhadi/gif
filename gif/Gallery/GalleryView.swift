@@ -1,6 +1,7 @@
 
 import QuickLook
 import SwiftUI
+import AVFoundation
 
 struct SizeModifier: ViewModifier {
     let size: CGSize
@@ -135,6 +136,8 @@ struct CollectionViewWrapper: View {
         return coord
     }
     
+        @Environment(\.verticalSizeClass) var verticalSize: UserInterfaceSizeClass?
+
     @Environment(\.hapticController) var hapticController: HapticController
     
     @Environment(\.deviceDetails) var deviceDetails: DeviceDetails
@@ -153,28 +156,31 @@ struct CollectionViewWrapper: View {
     
     @Binding var pressingGIF: GIF?
     
+    @State var loaded = false
+    
     var body: some View {
         let layout = CollectionViewLayout(rowPadding: self.deviceDetails.uiIdiom == .pad ? EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20) : EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0),
-                                          numberOfColumns: self.deviceDetails.uiIdiom == .pad ? 5 : 3,
+                                          numberOfColumns: self.deviceDetails.uiIdiom == .pad || self.verticalSize == .compact ? 5 : 3,
                                           itemSpacing: self.deviceDetails.uiIdiom == .pad ? 20 : 2,
                                           rowHeight: .sameAsItemWidth,
                                           scrollViewInsets: EdgeInsets(top: 0, leading: 0, bottom: 60, trailing: 0))
         
-        return GeometryReader { metrics in
+        return
+//            GeometryReader { metrics in
             
             CollectionView(items: self.$gallery.gifs.animation(),
                            selectedItems: self.$selectedGIFs,
                            selectionMode: self.$selectionMode,
                            layout: layout,
-                           tapAction: { _, metrics in
+                           tapAction: { _ in
                             
                             if !self.selectionMode {
-                                self.transitionContext.itemMetrics = metrics
+//                                self.transitionContext.itemMetrics = metrics
                                 self.transitionContext.yDrag = nil
                                 self.transitionContext.dragScale = nil
                                 self.transitionContext.disableAnimation = true
                             }
-            }, longPressAction: { item, _ in
+            }, longPressAction: { item in
                 self.hapticController.longPressHaptic()
                 self.longPressCoordinator.cancel()
                 
@@ -190,41 +196,157 @@ struct CollectionViewWrapper: View {
                     self.longPressCoordinator.cancel()
                 }
                 
-                print(pressing)
-                
-            }) { item, itemMetrics in
+            }) { idx, item, size in
                 //            Group {
-                Image(uiImage: item.thumbnail!)
-                    .resizable()
-                    //                    .clipped()
-                    .scaled(self.deviceDetails.uiIdiom == .pad ? .toFit : .toFill)
-                    //            }
-                    //                    .opacity(self.highlightedGIF == item ? 0.2 : 1)
-                    .addItemOpacity(item: item, highlightedGIF: self.highlightedGIF, selectedGIFs: self.selectedGIFs, selectionMode: self.selectionMode)
-                    .scaleEffect(self.highlightedGIF == item ? 0.8 : 1)
-                    .frame(width: itemMetrics.size.width, height: itemMetrics.size.height)
-                    .brightness(self.pressingGIF == item ? 0.3 : 0)
-                    .clipped()
-                    .transition(AnyTransition.opacity.animation(Animation.easeInOut(duration: 0.3)))
-                    .saveAnchorFrame(to: SelectedItemFrameKey.self, condition: self.selectedGIFs.first == item)
+                
+                self.item(idx, item, size)
             }
+            .onAppear {
+                Delayed(0.2) {
+                    self.loaded = true
+                }
+            }
+            
+
                 //            .numberOfColumns(self.deviceDetails.uiIdiom == .pad ? 5 : 3)
                 //            .itemSpacing(self.deviceDetails.uiIdiom == .pad ? 20 : 2)
                 //            .rowPadding(self.deviceDetails.uiIdiom == .pad ? EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20) : EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 //            .scrollViewInsets(EdgeInsets(top: 0, leading: 0, bottom: 60 + metrics.safeAreaInsets.bottom, trailing: 0))
-                .onReceive(self.gallery.objectWillChange) { _ in
-                    Async {
-                        self.$gifCount.animation(Animation.default.delay(0.1)).wrappedValue = self.gallery.gifs.count
-                    }
-            }
+//                .onReceive(self.gallery.objectWillChange) { _ in
+//                    Async {
+//                        self.$gifCount.animation(Animation.default.delay(0.1)).wrappedValue = self.gallery.gifs.count
+//                    }
+            //            }
             
-        }
+//        }
         
+        
+    }
+    
+    func item(_ idx: Int, _ item: GIF, _ size: CGSize) -> some View {
+        
+//        let f = itemMetrics.frame(in: .global)
+//        let visible = UIScreen.main.bounds.intersects(f) && f.size.height > 0 && f.size.height > 10
+//
+        return
+            
+//            ConditionalVisibleView(visible: visible, id: item.id) {
+//                Rectangle().foregroundColor(Color.gray)
+            Image(uiImage: item.thumbnail!)
+                .resizable()
+                .aspectRatio(nil, contentMode: self.deviceDetails.uiIdiom == .pad ? .fit : .fill)
+//                .scaled(self.deviceDetails.uiIdiom == .pad ? .toFit : .toFill)
+
+//        }.equatable()
+
+        .frame(width: size.width, height: size.height)
+        .addItemOpacity(item: item, highlightedGIF: self.highlightedGIF, selectedGIFs: self.selectedGIFs, selectionMode: self.selectionMode)
+        .scaleEffect(self.highlightedGIF == item ? 0.8 : 1)
+        .brightness(self.pressingGIF == item ? 0.3 : 0)
+        .clipped()
+        .modifier(ItemAppearModifier(visible: self.$loaded, delay: 0.2 + (Double(idx) / 20), condition: idx < 50))
+        
+        .saveAnchorFrame(to: SelectedItemFrameKey.self, condition: self.selectedGIFs.first == item)
     }
     
     
     
     
+}
+
+class VisibleCounter {
+    
+    static var visible = [String]() {
+        didSet {
+            print("\(visible.count)")
+        }
+    }
+}
+
+struct ConditionalVisibleView<Content> : View, Equatable where Content: View {
+    
+    static func == (lhs: ConditionalVisibleView<Content>, rhs: ConditionalVisibleView<Content>) -> Bool {
+        lhs.visible == rhs.visible
+    }
+    
+    
+    let visible: Bool
+    
+    let id: String
+    
+    let content: Content
+    
+    init(visible: Bool, id: String, @ViewBuilder content: () -> Content) {
+        self.visible = visible
+        self.content = content()
+        self.id = id
+        
+        if visible {
+            if !VisibleCounter.visible.contains(id) {
+                VisibleCounter.visible.append(id)
+            }
+        } else {
+            if let idx = VisibleCounter.visible.firstIndex(of: id) {
+                VisibleCounter.visible.remove(at: idx)
+            }
+        }
+    }
+    
+    var body : some View {
+        Group {
+            if visible {
+                self.content
+            } else {
+                Rectangle().foregroundColor(Color.background)
+            }
+        }
+    }
+    
+}
+
+struct EquatableImage: View, Equatable {
+    
+    let gif: GIF
+    
+    
+    var body: some View {
+            
+                Image(uiImage: gif.thumbnail!)
+                    .resizable()
+            
+        //                    .clipped()
+    }
+    
+}
+
+struct ItemAppearModifier : ViewModifier {
+    
+    @Binding var visible: Bool
+    let delay: Double
+    
+    let condition: Bool
+    
+    func body(content: Self.Content) -> some View {
+        Group {
+            if condition {
+                content
+                    .opacity(self.visible ? 1 : 0)
+                    .blur(radius: self.visible ? 0 : 30)
+                    .scaleEffect(self.visible ? 1 : 0.5)
+//                .compositingGroup()
+                    .animation(Animation.spring(response: 0.3, dampingFraction: 0.5).delay(self.delay), value: self.visible)
+            } else {
+                content
+            }
+        }
+        
+    }
+    
+    init(visible: Binding<Bool>, delay: Double, condition: Bool = true) {
+        self._visible = visible
+        self.delay = delay
+        self.condition = condition
+    }
 }
 
 fileprivate extension View {
@@ -276,6 +398,15 @@ class TransitionAnimationContext: ObservableObject {
 }
 
 struct GalleryContainer: View {
+    
+    
+//    GalleryContainer(activePopover: self.$globalState.activePopover, galleryStore: self.$globalState.galleryStore, transitionAnimation: self.transitionAnimationContext)
+    
+    init(activePopover: Binding<ActivePopover?>, galleryStore: Binding<GalleryStore>, transitionAnimation: TransitionAnimationContext) {
+        self._activePopover = activePopover
+        self._galleryStore = galleryStore
+        self.transitionAnimation = transitionAnimation
+    }
     @State var transitionContext = TransitionContext()
     
     @State var pressingGIF: GIF? = nil
@@ -359,47 +490,58 @@ struct GalleryContainer: View {
                 ActivityIndicatorView().zIndex(0)
             }
             
-            TabView(selection: self.$activeTab) {
-                self.getMainView(gallery: self.galleryStore.galleries[0], title: self.galleryStore.galleries[0].title, trailingNavItems: self.getTrailingBarItem())
-                    .tabItem {
-                        self.galleryStore.galleries[0].tabImage
-                        Text(self.galleryStore.galleries[0].title)
-                }.tag(0)
-                
-                self.getMainView(gallery: self.galleryStore.galleries[1], title: self.galleryStore.galleries[1].title, trailingNavItems: EmptyView())
-                    .tabItem {
-                        self.galleryStore.galleries[1].tabImage
-                        Text(self.galleryStore.galleries[1].title)
-                }.tag(1)
-                
-                SettingsView()
-                    .environmentObject(Settings.shared).tabItem {
-                        Image.symbol("gear")
-                        Text("Settings")
-                }.tag(2)
-            }
-            .navigationViewStyle(StackNavigationViewStyle())
-                
-            .opacity(self.loaded ? 1 : 0)
-            .edgesIgnoringSafeArea(.top)
-                
-            .zIndex(0)
+//            TabView(selection: self.$activeTab) {
+//                self.getMainView(gallery: self.galleryStore.galleries[0], title: self.galleryStore.galleries[0].title, leadingNavItems: self.getLeadingNavItem(), trailingNavItems: self.getTrailingBarItem())
+//                    .tabItem {
+//                        self.galleryStore.galleries[0].tabImage
+//                        Text(self.galleryStore.galleries[0].title)
+//                }.tag(0)
+//
+//                self.getMainView(gallery: self.galleryStore.galleries[1], title: self.galleryStore.galleries[1].title, leadingNavItems: EmptyView(), trailingNavItems: EmptyView())
+//                    .tabItem {
+//                        self.galleryStore.galleries[1].tabImage
+//                        Text(self.galleryStore.galleries[1].title)
+            //                }.tag(1)
+            //
+            //                SettingsView()
+            //                    .environmentObject(Settings.shared).tabItem {
+            //                        Image.symbol("gear")
+            //                        Text("Settings")
+            //                }.tag(2)
+            //            }
+            //            .navigationViewStyle(StackNavigationViewStyle())
+            //
+            //            .opacity(self.loaded ? 1 : 0)
+            //            .edgesIgnoringSafeArea(.top)
+            //
+            //            .zIndex(0)
             
-            //            CustomTabView(selectedTab: self.$activeTab, tabs: tabs, content: { tab in
-            //
-            //                if tab.id == tabs.count - 1 {
-            //                    return SettingsView()
-            //                        .environmentObject(Settings.shared).any
-            //                } else {
-            //                    return self.getMainView(gallery: self.galleryStore.galleries[tab.id],
-            //                                            title: self.galleryStore.galleries[tab.id].title,
-            //                                            trailingNavItems: tab.id == 0 ? self.getTrailingBarItem().any : EmptyView().any).any
-            //                }
-            //            })
-            //                .navigationViewStyle(StackNavigationViewStyle())
-            //
-            //                .opacity(self.loaded ? 1 : 0)
-            //                .zIndex(0)
+            CustomTabView(selectedTab: self.$activeTab, tabs: tabs, content: { tab in
+                
+//                Group {
+                    if tab.id == tabs.count - 1 {
+                        SettingsView()
+                            .environmentObject(Settings.shared)
+                        
+                    } else {
+                        if tab.id == 0 {
+                            self.getMainView(gallery: self.galleryStore.galleries[tab.id],
+                            title: self.galleryStore.galleries[tab.id].title, leadingNavItems: tab.id == 0 ? self.getLeadingNavItem().any : EmptyView().any,
+                            trailingNavItems: tab.id == 0 ? self.getTrailingBarItem().any : EmptyView().any)
+                        } else {
+                            self.getMainView(gallery: self.galleryStore.galleries[tab.id],
+                            title: self.galleryStore.galleries[tab.id].title, leadingNavItems: tab.id == 0 ? self.getLeadingNavItem().any : EmptyView().any,
+                            trailingNavItems: tab.id == 0 ? self.getTrailingBarItem().any : EmptyView().any)
+                        }
+                        
+                    }
+//                }
+
+            })
+                .navigationViewStyle(StackNavigationViewStyle())
+                
+                .opacity(self.loaded ? 1 : 0)
+                .zIndex(0)
             
             
             
@@ -408,7 +550,7 @@ struct GalleryContainer: View {
                 Group {
                     Rectangle().foregroundColor(Color.primary.opacity(0.01)).edgesIgnoringSafeArea([.top, .bottom]).zIndex(300)
                     
-                    VisualEffectView.blur(.dark)
+                    VisualEffectView.blur(.regular)
                         //                        .opacity(0.95)
                         .edgesIgnoringSafeArea([.top, .bottom])
                         .zIndex(301)
@@ -448,6 +590,7 @@ struct GalleryContainer: View {
                         //
                         if self.showingGIF {
                             self.getGIFView(metrics: overlayMetrics, selectedItemFrame: val)
+                            
                                 //                    .opacity(self.transitionAnimation.isComplete ? 1 : 0)
                                 .zIndex(1000)
                         }
@@ -485,7 +628,7 @@ struct GalleryContainer: View {
     func getPlusMenu() -> some View {
         
         
-        let createItems = [MenuItem(image: Image.symbol("photo.on.rectangle", .init(scale: .large)),
+        var createItems = [MenuItem(image: Image.symbol("photo.on.rectangle", .init(scale: .large)),
                                     text: Text("Photo Library"),
                                     action: .action {
                                         Delayed(0.1) {
@@ -512,6 +655,14 @@ struct GalleryContainer: View {
                                                                                 
                             })]
         
+        if let prevUrl = (GlobalState.instance.previousURL?.nilOrNotEmpty ?? GlobalState.instance.video.url.nilOrNotEmpty), FileManager.default.fileExists(atPath: prevUrl.path),  AVURLAsset.init(url: prevUrl).isReadable {
+            createItems.append(MenuItem(image: Image.symbol("arrowshape.turn.up.left", .init(scale: .large)), text: Text("Last Video"), action: .action {
+                Delayed(0.1) {
+                    GlobalState.instance.video.reset(prevUrl)
+                }
+                }))
+        }
+        
         let items = [
             MenuItem(image: Image.symbol("plus", .init(scale: .large)),
                      text: Text("Create from Video"),
@@ -534,43 +685,41 @@ struct GalleryContainer: View {
     
     func handlePaste() {
         
-        DispatchQueue.main.async {
-            if let image = UIPasteboard.general.data(forPasteboardType: "com.compuserve.gif") {
-                self.add(with: image)
-                return
-            }
-            
-            
-            if let url = UIPasteboard.general.url,
-                url.absoluteString.lowercased().contains(".gif"),
-                let data = try? Data(contentsOf: url),
-                data.count > 0 {
-                self.add(with: data)
-            } else {
-                for item in UIPasteboard.general.items {
-                    for value in item.values {
-                        if value is Data {
-                            self.add(with: value as! Data)
-                            return
-                        }
-                    }
-                }
-                
-                let message = HUDAlertMessage(text: "No GIF found", symbolName: "questionmark.circle.fill")
-                self.hudAlertState.hudAlertMessage = [message]
-            }
-        }
+//        DispatchQueue.main.async {
+//            if let image = UIPasteboard.general.data(forPasteboardType: "com.compuserve.gif") {
+//                self.add(with: image)
+//                return
+//            }
+//            
+//            
+//            if let url = UIPasteboard.general.url,
+//                url.absoluteString.lowercased().contains(".gif"),
+//                let data = try? Data(contentsOf: url),
+//                data.count > 0 {
+//                self.add(with: data)
+//            } else {
+//                for item in UIPasteboard.general.items {
+//                    let dataItems = item.values.compactMap { v in
+//                        return v as? Data
+//                    }
+//                    for value in dataItems {
+//                        self.add(with: value)
+//                    }
+//                }
+//                
+//                let message = HUDAlertMessage(text: "No GIF found", symbolName: "questionmark.circle.fill")
+//                self.hudAlertState.hudAlertMessage = [message]
+//            }
+//        }
         
     }
     
     func getGIFView(metrics: GeometryProxy, selectedItemFrame: AnchoredFrame) -> some View {
         print("get gif view")
-        let localcenter = selectedItemFrame.center != nil ? metrics[selectedItemFrame.center!] : CGPoint.zero
         let localbounds = selectedItemFrame.bounds != nil ? metrics[selectedItemFrame.bounds!] : CGRect.zero
         
         if self.selectedGIFs.count > 0 {
             self.transitionAnimation.activeGIF = self.selectedGIFs.first
-            self.transitionAnimation.center = localcenter
             self.transitionAnimation.bounds = localbounds
             self.transitionAnimation.boundsAnchor = selectedItemFrame.bounds
         }
@@ -600,26 +749,35 @@ struct GalleryContainer: View {
         
     }
     
-    func getMainView<T>(gallery: Gallery, title: String, trailingNavItems: T) -> some View where T: View {
-        return NavigationView {
-            ZStack {
-                if gallery.unableToLoad != nil {
-                    gallery.unableToLoad
-                } else {
-                    CollectionViewWrapper(selectedGIFs: self.$selectedGIFs, selectionMode: self.$selectionMode, transitionContext: self.$transitionContext, highlightedGIF: self.$highlightedGIF, pressingGIF: self.$pressingGIF).environmentObject(gallery).zIndex(1)
-                    
-                    if self.showToolbar {
-                        GeometryReader { metrics in
-                            self.getToolbar(with: metrics).background(Color.clear)
-                                .transition(.opacity)
-                        }.zIndex(2)
-                    }
+    @State var loadCV = true
+    @State var galleryLoaded = false
+    @State var navLoaded = false
+    @State var hideActivityIndicator = true
+    func getMainView<L, T>(gallery: Gallery, title: String, leadingNavItems: L, trailingNavItems: T) -> some View where T: View, L: View {
+        
+        GalleryMainView(gallery: gallery, title: title, leadingNavItems: leadingNavItems, trailingNavItems: trailingNavItems, selectionMode: self.selectionMode) {
+            Group {
+                CollectionViewWrapper(selectedGIFs: self.$selectedGIFs, selectionMode: self.$selectionMode, transitionContext: self.$transitionContext, highlightedGIF: self.$highlightedGIF, pressingGIF: self.$pressingGIF)
+                    .environmentObject(gallery)
+                    .zIndex(1)
+                
+                if self.showToolbar {
+                    GeometryReader { metrics in
+                        self.getToolbar(with: metrics).background(Color.clear)
+                            .transition(.opacity)
+                    }.zIndex(2)
                 }
                 
-            }.navigationBarTitle(title)
-                .navigationBarItems(trailing: trailingNavItems)
+            }
+            
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+
+        .equatable()
+        
+                        
+
+
+        
     }
     
     func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .prominent)).any) -> AnyView {
@@ -631,14 +789,28 @@ struct GalleryContainer: View {
                 .padding(12).opacity(self.selectedGIFs.count > 0 ? 1 : 0.5)
             Spacer()
             Button(action: {
-                withAnimation {
-                    self.gallery.remove(self.selectedGIFs)
-                    self.selectedGIFs = []
-                }
+//                withAnimation {
+//                    self.gallery.remove(self.selectedGIFs)
+//                    self.selectedGIFs = []
+//                }
             }, label: { Image.symbol("trash") })
                 .disabled(self.selectedGIFs.count == 0)
                 .padding(12).opacity(self.selectedGIFs.count > 0 ? 1 : 0.5)
         }.frame(height: metrics.size.height, alignment: .bottom).any
+    }
+    
+    func getLeadingNavItem() -> some View {
+        Group {
+            if !self.selectionMode {
+                Button(action: {
+                                  withAnimation {
+                                      self.selectionMode = true
+                                      self.showToolbar = true
+                                  }
+                                  
+                              }, label: { Text("Select") })
+            }
+        }
     }
     
     func getTrailingBarItem() -> some View {
@@ -652,20 +824,10 @@ struct GalleryContainer: View {
                 
             }, label: { Text("Done") }).any
         } else {
-            return HStack {
-                Button(action: {
-                    withAnimation {
-                        self.selectionMode = true
-                        self.showToolbar = true
-                    }
-                    
-                }, label: { Text("Select") })
-                Spacer(minLength: 30)
-                Button(action: {
-                    //                    self.visibleActionSheet = .addMenu
-                    self.$showPlusMenu.animation().wrappedValue = true
-                }, label: { Image.symbol("plus", .init(scale: .medium))?.padding(5) })
-            }.any
+            return Button(action: {
+                //                    self.visibleActionSheet = .addMenu
+                self.$showPlusMenu.animation().wrappedValue = true
+            }, label: { Image.symbol("plus", .init(scale: .medium))?.padding(5) }).any
         }
     }
     
@@ -732,3 +894,91 @@ struct GalleryContainer: View {
     }
 }
 
+
+struct GalleryMainView<Content, L, T>: View, Equatable where Content : View, L: View, T: View {
+    static func == (lhs: GalleryMainView<Content, L, T>, rhs: GalleryMainView<Content, L, T>) -> Bool {
+        return lhs.title == rhs.title && lhs.selectionMode == rhs.selectionMode
+    }
+    
+    
+    let gallery: Gallery
+    let title: String
+    let leadingNavItems: L
+    let trailingNavItems: T
+    let selectionMode: Bool
+    
+    let content: () -> Content
+    
+    init(gallery: Gallery, title: String, leadingNavItems: L, trailingNavItems: T, selectionMode: Bool, @ViewBuilder content: @escaping () -> Content) {
+        self.gallery = gallery
+        self.title = title
+        self.leadingNavItems = leadingNavItems
+        self.trailingNavItems = trailingNavItems
+        self.content = content
+        self.selectionMode = selectionMode
+        self.loadCV = false
+        self.galleryLoaded = false
+        self.navLoaded = false
+        
+    }
+    
+    
+    @State var loadCV = false
+    @State var galleryLoaded = false
+    @State var navLoaded = false
+    @State var hideActivityIndicator = true
+    var body: some View {
+        return NavigationView {
+            ZStack {
+                if gallery.unableToLoad != nil {
+                    gallery.unableToLoad
+                } else {
+                    
+                    if self.loadCV {
+                        content()
+                        .opacity(self.galleryLoaded ? 1 : 0)
+                            .onAppear {
+                                Delayed(0.5) {
+                                    self.galleryLoaded = true
+
+                                }
+                        }
+                        .transition(AnyTransition.opacity.animation(Animation.default))
+             
+
+                        
+                    }
+                }
+                
+            }.navigationBarTitle(title)
+                .navigationBarItems(leading: leadingNavItems, trailing: self.hideActivityIndicator ? trailingNavItems.any : LoadingCircleView().frame(width: 30, height: 30).any)
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+            
+            
+        .onDisappear {
+            self.galleryLoaded = false
+            self.loadCV = false
+            self.$navLoaded.animation(Animation.default).wrappedValue = false
+            self.hideActivityIndicator = false
+        }
+        .onAppear {
+            Delayed(0.2) {
+                self.loadCV = true
+            }
+
+            Delayed(2) {
+                self.$hideActivityIndicator.animation(Animation.default).wrappedValue = true
+            }
+        }
+        .opacity(self.navLoaded ? 1 : 0)
+        .onAppear {
+            self.$navLoaded.animation(Animation.easeIn(duration: 0.1)).wrappedValue = true
+
+        }
+
+        
+    }
+    
+    
+}

@@ -9,16 +9,45 @@
 import Combine
 import SwiftUI
 
-struct SlideUpModifier : ViewModifier {
-
+struct PopModifier : ViewModifier {
+    
     @Binding var visible: Bool
     let delay: Double
+    
+    let condition: Bool
+    
+    func body(content: Self.Content) -> some View {
+        Group {
+            if condition {
+                content
+                    .opacity(self.visible ? 1 : 0)
+                    .scaleEffect(self.visible ? 1 : 0.2)
+                    .animation(Animation.bouncy2.delay(self.delay), value: self.visible)
+            } else {
+                content
+            }
+        }
+        
+    }
+    
+    init(visible: Binding<Bool>, delay: Double, condition: Bool = true) {
+        self._visible = visible
+        self.delay = delay
+        self.condition = condition
+    }
+}
 
+
+struct SlideUpModifier : ViewModifier {
+    
+    @Binding var visible: Bool
+    let delay: Double
+    
     func body(content: Self.Content) -> some View {
         content
-        .opacity(self.visible ? 1 : 0)
-        .scaleEffect(self.visible ? 1 : 0.2)
-        .offset(y: self.visible ? 0 : 50)
+            .opacity(self.visible ? 1 : 0)
+            .scaleEffect(self.visible ? 1 : 0.2)
+            .offset(y: self.visible ? 0 : 10)
             .animation(Animation.bouncy2.delay(self.delay))
     }
 }
@@ -29,11 +58,14 @@ struct EditNavView<Content>: View where Content: View {
     let content: () -> Content
     let title: String
     
-    init(title: String, leadingItem: AnyView, trailingItem: AnyView, @ViewBuilder content: @escaping () -> Content) {
+    let navVisible: Bool
+    
+    init(title: String, leadingItem: AnyView, trailingItem: AnyView, navVisible: Bool = true, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
         self.leadingItem = leadingItem
         self.trailingItem = trailingItem
         self.content = content
+        self.navVisible = navVisible
     }
     
     var body: some View {
@@ -53,7 +85,8 @@ struct EditNavView<Content>: View where Content: View {
                 }
                 .frame(height: 40)
                 .padding([.leading, .trailing], 20)
-                .background(Color.black)
+                .background(Color.background.edgesIgnoringSafeArea([.leading, .trailing]))
+                .offset(y: self.navVisible ? 0 : -(40 + metrics.safeAreaInsets.top))
                 
                 self.content().frame(height: metrics.size.height - (40))
             }
@@ -99,7 +132,7 @@ struct EditContainerView: View {
         let trailing = Button("Save") {
             GlobalState.instance.saveGeneratedGIF(gif: self.gif) { (success) in
                 if success {
-                    Async {
+                    Delayed(0.4) {
                         self.dismissBlock()
                     }
                 }
@@ -109,13 +142,16 @@ struct EditContainerView: View {
         
         return GeometryReader { metrics in
             VStack(spacing: 0) {
- 
+                
                 EditNavView(title: "Edit", leadingItem: Button(action: {
                     self.dismissBlock()
-                }, label: { Text("Cancel") }).any, trailingItem: trailing.any) {
-                    
-                    AnimatedGIFView(gif: self.$gif, animated: self.$animated)
-                        .opacity(self.activeEditor == nil ? 1 : 0)
+                }, label: { Text("Cancel") }).any, trailingItem: trailing.any, navVisible: self.visible) {
+                    VStack {
+                        Spacer()
+                        AnimatedGIFView(gif: self.$gif, animated: self.$animated)
+                            .opacity(self.activeEditor == nil ? 1 : 0)
+                        Spacer()
+                    }
                 }
                 
                 self.getToolbar(with: metrics).offset(y: self.activeEditor == nil ? 0 : 80)
@@ -125,7 +161,7 @@ struct EditContainerView: View {
         .overlay(Group {
             self.getActiveEditor()
         })
-            .background(Color.black.edgesIgnoringSafeArea([.top, .bottom]))
+            .background(Color.background.edgesIgnoringSafeArea([.top, .bottom]).opacity(self.visible ? 1 : 0))
             .onAppear {
                 Delayed(0.2) {
                     self.$visible.animation(Animation.bouncy1).wrappedValue = true
@@ -172,7 +208,7 @@ struct EditContainerView: View {
         Group {
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.trim
-
+                
                 
             }, label: { Image.symbol("slider.horizontal.below.rectangle") }).padding(12)
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.2))
@@ -182,17 +218,17 @@ struct EditContainerView: View {
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.crop
             }, label: { Image.symbol("crop") }).padding(12)
-
-            .modifier(SlideUpModifier(visible: self.$visible, delay: 0.3))
-
+                
+                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.3))
+            
             
             Spacer()
             
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.text
             }, label: { Image.symbol("textbox") }).padding(12)
-                                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.4))
-
+                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.4))
+            
             
             Spacer()
             
@@ -200,8 +236,8 @@ struct EditContainerView: View {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.image
                 
             }, label: { Image.symbol("dial.fill") }).padding(12)
-                                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.5))
-
+                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.5))
+            
         }
     }
     
@@ -209,11 +245,11 @@ struct EditContainerView: View {
     func getImageEditor() -> some View {
         
         let imageEditor = ImageEditor(gif: self.gif)
-
+        
         
         let leading = Button("Cancel") {
             self.$activeEditor.animation().wrappedValue = nil
-
+            
         }.any
         
         let trailing = Button("Apply") {
@@ -238,29 +274,29 @@ struct EditContainerView: View {
                         }
                     } else {
                         HUDAlertState.global.show(.error("Error editing GIF"))
-
+                        
                     }
                     
             }.store(in: &self.store.cancellables)
             
-//            generateGif(photos: imageEditor.images, filename: "edited.gif", frameDelay: imageEditor.duration / Double(imageEditor.images.count))
-//                .subscribe(on: DispatchQueue.global())
-//                .receive(on: DispatchQueue.main)
-//                .sink { url in
-//                    if let url = url {
-//                        let gif = GIFFile(id: UUID().uuidString, url: url)
-//
-//                        HUDAlertState.global.showLoadingIndicator = false
-//
-//                        Async {
-//                            self.$gif.animation().wrappedValue = gif
-//                            self.$activeEditor.animation().wrappedValue = nil
-//                        }
-//                    } else {
-//                        HUDAlertState.global.show(.error("Error editing GIF"))
-//                    }
-//
-//            }.store(in: &self.store.cancellables)
+            //            generateGif(photos: imageEditor.images, filename: "edited.gif", frameDelay: imageEditor.duration / Double(imageEditor.images.count))
+            //                .subscribe(on: DispatchQueue.global())
+            //                .receive(on: DispatchQueue.main)
+            //                .sink { url in
+            //                    if let url = url {
+            //                        let gif = GIFFile(id: UUID().uuidString, url: url)
+            //
+            //                        HUDAlertState.global.showLoadingIndicator = false
+            //
+            //                        Async {
+            //                            self.$gif.animation().wrappedValue = gif
+            //                            self.$activeEditor.animation().wrappedValue = nil
+            //                        }
+            //                    } else {
+            //                        HUDAlertState.global.show(.error("Error editing GIF"))
+            //                    }
+            //
+            //            }.store(in: &self.store.cancellables)
         }.any
         
         
@@ -271,8 +307,8 @@ struct EditContainerView: View {
                     ImageAdjustmentView(gif: self.gif, editor: imageEditor)
                 }
                 
-//                Color.clear.frame(height: 40)
-
+                //                Color.clear.frame(height: 40)
+                
             }
             
         }.transition(AnyTransition.scale(scale: 1.2).combined(with: .opacity).animation(Animation.default))
@@ -309,7 +345,7 @@ struct EditContainerView: View {
                 }, label: { Text("Apply") }))
         }
             //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
-            .modifier(WithHUDModifier(hudAlertState: HUDAlertState.global))
+//            .modifier(WithHUDModifier(hudAlertState: HUDAlertState.global))
             .environmentObject(self.gif.editingContext)
             .background(Color.background)
             .navigationViewStyle(StackNavigationViewStyle())
@@ -346,7 +382,7 @@ struct EditContainerView: View {
                 }, label: { Text("Apply") }))
         }
             //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
-            .modifier(WithHUDModifier(hudAlertState: HUDAlertState.global))
+//            .modifier(WithHUDModifier(hudAlertState: HUDAlertState.global))
             .environmentObject(self.gif.textEditingContext)
             .background(Color.background)
             .navigationViewStyle(StackNavigationViewStyle())

@@ -152,7 +152,7 @@ class EditingContext<Generator>: ObservableObject where Generator : GifGenerator
         }
     }
     
-    let frameIncrement: CGFloat
+    var frameIncrement: CGFloat
     
     let size: CGSize
     
@@ -202,6 +202,20 @@ protocol Editable {
     
 }
 
+extension Optional where Wrapped == URL {
+    var isEmpty: Bool {
+        return true
+    }
+}
+
+extension URL {
+    
+    var nilOrNotEmpty: URL? {
+        return self.absoluteString == "/" ? nil : self
+    }
+    
+}
+
 extension Video {
     var unwrappedGifConfig: GifConfig {
         set {
@@ -223,11 +237,7 @@ extension Video {
 }
 
 class Video: ObservableObject, Identifiable, Editable {
-    
-    func reset() {
-        self.timelineItems = []
-    }
-    
+
     var editingContext: EditingContext<VideoGifGenerator> {
         if let context = ContextStore.context as? EditingContext<VideoGifGenerator> {
             return context
@@ -249,14 +259,17 @@ class Video: ObservableObject, Identifiable, Editable {
     
     var readyToEdit = PassthroughSubject<Bool?, Never>()
     
-    let url: URL
+    var updated = PassthroughSubject<Video, Never>()
+
+    
+    @Published var url: URL = URL.init(string: "/")!
     
     var playState = PlayState()
     var timelineItems = [TimelineItem]()
     
     var ready = false
     
-    let asset: AVURLAsset
+    var asset: AVURLAsset!
     
     var assetInfo: AssetInfo = AssetInfo.empty
     
@@ -264,39 +277,64 @@ class Video: ObservableObject, Identifiable, Editable {
     
     @Published var gifConfig: GifConfig = GifConfig(assetInfo: AssetInfo.empty)
     
+    func reset(_ url: URL? = nil) {
+        
+        if let nonEmpty = url?.nilOrNotEmpty {
+            GlobalState.instance.previousURL = nonEmpty
+        }
+        
+        self.timelineItems = []
+
+        self.assetInfo = AssetInfo.empty
+        self.gifConfig = GifConfig(assetInfo: self.assetInfo)
+        self.isValid = nil
+
+        if let url = url {
+            self.url = url
+            
+            let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+            self.asset = asset
+            
+            self.asset.loadValuesAsynchronously(forKeys: ["readable", "duration"]) {
+                if let track = asset.tracks(withMediaType: .video).last {
+                    self.assetInfo = AssetInfo(fps: track.nominalFrameRate, duration: asset.duration.seconds, size: track.naturalSize.applying(track.preferredTransform).absolute())
+                } else {
+                    self.assetInfo = AssetInfo.empty
+                    
+                    self.gifConfig = GifConfig(assetInfo: self.assetInfo)
+                    
+                    self.isValid = false
+                    self.updated.send(self)
+
+                    return
+                }
+
+            self.gifConfig = GifConfig(assetInfo: self.assetInfo)
+            
+            Delayed(0.2) {
+                if asset.isReadable {
+                        self.isValid = true
+                        self.readyToEdit.send(true)
+                        GlobalPublishers.default.videoReady.send(self)
+                    } else {
+                        self.isValid = false
+                        self.readyToEdit.send(false)
+                    }
+                }
+                
+                self.updated.send(self)
+                
+            }
+        } else {
+            self.url = URL.init(string: "/")!
+            self.updated.send(self)
+        }
+    }
+    
     init(data: Data?, url: URL) {
         self.data = data
-        self.url = url
         
-        let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
-        self.asset = asset
-        
-        self.asset.loadValuesAsynchronously(forKeys: ["readable", "duration"]) {
-            if let track = asset.tracks(withMediaType: .video).last {
-                self.assetInfo = AssetInfo(fps: track.nominalFrameRate, duration: asset.duration.seconds, size: track.naturalSize.applying(track.preferredTransform).absolute())
-            } else {
-                self.assetInfo = AssetInfo.empty
-                
-                self.gifConfig = GifConfig(assetInfo: self.assetInfo)
-                
-                self.isValid = false
-                return
-            }
-
-        self.gifConfig = GifConfig(assetInfo: self.assetInfo)
-        
-        Delayed(0.2) {
-            if asset.isReadable {
-                    self.isValid = true
-                    self.readyToEdit.send(true)
-                    GlobalPublishers.default.videoReady.send(self)
-                } else {
-                    self.isValid = false
-                    self.readyToEdit.send(false)
-                }
-            }
-            
-        }
+//        self.reset(url)
         
         
         
@@ -484,7 +522,7 @@ struct ImagePickerController: UIViewControllerRepresentable {
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let url = info[.mediaURL] as? URL {
-                self.parent.video = Video(data: nil, url: url)
+                self.parent.video.url = url
             }
             
         }
@@ -500,41 +538,42 @@ class Converter {
     static var exportSession: AVAssetExportSession?
     
     static func convert(url: URL, done: @escaping (URL?) -> Void) {
-        
-        let anAsset = AVURLAsset(url: url)
-        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmpvid.mp4")
-         
-        do {
-            try FileManager.default.removeItem(at: outputURL)
-        } catch {
+        DispatchQueue.global().async {
+            let anAsset = AVURLAsset(url: url)
+            let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmpvid.mp4")
             
-        }
-        
-        // These settings will encode using H.264.
-        let preset = AVAssetExportPreset1280x720
-        let outFileType = AVFileType.mp4
-        
-        AVAssetExportSession.determineCompatibility(ofExportPreset: preset, with: anAsset, outputFileType: outFileType, completionHandler: { (isCompatible) in
-            if !isCompatible {
-                return
-        }})
-        
-        exportSession = AVAssetExportSession(asset: anAsset, presetName: preset)
-        
-        guard let export = exportSession else {
-            return
-        }
-
-        export.outputFileType = outFileType
-        export.outputURL = outputURL
-        export.exportAsynchronously { [unowned export] () -> Void in
-           
-            if export.status == .cancelled || export.status == .failed {
-                done(nil)
-            } else if export.status == .completed {
-                done(outputURL)
+            do {
+                try FileManager.default.removeItem(at: outputURL)
+            } catch {
+                
             }
             
+            // These settings will encode using H.264.
+            let preset = AVAssetExportPreset1280x720
+            let outFileType = AVFileType.mp4
+            
+            AVAssetExportSession.determineCompatibility(ofExportPreset: preset, with: anAsset, outputFileType: outFileType, completionHandler: { (isCompatible) in
+                if !isCompatible {
+                    return
+                }})
+            
+            exportSession = AVAssetExportSession(asset: anAsset, presetName: preset)
+            
+            guard let export = exportSession else {
+                return
+            }
+            
+            export.outputFileType = outFileType
+            export.outputURL = outputURL
+            export.exportAsynchronously { [unowned export] () -> Void in
+                
+                if export.status == .cancelled || export.status == .failed {
+                    done(nil)
+                } else if export.status == .completed {
+                    done(outputURL)
+                }
+                
+            }
         }
     }
     

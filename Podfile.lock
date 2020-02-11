@@ -16,7 +16,7 @@ PODS:
 DEPENDENCIES:
   - Drawsana (from `~/Projects/Drawsana`)
   - Gifu
-  - iCloudSync
+  - iCloudSync (from `~/Projects/iCloudSync`)
   - IGColorPicker
   - Introspect
   - mobile-ffmpeg-video
@@ -27,7 +27,6 @@ DEPENDENCIES:
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
     - Gifu
-    - iCloudSync
     - IGColorPicker
     - Introspect
     - M13Checkbox
@@ -39,11 +38,13 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   Drawsana:
     :path: "~/Projects/Drawsana"
+  iCloudSync:
+    :path: "~/Projects/iCloudSync"
 
 SPEC CHECKSUMS:
   Drawsana: 1866ffebc03f36030fe241a60a39a76758cd3ed8
   Gifu: 7bcb6427457d85e0b4dff5a84ec5947ac19a93ea
-  iCloudSync: 9db5fec951673172886bd75203971c003b02e988
+  iCloudSync: 68ea8986be30ac6297cc037312348c3e60c89e86
   IGColorPicker: c6d43aa386a9fdc8f958f3bd4e5ab85905242c8a
   Introspect: 3575a13dbece038e564e4375eeac2117e64a0242
   M13Checkbox: a8c2491cfbbca10797925fd0b9154a782bf40d89
@@ -52,6 +53,6 @@ SPEC CHECKSUMS:
   SwiftDate: fa2bb3962056bb44047b4b85a30044e5eae30b03
   YYImage: 1e1b62a9997399593e4b9c4ecfbbabbf1d3f3b54
 
-PODFILE CHECKSUM: a08cdbdc35e6a4127657c578f34aec35de5f4d04
+PODFILE CHECKSUM: 16c62c9de7785e8d8900e084601e91f0b0647f91
 
 COCOAPODS: 1.7.5

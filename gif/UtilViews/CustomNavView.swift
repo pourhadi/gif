@@ -45,14 +45,17 @@ struct CustomNavView<Content>: View where Content: View {
                 }
                 .frame(height: 40)
                 .padding([.leading, .trailing], 20)
-                .background(VisualEffectView.blur(.systemChromeMaterialDark)               .edgesIgnoringSafeArea(.top))
-
+                .background(VisualEffectView.blur(.systemChromeMaterial)
+                .edgesIgnoringSafeArea(.all))
+                    
                 .offset(x: 0, y: !self.navBarVisible ? -(40 + metrics.safeAreaInsets.top) : 0)
                 .zIndex(1)
-                Divider()                .offset(x: 0, y: !self.navBarVisible ? -(40 + metrics.safeAreaInsets.top) : 0)
-
+                Divider().edgesIgnoringSafeArea([.leading, .trailing])
+                    .offset(x: 0, y: !self.navBarVisible ? -(40 + metrics.safeAreaInsets.top) : 0)
+                
                 self.content().frame(height: metrics.size.height - (40)).zIndex(0)
             }
+            
         }
     }
 }

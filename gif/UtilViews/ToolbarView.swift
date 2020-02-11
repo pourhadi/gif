@@ -19,6 +19,8 @@ struct ToolbarView<Content>: View where Content: View {
     
     let hideDivider: Bool
     
+    @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
+    
     init(metrics: GeometryProxy, bottomAdjustment: CGFloat? = nil, background: AnyView, hideDivider: Bool = false, @ViewBuilder content: () -> Content) {
         self.items = content()
         self.metrics = metrics
@@ -31,7 +33,7 @@ struct ToolbarView<Content>: View where Content: View {
         Group {
             VStack {
                 if !self.hideDivider {
-                Divider()
+                    Divider().edgesIgnoringSafeArea(.all)
                 }
                 HStack {
                     self.items
@@ -39,8 +41,8 @@ struct ToolbarView<Content>: View where Content: View {
                 Spacer()
                 Spacer(minLength: self.bottomAdjustment)
             }
-            .background(self.background)
-            .frame(height: 40 + (self.bottomAdjustment ?? 0))
+            .background(self.background.edgesIgnoringSafeArea(.all))
+            .frame(height: (self.verticalSizeClass == .compact ? 30 : 40) + (self.bottomAdjustment ?? 0))
         }
 //            .offset(y: self.bottomAdjustment != nil ? -(self.bottomAdjustment!) : 0)
     }

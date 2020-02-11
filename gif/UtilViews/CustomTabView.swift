@@ -22,16 +22,20 @@ struct TabModel: Identifiable {
     }
 }
 
-struct CustomTabView: View {
+struct CustomTabView<Content>: View where Content : View {
     
     
     @Binding var selectedTab: Int
     
     let tabs: [TabModel]
     
-    let content: (TabModel) -> AnyView
+    let content: (TabModel) -> Content
     
-    init(selectedTab: Binding<Int>, tabs: [TabModel], content: @escaping (TabModel) -> AnyView) {
+    @Environment(\.deviceDetails) var deviceDetails: DeviceDetails
+    
+    @Environment(\.verticalSizeClass) var sizeClass: UserInterfaceSizeClass?
+    
+    init(selectedTab: Binding<Int>, tabs: [TabModel], @ViewBuilder content: @escaping (TabModel) -> Content) {
         self._selectedTab = selectedTab
         self.tabs = tabs
         self.content = content
@@ -40,32 +44,38 @@ struct CustomTabView: View {
     var body: some View {
         ZStack {
             
-            self.content(self.tabs[self.selectedTab]).zIndex(Double(self.selectedTab))
-
+            self.content(self.tabs[self.selectedTab]).zIndex(0)
+            
             GeometryReader { metrics in
-
-            Group {
+                
+                Group {
                     
                     VStack {
-                        Divider()
+                        Divider().edgesIgnoringSafeArea([.leading, .trailing])
+                        Spacer(minLength: 4)
                         HStack {
                             ForEach(self.tabs) { tab in
-                                VStack {
+                                Stack(self.deviceDetails.uiIdiom == .pad || self.sizeClass == .compact ? .horizontal : .vertical) {
                                     tab.image.renderingMode(.template)
                                     tab.title.font(.footnote)
-                                }.opacity(tab.id == self.selectedTab ? 1.0 : 0.5).foregroundColor(tab.id == self.selectedTab ? Color.accent : Color.white)
-                                    .onTapGesture {
-                                        self.selectedTab = tab.id
-                                }.frame(width: metrics.size.width / CGFloat(self.tabs.count), alignment: .center)
+                                }
+                                .opacity(tab.id == self.selectedTab ? 1.0 : 0.5)
+                                .foregroundColor(tab.id == self.selectedTab ? Color.accent : Color.secondary)
+                                .onTapGesture {
+                                    self.selectedTab = tab.id
+                                }
+                                .frame(width: metrics.size.width / CGFloat(self.tabs.count), alignment: .center)
                                 
                             }
                         }
                         Spacer(minLength: metrics.safeAreaInsets.bottom)
                         
-                    }.background(VisualEffectView(effect: .init(style: .prominent)))
-                        .frame(height: 60 + metrics.safeAreaInsets.bottom)
-            }            .frame(height:metrics.size.height + metrics.safeAreaInsets.bottom, alignment: .bottom).offset(y: metrics.safeAreaInsets.bottom)
-
+                    }.background(VisualEffectView(effect: .init(style: .systemChromeMaterial)).edgesIgnoringSafeArea(.all))
+                        .frame(height: (self.sizeClass == .compact ? 30 : 55) + metrics.safeAreaInsets.bottom)
+                }
+                .frame(height:metrics.size.height, alignment: .bottom)
+                .offset(y: metrics.safeAreaInsets.bottom)
+                
                 //            .frame(height: metrics.size.height + metrics.safeAreaInsets.bottom, alignment: .bottom)
             }
             .zIndex(20)

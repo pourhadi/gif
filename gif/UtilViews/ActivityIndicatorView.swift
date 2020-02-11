@@ -37,19 +37,28 @@ struct LoadingView: View {
     }
 }
 
-struct ActivityIndicatorView: UIViewRepresentable {
-    func makeUIView(context: UIViewRepresentableContext<ActivityIndicatorView>) -> UIActivityIndicatorView {
-        let v = UIActivityIndicatorView(style: .large)
-        v.color = _accent
-        v.startAnimating()
-        return v
+struct ActivityIndicatorView: View {
+    
+    var body: some View {
+        LoadingCircleView()
     }
     
-    func updateUIView(_ uiView: UIActivityIndicatorView, context: UIViewRepresentableContext<ActivityIndicatorView>) {
-        
-    }
-    
-    typealias UIViewType = UIActivityIndicatorView
 }
+
+
+//struct ActivityIndicatorView: UIViewRepresentable {
+//    func makeUIView(context: UIViewRepresentableContext<ActivityIndicatorView>) -> UIActivityIndicatorView {
+//        let v = UIActivityIndicatorView(style: .large)
+//        v.color = _accent
+//        v.startAnimating()
+//        return v
+//    }
+//
+//    func updateUIView(_ uiView: UIActivityIndicatorView, context: UIViewRepresentableContext<ActivityIndicatorView>) {
+//
+//    }
+//
+//    typealias UIViewType = UIActivityIndicatorView
+//}
 
 

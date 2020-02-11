@@ -51,7 +51,9 @@ class SaveToRollActivity: UIActivity {
     }
 }
 
-// UIActivityType __nullable activityType, BOOL completed, NSArray * __nullable returnedItems, NSError * __nullable activityError
+
+
+
 struct ActivityView : UIViewControllerRepresentable {
     
     let gifs: [GIF]

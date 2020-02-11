@@ -289,14 +289,19 @@ public struct TextPlayerView : PlayerView {
                     .frame(width: metrics.size.width, height: metrics.size.height, alignment: .center)
 //                    .scaleEffect(CGSize(width: scaleW, height: scaleH))
                 
-                if !self.textAdded {
-                    Text("Tap to add text").foregroundColor(Color.white)
-                        .padding(5)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.2)))
-                        .frame(width: metrics.size.width, height: metrics.size.height, alignment: .center)
-                    .allowsHitTesting(false)
+            }
+            
+            if !self.textAdded && self.playerType == .playhead {
+                Text("Tap to add text").foregroundColor(Color.white)
+                    .padding(5)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.2)))
+                    .frame(width: metrics.size.width, height: metrics.size.height, alignment: .center)
+                .allowsHitTesting(false)
 
-                }
+            }
+        }.onTapGesture {
+            if !self.gif.textEditingContext.editingText {
+                self.gif.textEditingContext.editingText = true
             }
         }
         
@@ -380,11 +385,14 @@ struct StepperView: View {
     }
     
     var backView: some View {
-        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("backward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
+        return Image.symbol("backward.fill", .init(pointSize: 20))!.foregroundColor(Color.text).shadow(color: Color.black.opacity(0.6), radius: 4, x: 0, y: 0)
+//        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("backward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
     }
     
     var forwardView: some View {
-        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("forward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
+        return Image.symbol("forward.fill", .init(pointSize: 20))!.foregroundColor(Color.text).shadow(color: Color.black.opacity(0.6), radius: 4, x: 0, y: 0)
+
+//        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("forward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
     }
 }
 
@@ -420,6 +428,10 @@ struct PlayerLabelView<Player>: View where Player: PlayerView {
     
     let adjustedTime: (CGFloat) -> Void
     
+    let duration: Double
+    
+    @Binding var timestamp: CGFloat
+    
     var body: some View {
         Group {
             GeometryReader { metrics in
@@ -428,16 +440,16 @@ struct PlayerLabelView<Player>: View where Player: PlayerView {
                         .zIndex(1)
                     
                     Group {
-                        self.text
-                            .frame(width: metrics.size.width, height: metrics.size.height)
-                            .shadow(color: Color.black, radius: 2, x: 0, y: 1)
-                        
-                        self.playerView
-                            .mask(self.text
-                                .frame(width: metrics.size.width,
-                                       height: metrics.size.height)
-                            )
-                            .brightness(0.3)
+//                        self.text
+//                            .frame(width: metrics.size.width, height: metrics.size.height)
+//                            .shadow(color: Color.black, radius: 2, x: 0, y: 1)
+//                        
+//                        self.playerView
+//                            .mask(self.text
+//                                .frame(width: metrics.size.width,
+//                                       height: metrics.size.height)
+//                            )
+//                            .brightness(0.3)
                         
                         StepperView(stepForward: self.stepForward,
                                     stepBackward: self.stepBackward)
@@ -447,7 +459,7 @@ struct PlayerLabelView<Player>: View where Player: PlayerView {
                     .zIndex(2)
                 }
             }
-        }
+        }.overlay(self.getTimestampLabel())
     }
     
     var text: Text {
@@ -467,6 +479,23 @@ struct PlayerLabelView<Player>: View where Player: PlayerView {
         self.controlsState.resetTimer()
         self.playerView.timestamp = self.playerView.timestamp - self.frameIncrement
         self.adjustedTime(self.playerView.timestamp)
+    }
+    
+    func getTimestampLabel() -> some View{
+        let duration = self.duration
+        let seconds = duration * Double(self.timestamp)
+        let formatted = seconds.secondsToFormattedTimestamp()
+
+        
+        return VStack {
+            Spacer()
+            Text(formatted)
+            .fontWeight(.medium)
+            .shadow(color: Color.black, radius: 2, x: 0, y: 0)
+            .scaledToFill()
+            .padding(.bottom, 12)
+            .frame(alignment: .bottom)
+        }
     }
 }
 

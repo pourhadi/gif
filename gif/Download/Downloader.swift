@@ -38,9 +38,11 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate {
     
      var cancellables = Set<AnyCancellable>()
     
-     func getVideo(url: URL) -> AnyPublisher<Video?, Never> {
+    var failed = false
+    
+     func getVideo(url: URL) -> AnyPublisher<URL?, Never> {
         self.downloadProgress = 0
-        
+        var cancel = false
         func handleInitialResponse(data: Data) -> AnyPublisher<URL?, Never> {
                 print("handle initial response")
             return self.checkAndGet(data: data)
@@ -49,13 +51,15 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     if let url = url {
                         if url.absoluteString.contains("mkv") {
                             Async {
-                                HUDAlertState.global.loadingMessage = "converting video"
+                                HUDAlertState.global.loadingMessage = ("converting video", {
+                                    cancel = true
+                                })
                             }
                             let localTmpUrl = FileManager.default.temporaryDirectory.appendingPathComponent("tmp.mp4")
                             
                             try? FileManager.default.removeItem(at: localTmpUrl)
                             MobileFFmpeg.execute("-i \(url.path) -strict -2 -c copy \(localTmpUrl.path)")
-                            
+                            if cancel { return nil }
                             return localTmpUrl
 
                         } else {
@@ -82,14 +86,7 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     return Just<URL?>(nil).eraseToAnyPublisher()
                 }
             }
-        .map { url -> Video? in
-            print(url)
-            if let url = url {
-                return Video(data: nil, url: url)
-            } else {
-                return nil
-            }
-        }
+
     
         .eraseToAnyPublisher()
     }
@@ -101,19 +98,30 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate {
             req.httpBody = "file=\(id)".data(using: .utf8)
             req.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
+            var retries = 0
             print("id: \(id)")
             return self.session.dataTaskPublisher(for: req)
                 .delay(for: 1, scheduler: DispatchQueue.main)
                 .tryMap { response -> String? in
                     print("try")
+                    print("retries: \(retries)")
+
+                    retries += 1
                     if let val = String(data: response.data, encoding: .utf8), val.count > 0 {
+                        if val == "FAIL" {
+                            if retries > 3 {
+                                Downloader.instance.failed = true
+                                Downloader.instance.cancellables.forEach { $0.cancel() }
+                            }
+                            throw DownloadError.error
+                        }
                         print("got from check: \(val)")
                         return val
                     } else {
                         throw DownloadError.error
                     }
                 }
-            .retry(30)
+            .retry(120)
             .replaceError(with: nil)
             .flatMap { id -> AnyPublisher<URL?, Never> in
                 if let id = id, id.count > 0 {
@@ -136,12 +144,15 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate {
 //        req.httpBody = "file=\(id)".data(using: .utf8)
 //        req.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
+        var task: URLSessionDownloadTask? = nil
         Async {
-            HUDAlertState.global.loadingMessage = "downloading video"
+            HUDAlertState.global.loadingMessage = ("downloading video", {
+                task?.cancel()
+            })
         }
         
         let future = Future<URL?, Never> { (promise) in
-            let task = self.session.downloadTask(with: req) { (url, response, error) in
+            task = self.session.downloadTask(with: req) { (url, response, error) in
                 print("download complete")
                 if let url = url, let filename = response?.suggestedFilename {
                     
@@ -168,7 +179,7 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate {
                 }
             }
             
-            task.resume()
+            task?.resume()
         }
         
         

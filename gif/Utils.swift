@@ -73,6 +73,21 @@ extension FloatingPoint {
     }
 }
 
+extension Double {
+    func secondsToFormattedTimestamp() -> String {
+        var formatted = String(format: "%.2f", self)
+
+        if (self / 60 > 1) {
+            let leftover = self - Double(Int(self / 60.0) * 60)
+            let minutes = Int(self / 60.0)
+            
+            formatted = String(format: "%d:%.2f", minutes, leftover)
+        }
+        
+        return formatted
+    }
+}
+
 extension CGFloat {
     var percentDisplayString: String {
         return "\(Int(self * 100))"
@@ -85,9 +100,7 @@ final class DeviceDetails {
         case landscape
     }
       
-    var compact: Bool {
-        return self.uiIdiom == .phone && self.orientation == .landscape
-    }
+    @Published var compact: Bool = false
     
     @Published var orientation: Orientation
     
@@ -105,7 +118,7 @@ final class DeviceDetails {
         else {
             self.orientation = .portrait
         }
-          
+
         // unowned self because we unregister before self becomes invalid
         _observer = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [weak self] note in
             guard let device = note.object as? UIDevice else {
@@ -117,7 +130,13 @@ final class DeviceDetails {
             else if device.orientation.isLandscape {
                 self?.orientation = .landscape
             }
+            
+            self?.compact = self?.uiIdiom == .phone && device.orientation.isLandscape
+
         }
+        
+        self.compact = self.uiIdiom == .phone && self.orientation == .landscape
+
     }
       
     deinit {
@@ -190,12 +209,12 @@ struct GlobalPreviewView: View {
 }
 #endif
 
-public func ExtrapolateValue(from:CGFloat, to:CGFloat, percent:CGFloat) -> CGFloat {
+public func ExtrapolateValue<V: BinaryFloatingPoint>(from:V, to:V, percent:V) -> V {
     let value = from + ((to - from) * percent)
     return value
 }
 
-public func CalculatePercentComplete(start:CGFloat, end:CGFloat, current:CGFloat) -> CGFloat {
+public func CalculatePercentComplete<V: BinaryFloatingPoint>(start:V, end:V, current:V) -> V {
     let x = end - start
     return (current - start) / x
 }
@@ -217,6 +236,27 @@ extension View {
         }
     }
     
+    func noAnimations() -> some View {
+        return self.transaction { (tx: inout Transaction) in
+            tx.disablesAnimations = true
+            tx.animation = nil
+        }.animation(nil)
+    }
+    
+    
+   
+    
+    func fadedEdges(_ fadeDistance: CGFloat = 0.1) -> some View {
+        
+        var _fadedEdgeGradient: Gradient {
+               return Gradient(stops: [Gradient.Stop(color: Color.clear, location: 0),
+                                       Gradient.Stop.init(color: Color.black, location: fadeDistance),
+                                       Gradient.Stop.init(color: Color.black, location: 1 - fadeDistance),
+                                       Gradient.Stop.init(color: Color.clear, location: 1)])
+           }
+        
+        return self.mask(LinearGradient(gradient: _fadedEdgeGradient, startPoint: UnitPoint.leading, endPoint: UnitPoint.trailing))
+    }
 }
 
 extension CGRect {
@@ -229,7 +269,14 @@ extension CGRect {
     }
     
     var center: CGPoint {
+        get{
         return CGPoint(x: self.midX, y: self.midY)
+
+        }
+        
+        set {
+            self.origin = CGPoint(x: newValue.x - (self.size.width / 2), y: newValue.y - (self.size.height / 2))
+        }
     }
     
 }

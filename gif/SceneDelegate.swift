@@ -25,6 +25,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 //            .environment(\.hudAlertState, state.hudAlertState)
             .environment(\.timelineState, state.timelineState)
 //            .environment(\.injected, injected)
+            .colorScheme(.dark)
             .environmentObject(state)
         
         // Use a UIHostingController as window root view controller.

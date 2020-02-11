@@ -9,7 +9,7 @@ target 'gif' do
 	pod 'SnapKit'
   pod 'SwiftDate'
   pod 'YYImage'
-  pod 'iCloudSync'
+  pod 'iCloudSync', :path => '~/Projects/iCloudSync'
   pod 'Drawsana', :path => '~/Projects/Drawsana'
   pod 'mobile-ffmpeg-video'
   pod 'IGColorPicker'
@@ -21,6 +21,6 @@ end
 target 'share' do
   
   pod 'SnapKit'
-  pod 'iCloudSync'
+  pod 'iCloudSync', :path => '~/Projects/iCloudSync'
   pod 'SwiftDate'
 end

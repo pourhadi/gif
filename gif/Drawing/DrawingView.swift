@@ -35,6 +35,20 @@ struct DrawsanaContainerView : UIViewRepresentable {
     
     func updateUIView(_ uiView: DrawsanaView, context: UIViewRepresentableContext<DrawsanaContainerView>) {
         
+        if self.context.editingText {
+            if let tool = context.coordinator.textTool {
+                uiView.set(tool: tool)
+            } else {
+                let text = TextTool()
+                context.coordinator.textTool = text
+                text.delegate = context.coordinator
+                uiView.set(tool: text)
+                
+                uiView.userSettings.fillColor = UIColor.white
+                uiView.userSettings.strokeWidth = 0
+                uiView.userSettings.strokeColor = UIColor.white
+            }
+        }
     }
     
     typealias UIViewType = DrawsanaView
