@@ -7,27 +7,198 @@
 //
 
 import SwiftUI
+import SmileLock
+import BiometricAuthentication
+
+enum EnterPasscodeMode {
+    case create((String) -> Void)
+    case confirm((String) -> Bool)
+    case validate((String) -> Bool)
+}
+
+struct EnterPasscodeView: View {
+    
+    let mode: EnterPasscodeMode
+
+    var body: some View {
+        PasscodeView(mode: self.mode)
+            .background(VisualEffectView.blur(.regular).edgesIgnoringSafeArea(.all))
+        
+    }
+    
+}
+
+struct PasscodeView : UIViewRepresentable {
+    
+    let mode: EnterPasscodeMode
+    
+    @State var wrongCode = false
+    
+    func makeCoordinator() -> Coordinator {
+        return Coordinator(self)
+    }
+    
+    func makeUIView(context: Context) -> PasswordContainerView {
+        let v = PasswordContainerView.create(withDigit: 4)
+        v.delegate = context.coordinator
+        v.tintColor = UIColor.white
+        v.highlightedColor = _accent
+        return v
+    }
+    
+    func updateUIView(_ uiView: PasswordContainerView, context: Context) {
+        if self.wrongCode {
+            uiView.wrongPassword()
+            uiView.clearInput()
+            
+            Async {
+                self.wrongCode = false
+            }
+        }
+    }
+    
+   
+    typealias UIViewType = PasswordContainerView
+    
+    
+    class Coordinator : PasswordInputCompleteProtocol {
+        func passwordInputComplete(_ passwordContainerView: PasswordContainerView, input: String) {
+            switch self.parent.mode {
+            case .create(let block): block(input)
+            case .confirm(let block):
+                if !block(input) { self.parent.wrongCode = true }
+            case .validate(let block):
+                if !block(input) { self.parent.wrongCode = true }
+            }
+        }
+        
+        func touchAuthenticationComplete(_ passwordContainerView: PasswordContainerView, success: Bool, error: Error?) {
+            
+        }
+        
+        let parent: PasscodeView
+        
+        init(_ parent: PasscodeView) {
+            self.parent = parent
+        }
+    }
+    
+}
+
+//
+//struct PrivacySettingsView : View {
+//    
+//    @ObservedObject var privacySettings = PrivacySettings.shared
+//    
+//    var body: some View {
+//        
+//        Form {
+//            
+//        }
+//        .navigationBarTitle("Privacy")
+//        
+//    }
+//    
+//}
 
 struct SettingsView: View {
     
-    @EnvironmentObject var settings: Settings
+    init() {
+        _hue = _accentHue
+        _sat = _accentSaturation
+        _hueColor = _accentColorBinding
+    }
+    @Binding var hueColor: UIColor
+    @Binding var hue : CGFloat
+    @State var hueState: CGFloat = _accentHue.wrappedValue
     
+    @Binding var sat: CGFloat
+    @State var satState: CGFloat = _accentSaturation.wrappedValue
+    
+    @EnvironmentObject var settings: Settings
+    @ObservedObject var privacySettings = PrivacySettings.shared
     var body: some View {
         NavigationView {
             Form {
+                Section {
+                    Toggle(isOn: _DEMO, label: { Text("Demo Mode")})
+                }
+                
                 Section(header: Text("iCloud")) {
                     Toggle(isOn: self.$settings.icloudEnabled, label: { Text("Sync GIFs to iCloud Drive") } )
                 }
+                
+                Section(header: Text("Privacy")) {
+                    //                    NavigationLink(destination: PrivacySettingsView().environmentObject(PrivacySettings()), label: { Text("Passcode") })
+                    
+                    
+                    Toggle("Require Passcode", isOn: self.$privacySettings.passcodeEnabled.animation(Animation.default))
+                    
+                    
+                    if self.privacySettings.passcodeEnabled && self.privacySettings.passcode != nil {
+                        if BioMetricAuthenticator.shared.faceIDAvailable() {
+                            Toggle("Use FaceID", isOn: self.$privacySettings.bioEnabled)
+                            
+                        } else if BioMetricAuthenticator.shared.touchIDAvailable() {
+                            Toggle("Use TouchID", isOn: self.$privacySettings.bioEnabled)
+                            
+                        }
+                    }
+                    
+                }
+                
+//                Section(header: Text("Video Downloads")) {
+//                    HStack {
+//                        Text("Preferred Quality")
+//                        Spacer()
+//                    Picker("Preferred Quality", selection: self.$settings.videoDownloadQuality, content: {
+//                        Text(VideoDownloadQuality.fourEighty.qualityString).tag(VideoDownloadQuality.fourEighty)
+//                        Text(VideoDownloadQuality.sevenTwenty.qualityString).tag(VideoDownloadQuality.sevenTwenty)
+//
+//                        }).pickerStyle(SegmentedPickerStyle())
+//                    }
+//                }
+                
+                Section(header: Text("Style")) {
+                    VStack {
+                        HStack {
+                            Text("Hue")
+                            Spacer()
+                            Text("\(Int(self.hue * 100.0))")
+                        }
+                        Slider(value: $hue.animation(Animation.default), in: 0...1, step: 0.01, onEditingChanged: { _ in
+//                            self.hueState = _accentHue.wrappedValue
+//                            self.hueColor = _accentColorBinding.wrappedValue
+                        }) {
+                            EmptyView()
+                        }.labelsHidden()
+                    }
+                    
+                    VStack {
+                        HStack {
+                            Text("Saturation")
+                            Spacer()
+                            Text("\(Int(self.sat * 100.0))")
+                        }
+                        Slider(value: $sat.animation(Animation.default), in: 0...1, step: 0.01, onEditingChanged: { _ in
+//                            self.satState = _accentSaturation.wrappedValue
+//                            self.hueColor = _accentColorBinding.wrappedValue
+                        }) {
+                            EmptyView()
+                        }.labelsHidden()
+                    }
+                }
+                
             }.navigationBarTitle("Settings")
-
+            
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .navigationViewStyle(StackNavigationViewStyle()).accentColor(Color(self.hueColor))
 
     }
 }
 
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
-        SettingsView()
+        SettingsView().environmentObject(Settings())
     }
 }

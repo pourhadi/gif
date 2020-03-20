@@ -342,7 +342,7 @@ struct TextFormatView: View {
                             VStack {
                                 
                                 
-                                Text("Offset")
+//                                Text("Offset")
                                 
                                 Stepper(onIncrement: {
                                     
@@ -355,20 +355,20 @@ struct TextFormatView: View {
                                     EmptyView()
                                 }).labelsHidden()
                                 
-                                Text("Radius")
+//                                Text("Radius")
 
-                                
-                                Stepper(onIncrement: {
-                                    
-                                    self.textFormat.shadowRadius += 1
-                                    
-                                }, onDecrement: {
-                                    self.textFormat.shadowRadius -= 1
-                                    
-                                }, label: {
-                                    EmptyView()
-                                }).labelsHidden()
-                                
+//
+//                                Stepper(onIncrement: {
+//
+//                                    self.textFormat.shadowRadius += 1
+//
+//                                }, onDecrement: {
+//                                    self.textFormat.shadowRadius -= 1
+//
+//                                }, label: {
+//                                    EmptyView()
+//                                }).labelsHidden()
+//
                                 
                                 
                             }
@@ -428,6 +428,42 @@ struct TextFormatView: View {
 
 struct TextFormatView_Previews: PreviewProvider {
     static var previews: some View {
-        TextFormatView().frame(height: 50).background(Color.init(white: 0.2)).environmentObject(TextFormat()).colorScheme(.dark)
+//        TextEditorView(gif: GIF(id: "1", url: Bundle.main.url(forResource: "2", withExtension: "gif")!)).environmentObject(TextFormat()).colorScheme(.dark)
+        TextFormatView().background(Color.init(white: 0.2)).environmentObject(TextFormat()).colorScheme(.dark)
     }
 }
+
+
+//struct TextEditorView : View {
+//
+//    var gif : GIF
+//
+//    @EnvironmentObject var textFormat: TextFormat
+//
+//    @Environment(\.keyboardManager) var keyboardManager : KeyboardManager
+//
+//    @State var keyboardHeight: CGFloat = 0
+//
+//    var body : some View {
+//
+//        CustomNavView(title: String(""), leadingItem: Button(action: {
+//
+//        }, label: { Text("Cancel")}).any, trailingItem: Button(action: {
+//
+//            }, label: { Text("Done")}).any) {
+//
+//                VStack {
+//                    .padding(20)
+//                }
+//
+//
+//        }.onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { (note) in
+//            if let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+//                self.keyboardHeight = frame.size.height
+//            }
+//        }
+//        .edgesIgnoringSafeArea([.bottom])
+//
+//    }
+//
+//}

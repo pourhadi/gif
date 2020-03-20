@@ -13,7 +13,7 @@ enum MenuItemAction {
     case action(() -> Void)
 }
 
-struct MenuItem: Equatable {
+struct MenuItem: Equatable, Identifiable {
     static func == (lhs: MenuItem, rhs: MenuItem) -> Bool {
         lhs.id == rhs.id
     }
@@ -69,22 +69,22 @@ extension AnyTransition {
 
 struct ConditionallyStacked<Content> : View where Content : View {
     
-    let content: () -> Content
+    let content: Content
     let hStacked: Bool
     
-    init(hStacked: Bool, @ViewBuilder content: @escaping () -> Content) {
+    init(hStacked: Bool, @ViewBuilder content:() -> Content) {
         self.hStacked = hStacked
-        self.content = content
+        self.content = content()
     }
     
     var body: some View{
         Group {
             if hStacked {
                 HStack(spacing: 10) {
-                    self.content()
+                    self.content
                 }
             } else {
-                self.content()
+                self.content
             }
             
         }
@@ -115,71 +115,91 @@ struct MenuView: View {
     let cancelAction: () -> Void
     var body: some View {
         ZStack {
-            VisualEffectView.blur(.regular)
-                .brightness(-0.1)
-                .transition(.opacity)
-                .opacity(self.dismissing ? 0 : 1)
-                .edgesIgnoringSafeArea(.all)
+            Button(action: {
+                self.dismiss()
+                self.cancelAction()
+            }, label: { Rectangle().fill(Color.clear) }).zIndex(0)
+//            VisualEffectView.blur(.systemUltraThinMaterial)
+//                .brightness(-0.1)
+//                .transition(.opacity)
+//                .opacity(self.dismissing ? 0 : 1)
+//                .edgesIgnoringSafeArea(.all)
+//                .zIndex(0)
             VStack(spacing: 20) {
                 if self.subMenu != nil {
                     if self.title != nil {
                         Group {
-                            Text(self.title!).font(.title).foregroundColor(Color.accent)
+                            Text(self.title!).font(.title).foregroundColor(Color.white)
                             Divider()
                         }.transition(AnyTransition.pop())
                     }
                     
                     ConditionallyStacked(hStacked: self.verticalSizeClass == .compact) {
-                        ForEach(0..<self.subMenu!.count) { x in
-                            self.button(self.subMenu![x])
+                        ForEach(self.subMenu!) { x in
+                            self.button(x)
                                 .scaleEffect(self.subVisible ? 1 : 0.25)
                                 .opacity(self.subVisible ? 1 : 0)
-                                .animation(self.bouncyAnimation.delay(Double(x) * Double(0.2) + 0.2))
-                                .transformEffect(self.dismissingMenuItem == self.subMenu![x] ? .init(scaleX: 0.95, y: 0.95) : .identity)
+                                .animation(self.bouncyAnimation.delay(Double(self.subMenu!.firstIndex(of: x)!) * Double(0.2) + 0.2))
+                                .transformEffect(self.dismissingMenuItem == x ? .init(scaleX: 0.95, y: 0.95) : .identity)
                             
-                        }.onAppear {
-                            self.$subVisible.animation(self.bouncyAnimation).wrappedValue = true
                         }
                     }
-                    
+                    .onAppear {
+                        self.$subVisible.animation(self.bouncyAnimation).wrappedValue = true
+                    }
                 } else {
                     
                     ConditionallyStacked(hStacked: self.verticalSizeClass == .compact) {
-                        
-                        ForEach(0..<self.menuItems.count) { x in
-                            self.button(self.menuItems[x])
+                        ForEach(self.menuItems) { x in
+                            
+                            self.button(x)
                                 .scaleEffect(self.buttonsVisible ? 1 : 0.25)
                                 .opacity(self.buttonsVisible ? 1 : 0)
-                                .animation(self.bouncyAnimation.delay(Double(x) * Double(0.2)))
-                                .transition(AnyTransition.pop(delayed: Double(x) * Double(0.2)))
-                                .transformEffect(self.dismissingMenuItem == self.menuItems[x] ? .init(scaleX: 0.95, y: 0.95) : .identity)
-                        }.onAppear {
-                            Delayed(0.2) {
-                                self.$buttonsVisible.animation(self.bouncyAnimation).wrappedValue = true
-                            }
+
+                                .transition(AnyTransition.pop(delayed: Double(self.menuItems.firstIndex(of: x)!) * Double(0.2)))
+                                .animation(self.bouncyAnimation.delay(Double(self.menuItems.firstIndex(of: x)!) * Double(0.2)))
+                                
+                                .transformEffect(self.dismissingMenuItem == x ? .init(scaleX: 0.95, y: 0.95) : .identity)
+                            
+                        }
+                        
+                        
+                        
+                    }
+                    .onAppear {
+                        Delayed(0.2) {
+                            self.$buttonsVisible.animation(self.bouncyAnimation).wrappedValue = true
+                            //                                                                                                self.buttonsVisible = true
                         }
                     }
+                    
                 }
+                
                 //                Spacer()
                 Divider()
                 Button("Cancel") {
                     self.dismiss()
                     self.cancelAction()
-                }.scaleEffect(self.buttonsVisible ? 1 : 0.25)
+                }
+                .scaleEffect(self.buttonsVisible ? 1 : 0.25)
                 .opacity(self.buttonsVisible ? 1 : 0)
             }
+                
+                
+                
             .padding(40)
             .scaleEffect(self.dismissing ? 1.2 : 1)
             .opacity(self.dismissing ? 0 : 1)
-        
+            .zIndex(1)
         }
         .edgesIgnoringSafeArea([.top, .bottom])
         .accentColor(Color.accent)
         .onTapGesture {
             self.dismiss()
             self.cancelAction()
-
+            
         }
+    .padding(20)
     }
     
     func dismiss(_ menuItem: MenuItem? = nil) {
@@ -193,17 +213,20 @@ struct MenuView: View {
     
     func button(_ item: MenuItem) -> some View {
         BouncyButton(content: {
-            Stack(self.verticalSizeClass == .compact ? .vertical : .horizontal, spacing: 20) {
+
+            VStack(spacing: 20) {
+//            Stack(self.verticalSizeClass == .compact ? .vertical : .horizontal, spacing: 20) {
                 
-            
-//            HStack(spacing: 20) {
+                
+                //            HStack(spacing: 20) {
                 item.image
-                item.text.minimumScaleFactor(0.9)
+                item.text.font(.headline).minimumScaleFactor(0.9).foregroundColor(Color.white)
             }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.15)))
+        .shadow(radius: 1)
+            .padding([.leading, .trailing], self.verticalSizeClass == .compact ? 20 : 40)
+            .padding([.top, .bottom], 20)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.7).opacity(0.5)))
+            
         }) {
             switch item.action {
             case .action(let action):
@@ -222,10 +245,18 @@ struct MenuView: View {
 }
 
 struct BouncyButton<Content>: View where Content: View {
+    internal init(@ViewBuilder content: @escaping () -> Content, action: @escaping () -> Void) {
+        self.content = content
+        self.action = action
+    }
+    
     @State var pressed = false
     
     let content: () -> Content
     let action: () -> Void
+    
+    
+    
     
     var body: some View {
         Button(action: {

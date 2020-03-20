@@ -2,7 +2,7 @@
  platform :ios, '13.0'
 use_frameworks!
 
-target 'gif' do
+target 'giffed' do
   # Comment the next line if you don't want to use dynamic frameworks
 
   # Pods for gif
@@ -11,16 +11,21 @@ target 'gif' do
   pod 'YYImage'
   pod 'iCloudSync', :path => '~/Projects/iCloudSync'
   pod 'Drawsana', :path => '~/Projects/Drawsana'
-  pod 'mobile-ffmpeg-video'
+  pod 'mobile-ffmpeg-full-gpl'
   pod 'IGColorPicker'
   pod 'Gifu'
-  pod 'Introspect'
+  pod 'Introspect', :git => 'git@github.com:siteline/SwiftUI-Introspect.git'
+  pod 'BiometricAuthentication'
+  pod 'SmileLock'
+  pod 'Alamofire'
+  pod 'Firebase/Auth'
+  pod "InAppPurchase"
 end
 
 
 target 'share' do
   
-  pod 'SnapKit'
   pod 'iCloudSync', :path => '~/Projects/iCloudSync'
   pod 'SwiftDate'
+
 end

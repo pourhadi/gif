@@ -19,6 +19,8 @@ import Combine
 //    static var defaultValue: Self.Value { get }
 //}
 
+
+
 extension ViewAlignment: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine("\(self)")
@@ -40,6 +42,8 @@ extension AnchoredFrameKey {
         if let center = n.center {
             value.center = center
         }
+        
+        
     }
     
     
@@ -172,6 +176,7 @@ struct CropPreferenceKey : PreferenceKey {
         if let cbt = next.contentBottomTrailing {
             value.contentBottomTrailing = cbt
         }
+        
     }
     
     typealias Value = CropPreferenceData

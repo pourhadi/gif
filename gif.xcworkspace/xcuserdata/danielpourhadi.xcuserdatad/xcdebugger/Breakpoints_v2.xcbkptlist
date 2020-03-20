@@ -5,147 +5,23 @@
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         BreakpointExtensionID = "Xcode.Breakpoint.SwiftErrorBreakpoint">
          <BreakpointContent
-            uuid = "225FA69A-12A6-40E7-90BE-7F09115C9261"
+            uuid = "A0DD51C1-7A46-4922-87F3-196BCA6D2921"
             shouldBeEnabled = "No"
             ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "gif/ContentView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "356"
-            endingLineNumber = "356"
-            landmarkName = "getDisplayedEditor()"
-            landmarkType = "7">
+            continueAfterRunningActions = "No">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         BreakpointExtensionID = "Xcode.Breakpoint.ExceptionBreakpoint">
          <BreakpointContent
-            uuid = "4DE186AA-5658-4B27-9D9C-7B47DEB91BEA"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "gif/Gallery/GIFView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "266"
-            endingLineNumber = "266"
-            landmarkName = "getPopover(metrics:values:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "FB5CABE6-B239-41CA-A8A6-5F0211365CEB"
+            uuid = "FED56991-AE76-4863-8982-D70AB03671E3"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "../CollectionView/Sources/CollectionView/CollectionView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "111"
-            endingLineNumber = "111"
-            landmarkName = "body"
-            landmarkType = "24">
-            <Locations>
-               <Location
-                  uuid = "FB5CABE6-B239-41CA-A8A6-5F0211365CEB - 1748532323319926"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "gif.CollectionView.body.getter : some"
-                  moduleName = "gif"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/danielpourhadi/Projects/CollectionView/Sources/CollectionView/CollectionView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "110"
-                  endingLineNumber = "110"
-                  offsetFromSymbolStart = "1640">
-               </Location>
-               <Location
-                  uuid = "FB5CABE6-B239-41CA-A8A6-5F0211365CEB - 3d14f50969b4de9a"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #1 () -&gt; &lt;&lt;opaque return type of (extension in SwiftUI):SwiftUI.View.overlayPreferenceValue&lt;A, B where A1: SwiftUI.PreferenceKey, B1: SwiftUI.View&gt;(A1.Type, (A1.Value) -&gt; B1) -&gt; some&gt;&gt;.0 in gif.CollectionView.body.getter : some"
-                  moduleName = "gif"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/danielpourhadi/Projects/CollectionView/Sources/CollectionView/CollectionView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "92"
-                  endingLineNumber = "92"
-                  offsetFromSymbolStart = "1680">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "F9F7CC8C-A3A9-46A9-9488-9096A53F7062"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "gif/Gallery/GalleryView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "911"
-            endingLineNumber = "911"
-            landmarkName = "GalleryMainView"
-            landmarkType = "14">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "18E4DC9D-E7CD-40D7-8997-E2F71C52CCB4"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "gif/Gallery/GalleryView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "659"
-            endingLineNumber = "659"
-            landmarkName = "getPlusMenu()"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "18E4DC9D-E7CD-40D7-8997-E2F71C52CCB4 - f9f2bc7ff678a36"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "gif.GalleryContainer.getPlusMenu() -&gt; some"
-                  moduleName = "gif"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/danielpourhadi/Projects/gif/gif/Gallery/GalleryView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "659"
-                  endingLineNumber = "659"
-                  offsetFromSymbolStart = "3428">
-               </Location>
-               <Location
-                  uuid = "18E4DC9D-E7CD-40D7-8997-E2F71C52CCB4 - 132e417f2d92975b"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #4 () -&gt; () in gif.GalleryContainer.getPlusMenu() -&gt; some"
-                  moduleName = "gif"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/danielpourhadi/Projects/gif/gif/Gallery/GalleryView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "658"
-                  endingLineNumber = "658"
-                  offsetFromSymbolStart = "44">
-               </Location>
-            </Locations>
+            scope = "1"
+            stopOnStyle = "0">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

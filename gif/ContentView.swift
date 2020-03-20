@@ -133,6 +133,9 @@ struct GIFCollection: Identifiable {
 }
 
 struct ContentView: View {
+    
+    var accent: Binding<UIColor> = _accentColorBinding
+    
     @State var displayedEditor: DisplayedEditor? = nil
     
     @State var activeView: ActiveView = .pickVideo
@@ -151,6 +154,12 @@ struct ContentView: View {
     //    @State var editingGIF: GIF? = nil
     
     @State var createdGIF: GIF? = nil
+    
+    @ObservedObject var privacySettings = PrivacySettings.shared
+    
+    @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
+
+    @State var rerendering = false
     
     //    @State var hudMessage: HUDAlertMessage = HUDAlertMessage.empty
     var body: some View {
@@ -189,7 +198,14 @@ struct ContentView: View {
             
             //            self.$createdGIF.animation(Animation.spring(dampingFraction: 0.7)).wrappedValue = gif
         }.onReceive(self.globalState.video.readyToEdit, perform: { valid in
-            guard let valid = valid else { return }
+            guard let valid = valid else {
+                
+                DispatchQueue.main.async {
+                self.globalState.hudAlertState.showLoadingIndicator = false
+                }
+                return
+                
+            }
             if valid {
                 DispatchQueue.main.async {
                     self.globalState.hudAlertState.showLoadingIndicator = false
@@ -200,8 +216,11 @@ struct ContentView: View {
                 }
                 
             } else {
-                DispatchQueue.main.async {
-                    self.globalState.hudAlertState.hudAlertMessage = [HUDAlertMessage(text: "Error loading video", symbolName: "xmark.octagon.fill")]
+                Delayed(0.2) {
+                    withAnimation(Animation.default.delay(0.1)) {
+                        
+                        self.globalState.hudAlertState.show(.error("something went wrong"))
+                    }
                 }
             }
         })
@@ -247,8 +266,34 @@ struct ContentView: View {
                     .transition(AnyTransition.opacity.animation(Animation.easeIn(duration: 0.3).delay(0.2)))
                     .zIndex(2)
             }
-            })
-            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+            
+            if self.privacySettings.passcodeEnabled && !self.privacySettings.authorized  {
+                VisualEffectView.blur(.regular).edgesIgnoringSafeArea(.all)
+                    .transition(AnyTransition.opacity.animation(Animation.default)).zIndex(1000)
+                
+                Group {
+                    if self.privacySettings.passcode == nil {
+                        PasscodeLockView(state: .setPasscode)
+                    } else if self.privacySettings.needsPasscodeUnlock {
+                        PasscodeLockView(state: .enterPasscode)
+                    }
+                }
+                .scaleEffect(self.verticalSizeClass == .compact ? 0.7 : 1)
+            .zIndex(1001)
+                .transition(AnyTransition.scale(scale: 1.1).combined(with: .opacity).animation(Animation.default))
+            }
+            
+        })
+                .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+                    .opacity(self.rerendering ? 0 : 1)
+                    .onReceive(AccentPublisher.shared.$publisher) { (val) in
+                        self.rerendering = true
+                        
+                        Async {
+                            self.rerendering = false
+                        }
+                }
+            .accentColor(Color(self.accent.wrappedValue))
     }
     
     func dismissEditor() {
@@ -370,7 +415,7 @@ struct ContentView: View {
     func getPopover() -> AnyView {
         switch self.globalState.activePopover {
         case .videoPicker:
-            return ImagePickerController(video: self.$globalState.video).onDisappear {
+            return ImagePickerController(video: self.globalState.video).onDisappear {
                 self.globalState.activePopover = nil
                 if self.globalState.video.isValid ?? false {
                     withAnimation(Animation.default.delay(0.4)) {
@@ -389,7 +434,7 @@ struct ContentView: View {
         //            return PreviewModal<VideoGifGenerator>(activePopover: self.$globalState.activePopover).environmentObject(self.globalState.gifGenerator).any
         case .docBrowser:
             //            return DocumentBrowserView(activePopover: self.$globalState.activePopover).any
-            return DocumentPickerUIView(video: self.$globalState.video, cancelBlock: {
+            return DocumentPickerUIView(video: self.globalState.video, cancelBlock: {
                 self.globalState.activePopover = nil
                 
             }).onDisappear {
@@ -439,7 +484,7 @@ struct ContentView: View {
                                     
                                     //                                    Delayed(0.3) {
                                     
-                                    self.$globalState.video.animation(Animation.default).wrappedValue.reset(video)
+                                    self.globalState.video.reset(video)
                                     
                                     //                                    }
                                     
@@ -506,7 +551,7 @@ struct ContentView: View {
     
     let transitionAnimationContext = TransitionAnimationContext()
     func getMain() -> some View {
-        return GalleryContainer(activePopover: self.$globalState.activePopover, galleryStore: self.$globalState.galleryStore, transitionAnimation: self.transitionAnimationContext)
+        return GalleryContainer(activePopover: self.$globalState.activePopover, transitionAnimation: self.transitionAnimationContext)
     }
 }
 

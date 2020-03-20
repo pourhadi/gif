@@ -291,17 +291,19 @@ public struct TextPlayerView : PlayerView {
                 
             }
             
-            if !self.textAdded && self.playerType == .playhead {
-                Text("Tap to add text").foregroundColor(Color.white)
+            if !self.textAdded && self.showText {
+                Text("Tap to add text").font(.title).foregroundColor(Color.white)
                     .padding(5)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.2)))
                     .frame(width: metrics.size.width, height: metrics.size.height, alignment: .center)
                 .allowsHitTesting(false)
+                
 
             }
         }.onTapGesture {
             if !self.gif.textEditingContext.editingText {
                 self.gif.textEditingContext.editingText = true
+                self.gif.textEditingContext.generator.drawsana.tool?.handleTap(context: self.gif.textEditingContext.generator.drawsana.toolOperationContext, point: CGPoint(x: 10, y: 10))
             }
         }
         
@@ -396,17 +398,6 @@ struct StepperView: View {
     }
 }
 
-struct BlurredPlayerView<Player>: View where Player: PlayerView {
-    let playerView: Player
-    
-    let effect: UIBlurEffect
-    var body: some View {
-        ZStack {
-            playerView
-            VisualEffectView(effect: effect)
-        }
-    }
-}
 
 struct OpacityModifier: ViewModifier {
     @Binding var controlsVisible: Bool
@@ -487,15 +478,7 @@ struct PlayerLabelView<Player>: View where Player: PlayerView {
         let formatted = seconds.secondsToFormattedTimestamp()
 
         
-        return VStack {
-            Spacer()
-            Text(formatted)
-            .fontWeight(.medium)
-            .shadow(color: Color.black, radius: 2, x: 0, y: 0)
-            .scaledToFill()
-            .padding(.bottom, 12)
-            .frame(alignment: .bottom)
-        }
+        return TimestampLabel(text: formatted)
     }
 }
 

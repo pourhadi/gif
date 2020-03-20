@@ -10,7 +10,7 @@ import SwiftUI
 
 struct ToolbarView<Content>: View where Content: View {
     
-    let items: Content
+    let items: () -> Content
     let metrics: GeometryProxy
     
     let background: AnyView
@@ -21,8 +21,8 @@ struct ToolbarView<Content>: View where Content: View {
     
     @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
     
-    init(metrics: GeometryProxy, bottomAdjustment: CGFloat? = nil, background: AnyView, hideDivider: Bool = false, @ViewBuilder content: () -> Content) {
-        self.items = content()
+    init(metrics: GeometryProxy, bottomAdjustment: CGFloat? = nil, background: AnyView, hideDivider: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.items = content
         self.metrics = metrics
         self.background = background
         self.hideDivider = hideDivider
@@ -36,7 +36,7 @@ struct ToolbarView<Content>: View where Content: View {
                     Divider().edgesIgnoringSafeArea(.all)
                 }
                 HStack {
-                    self.items
+                    self.items()
                 }.padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
                 Spacer()
                 Spacer(minLength: self.bottomAdjustment)

@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "37A7A94D238087A000BBCADB"
-               BuildableName = "gif.app"
-               BlueprintName = "gif"
+               BuildableName = "giffed.app"
+               BlueprintName = "giffed"
                ReferencedContainer = "container:gif.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,11 +46,23 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "37A7A94D238087A000BBCADB"
-            BuildableName = "gif.app"
-            BlueprintName = "gif"
+            BuildableName = "giffed.app"
+            BlueprintName = "giffed"
             ReferencedContainer = "container:gif.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <AdditionalOptions>
+         <AdditionalOption
+            key = "DYLD_INSERT_LIBRARIES"
+            value = "/usr/lib/libgmalloc.dylib"
+            isEnabled = "YES">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "NSZombieEnabled"
+            value = "YES"
+            isEnabled = "YES">
+         </AdditionalOption>
+      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -63,8 +75,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "37A7A94D238087A000BBCADB"
-            BuildableName = "gif.app"
-            BlueprintName = "gif"
+            BuildableName = "giffed.app"
+            BlueprintName = "giffed"
             ReferencedContainer = "container:gif.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

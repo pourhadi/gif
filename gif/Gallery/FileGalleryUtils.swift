@@ -12,35 +12,8 @@ import Combine
 import SwiftUI
 import SwiftDate
 
+var DEMO = false
 
-struct PrivacySettings: Codable {
-    
-    var passcodeEnabled: Bool
-    
-    
-}
-
-class Settings: ObservableObject {
-    @Published var icloudEnabled = false
-    
-    var cancellables = Set<AnyCancellable>()
-    
-    static let shared = Settings()
-    
-    let defaults = UserDefaults(suiteName: "group.com.pourhadi.gif")!
-    
-    init() {
-        if defaults.object(forKey: "iCloudEnabled") == nil {
-            defaults.set(true, forKey: "iCloudEnabled")
-        }
-        
-        self.icloudEnabled = defaults.bool(forKey: "iCloudEnabled")
-        
-        $icloudEnabled.sink { val in
-            self.defaults.set(val, forKey: "iCloudEnabled")
-        }.store(in: &self.cancellables)
-    }
-}
 
 protocol FileGalleryUtils {
     
@@ -67,6 +40,13 @@ extension FileGalleryUtils {
         
     }
      var gifURL: URL {
+        if DEMO {
+            let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            let documentsDirectory = paths[0]
+            try? FileManager.default.createDirectory(at: documentsDirectory.appendingPathComponent("demo"), withIntermediateDirectories: true, attributes: nil)
+            return documentsDirectory.appendingPathComponent("demo")
+        }
+        
          if self.cloudAvailable {
              return iCloud.shared.localDocumentsURL!
          }
@@ -77,7 +57,7 @@ extension FileGalleryUtils {
      }
     
     var cloudAvailable: Bool {
-        return iCloud.shared.cloudAvailable && Settings.shared.icloudEnabled
+        return iCloud.shared.cloudAvailable && !DEMO && (UserDefaults(suiteName: "group.com.pourhadi.gif")?.bool(forKey: "iCloudEnabled") ?? false)
     }
     
 
@@ -139,4 +119,8 @@ extension FileGalleryUtils {
     }
 }
 
-class FileGalleryDummy: FileGalleryUtils { }
+class FileGalleryDummy: FileGalleryUtils {
+    
+    static let shared = FileGalleryDummy()
+    
+}

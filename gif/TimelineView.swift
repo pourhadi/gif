@@ -23,9 +23,10 @@ struct TimelineControlsView<Generator>: View where Generator : GifGenerator {
             Button(action: {
                 self.$previewing.animation().wrappedValue.toggle()
             }, label: { Text("Preview").padding(10) } )
-                .background(self.previewing ? Color(white: 0.4) : Color.clear)
+                .background(self.previewing ? Color.accent: Color.clear)
                 .cornerRadius(6)
                 .padding(10)
+                .foregroundColor(self.previewing ? Color.black : Color.accent)
 //            Spacer()
 //            Button(action: {
 //                self.context.cropState.visible = true
@@ -58,17 +59,19 @@ struct TimelineView<Generator>: View where Generator : GifGenerator {
     
     @State var thumbnailMultiplier: CGFloat = 1
     
+    @Environment(\.verticalSizeClass) var verticalSize: UserInterfaceSizeClass?
+
     var body: some View {
         GeometryReader { metrics in
             VStack(spacing: 0) {
-//                if !self.visualState.compact {
+                if self.verticalSize != .compact {
                     TimelineControlsView(context: self.context, previewing: self.$context.playState.previewing)
-//                }
+                }
                 TimelineUIView<Generator>(selection: self.$selection,
                                playState: self.playState,
                                currentPlayhead: self.$playState.currentPlayhead,
                                thumbnailMultiplier: self.$thumbnailMultiplier)
-                    .fadedEdges(0.05)
+//                    .fadedEdges(0.05)
             }
 
             Rectangle()

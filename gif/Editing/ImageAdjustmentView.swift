@@ -14,8 +14,48 @@ import UIKit
 import CoreGraphics
 import YYImage
 
+enum FilterType: String, CaseIterable, Identifiable {
+    
+    case none
+    case chrome
+    case fade
+    case instant
+    case mono
+    case noir
+    case process
+    case tonal
+    case thermal
+    case xray
+    
+    var id: Self { return self }
+    
+    var name: String {
+        return self.rawValue
+    }
+    
+    var filter: CIFilter? {
+        var filterName = ""
+        switch self {
+        case .none: filterName = ""
+        case .chrome: filterName = "CIPhotoEffectChome"
+        case .fade: filterName = "CIPhotoEffectFade"
+        case .instant: filterName = "CIPhotoEffectInstant"
+        case .mono: filterName = "CIPhotoEffectMono"
+        case .noir: filterName = "CIPhotoEffectNoir"
+        case .process: filterName = "CIPhotoEffectProcess"
+        case .tonal: filterName = "CIPhotoEffectTonal"
+        case .thermal: filterName = "CIThermal"
+        case .xray: filterName = "CIXRay"
+        }
+        
+        print("create filter")
+        return CIFilter(name: filterName)
+    }
+}
 
-enum AdjustmentType: Int, CaseIterable {
+enum AdjustmentType: Int, CaseIterable, Identifiable {
+    var id: Self { return self }
+    
     case brightness
     case contrast
     case saturation
@@ -25,6 +65,7 @@ enum AdjustmentType: Int, CaseIterable {
     case bloom
     case exposure
     case vibrance
+    case filters
     
     var resetValue: Double {
         switch self {
@@ -37,6 +78,7 @@ enum AdjustmentType: Int, CaseIterable {
         case .bloom: return 0
         case .exposure: return 0.5
         case .vibrance: return 0
+        case .filters: return 0
         }
     }
     
@@ -55,6 +97,7 @@ enum AdjustmentType: Int, CaseIterable {
         case .bloom: return "b.circle"
         case .exposure: return "plusminus.circle"
         case .vibrance: return "triangle.lefthalf.fill"
+        case .filters: return "wand.and.rays"
         }
     }
 }
@@ -65,14 +108,14 @@ class ImageEditor: ObservableObject {
     @Published var values = [AdjustmentType: Double]()
     
     func reset() {
-//        self.brightness = 0
-//        self.contrast = 1
-//        self.saturation = 1
-//        self.hue = 0
-//        self.highlights = 1
-//        self.shadows = 0
-//        self.bloom = 0
-//        self.exposure = 0.5
+        //        self.brightness = 0
+        //        self.contrast = 1
+        //        self.saturation = 1
+        //        self.hue = 0
+        //        self.highlights = 1
+        //        self.shadows = 0
+        //        self.bloom = 0
+        //        self.exposure = 0.5
         
         for type in AdjustmentType.allCases {
             self.values[type] = type.resetValue
@@ -84,32 +127,34 @@ class ImageEditor: ObservableObject {
     
     @Published var duration: Double = 0
     
-//    @Published var brightness: Double = 0
-//
-//    @Published var contrast: Double = 1
-//
-//    @Published var saturation: Double = 1
-//
-//    @Published var hue: Double = 0
-//
-//    @Published var highlights: Double = 1
-//
-//    @Published var shadows: Double = 0
-//
-//    @Published var bloom : Double = 0
-//
-//    @Published var exposure: Double = 0.5
+    //    @Published var brightness: Double = 0
+    //
+    //    @Published var contrast: Double = 1
+    //
+    //    @Published var saturation: Double = 1
+    //
+    //    @Published var hue: Double = 0
+    //
+    //    @Published var highlights: Double = 1
+    //
+    //    @Published var shadows: Double = 0
+    //
+    //    @Published var bloom : Double = 0
+    //
+    //    @Published var exposure: Double = 0.5
     
     @Published var editing: Bool = false
     
     @Published var reloading: Bool = false
     
-
+    @Published var selectedFilter: FilterType? = FilterType.none
+    
     
     
     let originalPreviewImage: UIImage
     @Published var previewImage: UIImage?
     
+    var thumbnail = PassthroughSubject<UIImage, Never>()
     
     var cancellables = Set<AnyCancellable>()
     
@@ -119,18 +164,14 @@ class ImageEditor: ObservableObject {
     
     var animating = true
     
-    var changeCounter = 0 {
-        didSet {
-            print(self.changeCounter)
-        }
-    }
+    var changeCounter = 0
     
     var cancellable: AnyCancellable? = nil
     
     var frameCount = 0
-    
+    let thumbQueue = DispatchQueue(label: "com.pourhadi.gif.thumbs")
     init(gif: GIF) {
-
+        
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError()
         }
@@ -194,24 +235,34 @@ class ImageEditor: ObservableObject {
                         }
                         
                         
-//                        if weakSelf.images.count == 0 {
-//                            if x == 0 {
-//                                weakSelf.images.append(newImg)
-//                            }
-//                        } else {
-//                            if x == 0 {
-//                                weakSelf.rendering = false
-//                                weakSelf.rendered = true
-//
-//                                done.pointee = true
-//                            } else {
-//                                weakSelf.images.append(newImg)
-//                            }
-//                        }
+                        //                        if weakSelf.images.count == 0 {
+                        //                            if x == 0 {
+                        //                                weakSelf.images.append(newImg)
+                        //                            }
+                        //                        } else {
+                        //                            if x == 0 {
+                        //                                weakSelf.rendering = false
+                        //                                weakSelf.rendered = true
+                        //
+                        //                                done.pointee = true
+                        //                            } else {
+                        //                                weakSelf.images.append(newImg)
+                        //                            }
+                        //                        }
                     }
                     
                     weakSelf.save(image: newImg, idx: x)
                     weakSelf.renderedImage.send(newImg)
+                    
+                    weakSelf.thumbQueue.async {
+                        if let output = weakSelf.outputImage(for: uiImage, true), let cgImage = weakSelf.context.createCGImage(output, from: output.extent) {
+                            
+                            let resized = UIImage(cgImage: cgImage).resized(CGSize(width: 80, height: 80))
+                            Async {
+                                weakSelf.thumbnail.send(resized)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -219,7 +270,7 @@ class ImageEditor: ObservableObject {
         try? FileManager.default.removeItem(at: self.cacheDir)
         try? FileManager.default.createDirectory(at: self.cacheDir, withIntermediateDirectories: true, attributes: nil)
         
-        self.cancellable = self.$values.sink { [weak self] _ in
+        self.cancellable = self.$values.combineLatest(self.$selectedFilter).sink { [weak self] _, _ in
             self?.changeCounter += 1
         }
     }
@@ -230,8 +281,8 @@ class ImageEditor: ObservableObject {
     
     func save(image: UIImage, idx: Int) {
         let change = self.changeCounter
-
-        DispatchQueue.global().async { [weak self] in
+        
+        serialQueue.async { [weak self] in
             guard let weakSelf = self else { return }
             
             
@@ -295,7 +346,7 @@ class ImageEditor: ObservableObject {
     }
     
     func rerenderAll() {
-        DispatchQueue.global().async {
+        serialQueue.async {
             var results = [UIImage]()
             
             for image in self.originalImages {
@@ -321,7 +372,7 @@ class ImageEditor: ObservableObject {
     let exposureControls = CIFilter(name: "CIExposureAdjust")
     let vibranceControls = CIFilter(name: "CIVibrance")
     
-    func outputImage(for image: UIImage) -> CIImage? {
+    func outputImage(for image: UIImage, _ withoutFilter:Bool = false) -> CIImage? {
         let original = CIImage(image: image)
         self.colorControls?.setValue(original, forKey: kCIInputImageKey)
         self.colorControls?.setValue(self.values[.saturation], forKey: kCIInputSaturationKey)
@@ -343,6 +394,13 @@ class ImageEditor: ObservableObject {
         
         self.vibranceControls?.setValue(self.exposureControls?.outputImage, forKey: kCIInputImageKey)
         self.vibranceControls?.setValue(self.values[.vibrance], forKey: kCIInputAmountKey)
+        
+        if self.selectedFilter != FilterType.none {
+            if let selectedFilter = self.selectedFilter?.filter, self.selectedFilter != FilterType.none, !withoutFilter {
+                selectedFilter.setValue(self.vibranceControls?.outputImage, forKey: kCIInputImageKey)
+                return selectedFilter.outputImage
+            }
+        }
         
         return self.vibranceControls?.outputImage
     }
@@ -376,6 +434,42 @@ struct RenderedImageView : View {
         }
     }
     
+}
+
+struct FilterPreviewImageView : View, Equatable {
+    static func == (lhs: FilterPreviewImageView, rhs: FilterPreviewImageView) -> Bool {
+        return lhs.filter == rhs.filter && lhs.image == rhs.image
+    }
+    
+    
+    let imageEditor: ImageEditor
+    @State var filter: CIFilter? = nil
+    @State var image: UIImage? = nil
+    
+    
+    var body: some View {
+        
+        return Group {
+            
+            if self.image != nil {
+                Image(uiImage: self.image!).interpolation(.low).resizable()
+            } else {
+                Image(uiImage: self.imageEditor.originalPreviewImage).resizable()
+            }
+            
+        }.onReceive(self.imageEditor.thumbnail) { (image) in
+            
+            var image = image
+            
+            self.filter?.setValue(CIImage(image: image), forKey: kCIInputImageKey)
+            if let out = self.filter?.outputImage, let cgImage = self.imageEditor.context.createCGImage(out, from: out.extent) {
+                image = UIImage(cgImage: cgImage)
+            }
+            self.image = image
+            
+            
+        }
+    }
 }
 
 class AnimatedUIImageView: UIView {
@@ -467,7 +561,7 @@ struct ImageAdjustmentView: View {
                 RenderedImageView(imageEditor: self.editor)
                     .aspectRatio(self.gif.aspectRatio ?? 1, contentMode: .fit)
                     .frame(width: metrics.size.width)
-                
+                    
                     .gesture(DragGesture().onEnded({ (_) in
                         self.store.originalValue = nil
                     }).onChanged { (val: DragGesture.Value) in
@@ -477,101 +571,107 @@ struct ImageAdjustmentView: View {
                         
                         let width = metrics.size.width
                         let percent = CalculatePercentComplete(start: 0, end: width, current: abs(val.translation.width))
-                                                
+                        
                         if val.translation.width < 0 {
                             self.value.wrappedValue = self.store.originalValue! - Double(percent)
                         } else {
                             self.value.wrappedValue = self.store.originalValue! + Double(percent)
                         }
                     })
+                    .padding(.bottom, 12)
                 
                 Spacer()
-                Spacer()
+                
                 VStack(spacing: 8) {
-                    Text(self.selectedAdjustment.name.uppercased())
-
-                        .font(.subheadline)
-                        .foregroundColor(Color.text)
-                        .brightness(-0.3)
-                    .scaledToFill()
-                        .noAnimations()
-
-                        .modifier(PopModifier(visible: self.$visible, delay: 0.2))
-
-                    if !self.compact {
-                    Text("\(Int((self.editor.values[self.selectedAdjustment] ?? 0) * 100))")
-
-                        .font(.headline)
-                        .foregroundColor(Color.text)
-                        .scaledToFill()
-
-                        .noAnimations()
-
-                    .modifier(PopModifier(visible: self.$visible, delay: 0.3))
+                    if self.selectedAdjustment != .filters {
+                        Text(self.selectedAdjustment.name.uppercased())
+                            
+                            .font(.subheadline)
+                            .foregroundColor(Color.text)
+                            .brightness(-0.3)
+                            .scaledToFill()
+                            .noAnimations()
+                            
+                            .modifier(PopModifier(visible: self.$visible, delay: 0.2))
+                        
+                        if !self.compact {
+                            Text("\(Int((self.editor.values[self.selectedAdjustment] ?? 0) * 100))")
+                                
+                                .font(.headline)
+                                .foregroundColor(Color.text)
+                                .scaledToFill()
+                                
+                                .noAnimations()
+                                
+                                .modifier(PopModifier(visible: self.$visible, delay: 0.3))
+                        }
                     }
                     
                 }.animation(nil)
                 
-                    
-
-                    
-                    
-                    Group {
-                        if self.selectedAdjustment == .brightness {
-                            Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
-                                self.changeMade = true
-                            })
-                        } else if self.selectedAdjustment == .contrast {
-                            Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
-                                self.changeMade = true
-                                
-                            })
-                        } else if self.selectedAdjustment == .saturation {
-                            Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
-                                self.changeMade = true
-                                
-                            })
-                        } else if self.selectedAdjustment == .hue {
-                            Slider(value: self.value, in: -180...180, onEditingChanged: { _ in
-                                self.changeMade = true
-                                
-                            })
-                        } else if self.selectedAdjustment == .highlights {
-                            Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
-                                self.changeMade = true
-                            })
-                        } else if self.selectedAdjustment == .shadows {
-                            Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
-                                self.changeMade = true
-                            })
-                        } else if self.selectedAdjustment == .bloom {
-                            Slider(value: self.value, in: 0...1, onEditingChanged: { _ in
-                                self.changeMade = true
-                            })
-                        } else if self.selectedAdjustment == .exposure {
-                            Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
-                                self.changeMade = true
-                            })
-                        } else if self.selectedAdjustment == .vibrance {
-                            Slider(value: self.value, in: -2...2, onEditingChanged: { _ in
-                                self.changeMade = true
-                            })
-                        }
-                        
+                Group {
+                    if self.selectedAdjustment == .brightness {
+                        Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
+                            self.changeMade = true
+                        })
+                    } else if self.selectedAdjustment == .contrast {
+                        Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
+                            self.changeMade = true
+                            
+                        })
+                    } else if self.selectedAdjustment == .saturation {
+                        Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
+                            self.changeMade = true
+                            
+                        })
+                    } else if self.selectedAdjustment == .hue {
+                        Slider(value: self.value, in: -180...180, onEditingChanged: { _ in
+                            self.changeMade = true
+                            
+                        })
+                    } else if self.selectedAdjustment == .highlights {
+                        Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
+                            self.changeMade = true
+                        })
+                    } else if self.selectedAdjustment == .shadows {
+                        Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
+                            self.changeMade = true
+                        })
+                    } else if self.selectedAdjustment == .bloom {
+                        Slider(value: self.value, in: 0...1, onEditingChanged: { _ in
+                            self.changeMade = true
+                        })
+                    } else if self.selectedAdjustment == .exposure {
+                        Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
+                            self.changeMade = true
+                        })
+                    } else if self.selectedAdjustment == .vibrance {
+                        Slider(value: self.value, in: -2...2, onEditingChanged: { _ in
+                            self.changeMade = true
+                        })
                     }
-                        
-                    .padding([.leading, .trailing], 20)
-                        
+                    
+                }
+                .padding([.leading, .trailing], 20)
+                .modifier(PopModifier(visible: self.$visible, delay: 0.5))
+                
+                if self.selectedAdjustment == .filters {
+                    self.getFilterSelector(width: metrics.size.width).padding(.bottom, 10)
                     .modifier(PopModifier(visible: self.$visible, delay: 0.5))
+
+                }
                 
                 if !self.compact {
-                    Button(action: {
-                        self.editor.values[self.selectedAdjustment] = self.selectedAdjustment.resetValue
-                    }, label: { Text("Reset") })
-                        .opacity(self.editor.values[self.selectedAdjustment] != self.selectedAdjustment.resetValue ? 1 : 0.5)
-                        .padding(12)
-                        .modifier(PopModifier(visible: self.$visible, delay: 0.4))
-                    
+                    if self.selectedAdjustment != .filters {
+                        Button(action: {
+                            self.editor.values[self.selectedAdjustment] = self.selectedAdjustment.resetValue
+                        }, label: { Text("Reset") })
+                            .opacity(self.editor.values[self.selectedAdjustment] != self.selectedAdjustment.resetValue ? 1 : 0.5)
+                            .padding(12)
+                            .modifier(PopModifier(visible: self.$visible, delay: 0.4))
+                        
+                    }
+                    Divider()
                     
                     AdjustmentSelector(selectedType: self.$selectedAdjustment, width: metrics.size.width)
                         .frame(width: metrics.size.width)
@@ -594,28 +694,82 @@ struct ImageAdjustmentView: View {
         .onReceive(self.deviceDetails.$compact) { (compact) in
             self.$compact.animation(Animation.default).wrappedValue = compact
         }
-
+        
+    }
+    
+    func getFilterSelector(width: CGFloat) -> some View {
+        
+        var name = "None"
+        if let filter = self.editor.selectedFilter {
+            name = filter.name
+        }
+        
+        let imgSize = self.gif.size.scaledToFit(CGSize(width: 80, height: 80))
+        return
+            VStack {
+                
+                Text(name.uppercased())
+                    
+                    .font(.subheadline)
+                    .foregroundColor(Color.text)
+                    .brightness(-0.3)
+                    .scaledToFill()
+                    .noAnimations()
+                ScrollView(.horizontal, showsIndicators: false) {
+                    
+                    HStack(spacing: 8) {
+                        
+                        Spacer(minLength: width * 0.2)
+                        ForEach(FilterType.allCases) { (x: FilterType) in
+                            FilterPreviewImageView(imageEditor: self.editor, filter: x.filter)
+                                .equatable()
+                                .compositingGroup()
+                                
+                                .aspectRatio(self.gif.aspectRatio ?? 1, contentMode: .fit)
+                                .cornerRadius(4)
+                                .overlay(RoundedRectangle(cornerRadius: 4)                            .stroke(self.editor.selectedFilter == x ? Color.accent : Color.clear, lineWidth: 4).foregroundColor(Color.clear))
+                                
+                                
+                                .onTapGesture {
+                                    self.editor.selectedFilter = x
+                            }
+                            .padding([.top, .bottom], 5)
+                            
+                        .noAnimations()
+                            
+                        }
+                        Spacer(minLength: width * 0.2)
+                        
+                    }
+                    .background(Color.black)
+                    .drawingGroup(opaque: true)
+                    .compositingGroup()
+                    
+                    
+                    
+                }
+                .frame(height: imgSize.height + 10)
+                .fadedEdges()
+                
+                
+        }
     }
 }
 
- struct ImageAdjustmentView_Previews: PreviewProvider {
-//    static let gif = GIFFile(url: Bundle.main.url(forResource: "3", withExtension: "gif")!, thumbnail: nil, image: nil, asset: nil, id: "1")!
+struct ImageAdjustmentView_Previews: PreviewProvider {
+    static let gif = GIFFile(url: Bundle.main.url(forResource: "3", withExtension: "gif")!, thumbnail: nil, image: nil, asset: nil, id: "1")!
     
-    @State static var selectedAdjustment = AdjustmentType.brightness
+    @State static var selectedAdjustment = AdjustmentType.filters
     static var previews: some View {
         EditNavView(title: "Test", leadingItem: EmptyView().any, trailingItem: EmptyView().any) {
-            GeometryReader { metrics in
-                VStack {
-                    Spacer()
-//                    AdjustmentSelector(selectedType: self.$selectedAdjustment, bottomPadding: metrics.safeAreaInsets.bottom)
-//                    .frame(width: metrics.size.width, height: 80 + metrics.safeAreaInsets.bottom).edgesIgnoringSafeArea(.bottom)                }
-                }
-            }
-            .edgesIgnoringSafeArea(.bottom)
-
-
+            
+            ImageAdjustmentView(gif: gif, editor: ImageEditor(gif: gif))
+            
         }
-//        .edgesIgnoringSafeArea(.bottom)
-
+        .edgesIgnoringSafeArea(.bottom)
+        
+        
     }
- }
+    //        .edgesIgnoringSafeArea(.bottom)
+    
+}

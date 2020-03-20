@@ -26,7 +26,25 @@ struct VisualEffectView: UIViewRepresentable {
         return VisualEffectView(effect: .init(style: style))
     }
     
+    static func barBlur() -> some View {
+        BarVisualEffectView()
+    }
+    
 }
+
+ 
+struct BarVisualEffectView : View {
+    
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body : some View {
+        VisualEffectView.blur(.prominent)
+//            .modify(if: colorScheme == .dark, { (content)  in
+//                content.overlay(Color.black.opacity(0.2))
+//            })
+    }
+}
+ 
 
 //struct TestBlurView : View {
 //    

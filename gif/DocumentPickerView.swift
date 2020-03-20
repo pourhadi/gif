@@ -13,7 +13,7 @@ import MobileCoreServices
 
 struct DocumentPickerUIView: UIViewControllerRepresentable {
     
-    @Binding var video: Video
+    var video: Video
     
     let cancelBlock: () -> Void
     

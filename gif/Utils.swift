@@ -10,6 +10,131 @@ import Foundation
 import UIKit
 import SwiftUI
 
+//@propertyWrapper
+//struct Transformed<From, To> {
+//    var set: (From?) -> To?
+//    var get: (To?) -> From?
+//
+//    var wrappedValue: To? {
+//        get {
+//            return get(val)
+//        }
+//        set {
+//            val = set(newValue)
+//        }
+//    }
+//}
+
+extension View {
+    @ViewBuilder
+    func modify<ModifiedContent>(if condition: Bool = true,
+                                    @ViewBuilder _ modifier: (Self) -> ModifiedContent) -> some View where ModifiedContent : View {
+        if condition {
+            modifier(self)
+        } else {
+            self
+        }
+    }
+}
+
+@propertyWrapper
+struct BoundDefaults<Value, EncodedValue> {
+    
+    var encode: ((Value) -> EncodedValue)
+    var decode: ((EncodedValue) -> Value)
+    
+    var key: String
+    
+    var wrappedValue: Binding<EncodedValue> {
+        get {
+                Binding<EncodedValue>(get: {
+                    self.encode(UserDefaults.standard.object(forKey: self.key) as! Value)
+
+                }, set: { val in
+                    UserDefaults.standard.set(self.decode(val), forKey: self.key)
+                })
+        }
+        set {  }
+    }
+    
+    init(encode: @escaping (Value) -> EncodedValue, decode: @escaping (EncodedValue) -> Value, key: String, defaultValue: EncodedValue) {
+        self.encode = encode
+        self.decode = decode
+        self.key = key
+        
+        if UserDefaults.standard.object(forKey: key) == nil {
+            UserDefaults.standard.set(decode(defaultValue), forKey: key)
+        }
+    }
+}
+
+extension BoundDefaults where EncodedValue == Value {
+    
+    init(key: String, defaultValue: EncodedValue) {
+        self.key = key
+        self.encode = { $0 }
+        self.decode = { $0 }
+        
+        if UserDefaults.standard.object(forKey: key) == nil {
+            UserDefaults.standard.set(decode(defaultValue), forKey: key)
+        }
+    }
+    
+}
+
+
+@propertyWrapper
+struct Defaults<Value, EncodedValue> {
+    
+    var encode: ((Value) -> EncodedValue)
+    var decode: ((EncodedValue) -> Value)
+    
+    var key: String
+    var wrappedValue: EncodedValue {
+        get {
+                return encode(UserDefaults.standard.object(forKey: key) as! Value)
+        }
+        set { UserDefaults.standard.set(decode(newValue), forKey: key) }
+    }
+    
+    init(wrappedValue: EncodedValue, encode: @escaping (Value) -> EncodedValue, decode: @escaping (EncodedValue) -> Value, key: String) {
+        self.encode = encode
+        self.decode = decode
+        self.key = key
+        
+        if UserDefaults.standard.object(forKey: key) == nil {
+            UserDefaults.standard.set(decode(wrappedValue), forKey: key)
+        }
+    }
+}
+
+extension Defaults where EncodedValue == Value {
+    
+    init(wrappedValue: EncodedValue, key: String) {
+        self.key = key
+        self.encode = { $0 }
+        self.decode = { $0 }
+        
+        if UserDefaults.standard.object(forKey: key) == nil {
+            UserDefaults.standard.set(decode(wrappedValue), forKey: key)
+        }
+    }
+    
+}
+
+extension UIImage {
+    
+    func resized(_ fitting: CGSize) -> UIImage {
+        let r = CGRect(origin: CGPoint.zero, size: self.size.scaledToFit(fitting))
+        UIGraphicsBeginImageContextWithOptions(r.size, true, 0.0)
+        self.draw(in: r)
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return image ?? self
+    }
+    
+}
+
 public func Delayed(_ seconds: Double, _ block: @escaping () -> Void) {
     DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
         block()
@@ -59,8 +184,8 @@ extension CGSize {
     }
 }
 
-extension FloatingPoint {
-    func clamp(min: Self = 0, max: Self = 1) -> Self {
+extension Int {
+    func clamp(_ min: Self = 0, _ max: Self = 2) -> Self {
         if self > max {
             return max
         }
@@ -70,6 +195,54 @@ extension FloatingPoint {
         }
         
         return self
+    }
+}
+
+
+extension CGFloat {
+    func clamp(_ min: Self = 0, _ max: Self = 2) -> Self {
+        if self > max {
+            return max
+        }
+        
+        if self < min {
+            return min
+        }
+        
+        return self
+    }
+}
+
+extension Numeric where Self : Strideable {
+    func clamp(_ min: Self = 0, _ max: Self = 1) -> Self {
+        if self > max {
+            return max
+        }
+        
+        if self < min {
+            return min
+        }
+        
+        return self
+    }
+}
+
+@propertyWrapper
+public struct Clamped<N> where N : Numeric, N : Strideable {
+    
+    let min: N
+    let max: N
+    
+    public init(wrappedValue: N, min: N = 0, max: N = 1) {
+        self.min = min
+        self.max = max
+        self.number = wrappedValue
+    }
+    
+    var number: N = 0
+    public var wrappedValue: N {
+        get { return number }
+        set { number = newValue.clamp(min, max) }
     }
 }
 
@@ -201,11 +374,26 @@ extension URL {
 #if MAIN_TARGET
 struct GlobalPreviewView: View {
     @State var visualState = VisualState()
+
     var body: some View {
-        EditorView<VideoPlayerView, VideoGifGenerator>().environment(\.colorScheme, .dark).environmentObject(Video.preview.editingContext).background(Color.background).accentColor(Color.text)
+        getEditor()
+//        EditorView<VideoPlayerView, VideoGifGenerator>().environment(\.colorScheme, .dark).environmentObject(Video.preview.editingContext).background(Color.background).accentColor(Color.text)
 
     }
     
+    
+        func getEditor() -> some View {
+            return NavigationView {
+                EditorView<VideoPlayerView, VideoGifGenerator>()
+                    .navigationBarTitle("Create GIF", displayMode: .inline)
+
+            }
+                //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
+    //            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+                .environmentObject(Video.preview.editingContext_blocking)
+                .background(Color.background)
+                .navigationViewStyle(StackNavigationViewStyle())
+        }
 }
 #endif
 
@@ -246,16 +434,16 @@ extension View {
     
    
     
-    func fadedEdges(_ fadeDistance: CGFloat = 0.1) -> some View {
+    func fadedEdges(_ startFadeDistance: CGFloat = 0.1, endFadeDistance: CGFloat = 0.1, startPoint: UnitPoint = .leading, endPoint: UnitPoint = .trailing) -> some View {
         
         var _fadedEdgeGradient: Gradient {
                return Gradient(stops: [Gradient.Stop(color: Color.clear, location: 0),
-                                       Gradient.Stop.init(color: Color.black, location: fadeDistance),
-                                       Gradient.Stop.init(color: Color.black, location: 1 - fadeDistance),
+                                       Gradient.Stop.init(color: Color.black, location: startFadeDistance),
+                                       Gradient.Stop.init(color: Color.black, location: 1 - endFadeDistance),
                                        Gradient.Stop.init(color: Color.clear, location: 1)])
            }
         
-        return self.mask(LinearGradient(gradient: _fadedEdgeGradient, startPoint: UnitPoint.leading, endPoint: UnitPoint.trailing))
+        return self.mask(LinearGradient(gradient: _fadedEdgeGradient, startPoint: startPoint, endPoint: endPoint))
     }
 }
 
@@ -280,3 +468,5 @@ extension CGRect {
     }
     
 }
+
+

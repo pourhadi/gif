@@ -24,6 +24,7 @@ struct TabModel: Identifiable {
 
 struct CustomTabView<Content>: View where Content : View {
     
+    @Binding var tabBarHidden: Bool
     
     @Binding var selectedTab: Int
     
@@ -35,10 +36,11 @@ struct CustomTabView<Content>: View where Content : View {
     
     @Environment(\.verticalSizeClass) var sizeClass: UserInterfaceSizeClass?
     
-    init(selectedTab: Binding<Int>, tabs: [TabModel], @ViewBuilder content: @escaping (TabModel) -> Content) {
+    init(tabBarHidden: Binding<Bool>, selectedTab: Binding<Int>, tabs: [TabModel], @ViewBuilder content: @escaping (TabModel) -> Content) {
         self._selectedTab = selectedTab
         self.tabs = tabs
         self.content = content
+        self._tabBarHidden = tabBarHidden
     }
     
     var body: some View {
@@ -52,29 +54,36 @@ struct CustomTabView<Content>: View where Content : View {
                     
                     VStack {
                         Divider().edgesIgnoringSafeArea([.leading, .trailing])
-                        Spacer(minLength: 4)
+//                        Spacer(minLength: 4)
                         HStack {
                             ForEach(self.tabs) { tab in
-                                Stack(self.deviceDetails.uiIdiom == .pad || self.sizeClass == .compact ? .horizontal : .vertical) {
-                                    tab.image.renderingMode(.template)
-                                    tab.title.font(.footnote)
-                                }
-                                .opacity(tab.id == self.selectedTab ? 1.0 : 0.5)
-                                .foregroundColor(tab.id == self.selectedTab ? Color.accent : Color.secondary)
-                                .onTapGesture {
+                                Button(action: {
                                     self.selectedTab = tab.id
-                                }
-                                .frame(width: metrics.size.width / CGFloat(self.tabs.count), alignment: .center)
+
+                                }, label: {
+                                    Stack(self.deviceDetails.uiIdiom == .pad || self.sizeClass == .compact ? .horizontal : .vertical, spacing: 6) {
+                                        tab.image.renderingMode(.template)
+                                        tab.title.font(.caption)
+                                    }
+//                                    .opacity(tab.id == self.selectedTab ? 1.0 : 0.5)
+                                        .foregroundColor(tab.id == self.selectedTab ? Color.accent : Color(white: 0.5))
+                                    
+                                    .frame(width: metrics.size.width / CGFloat(self.tabs.count),  alignment: .center)
+                                    
+                                   
+                                })
+                                
                                 
                             }
                         }
-                        Spacer(minLength: metrics.safeAreaInsets.bottom)
+                        .padding(.bottom, metrics.safeAreaInsets.bottom)
+//                        Spacer(minLength: metrics.safeAreaInsets.bottom)
                         
-                    }.background(VisualEffectView(effect: .init(style: .systemChromeMaterial)).edgesIgnoringSafeArea(.all))
-                        .frame(height: (self.sizeClass == .compact ? 30 : 55) + metrics.safeAreaInsets.bottom)
+                    }.background(VisualEffectView.barBlur().edgesIgnoringSafeArea(.all))
+                        .frame(height: (self.sizeClass == .compact ? 30 : 45) + metrics.safeAreaInsets.bottom)
                 }
                 .frame(height:metrics.size.height, alignment: .bottom)
-                .offset(y: metrics.safeAreaInsets.bottom)
+                .offset(y: self.tabBarHidden ? metrics.size.height : metrics.safeAreaInsets.bottom)
                 
                 //            .frame(height: metrics.size.height + metrics.safeAreaInsets.bottom, alignment: .bottom)
             }

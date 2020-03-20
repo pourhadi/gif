@@ -24,15 +24,32 @@ struct FallModifier: ViewModifier {
 
 
 class HUDAlertState: ObservableObject {
+    
+    @Published var determinate = false
+    
+    @Published var percentComplete: Double = 0
+//        {
+//        didSet {
+//            guard percentComplete != oldValue else { return }
+//            if self.percentComplete != 0 {
+//                self.determinate = true
+//            } else {
+//                self.determinate = false
+//            }
+//        }
+//    }
+    
     @Published var hudAlertMessage: [HUDAlertMessage] = []
 
-    @Published var showLoadingIndicator: Bool = false {
-           didSet {
-               if self.showLoadingIndicator != oldValue {
-                self.loadingMessage = (nil, nil)
-               }
-           }
-       }
+    @Published var showLoadingIndicator: Bool = false
+//        {
+//           didSet {
+//               if self.showLoadingIndicator != oldValue {
+//                self.loadingMessage = (nil, nil)
+//                self.percentComplete = 0
+//               }
+//           }
+//       }
     
     @Published var loadingMessage: (String?, (()->Void)?) = (nil, nil)
 
@@ -49,11 +66,20 @@ class HUDAlertState: ObservableObject {
     var cancellables = Set<AnyCancellable>()
     
     init() {
-//        self.$showLoadingIndicator.sink { showing in
-//            if !showing {
-//                self.loadingMessage = nil
-//            }
-//        }.store(in: &self.cancellables)
+        self.$showLoadingIndicator.removeDuplicates().sink { [unowned self] showing in
+            if !showing {
+                self.loadingMessage = (nil, nil)
+                self.percentComplete = 0
+            }
+        }.store(in: &self.cancellables)
+        
+        self.$percentComplete.removeDuplicates().sink { [unowned self] percent in
+            if percent != 0 {
+                self.determinate = true
+            } else {
+                self.determinate = false
+            }
+        }.store(in: &self.cancellables)
     }
 }
 
@@ -142,7 +168,7 @@ struct HUDContainer<Content>: View where Content : View {
 
 
 struct HUDMessageView: View {
-        
+    
     var message: HUDAlertMessage
     
     var body: some View {
@@ -152,11 +178,13 @@ struct HUDMessageView: View {
                 .foregroundColor(Color.accent)
             
             Text(self.message.text)
+                .minimumScaleFactor(0.7)
                 .allowsTightening(true)
                 .font(.title)
                 .padding([.leading, .trailing], 20)
-                .foregroundColor(Color.accent)
-
+                .lineLimit(2)
+                .foregroundColor(Color.secondary)
+            
             if message.cancelAction != nil {
                 Button(action: {
                     self.message.cancelAction?()
@@ -174,7 +202,7 @@ struct HUDLoadingView: View {
     
     var body: some View {
         VStack {
-            LoadingCircleView().frame(width: 60, height: 60)
+            LoadingCircleView(progress: self.hudAlertState.determinate ? self.hudAlertState.percentComplete : nil).frame(width: 60, height: 60)
 //        ActivityIndicatorView()
             .scaleEffect(1.3)
             .padding(30)
@@ -252,14 +280,20 @@ struct WithHUDModifier: ViewModifier {
                             .opacity(self.showHUDMessage ? 1 : 0.00)
                             .scaleEffect(self.showHUDMessage ? 1 : 0.5)
                             .frame(width: self.showHUDMessage ? nil : 120, height: self.showHUDMessage ? nil : 120)
+                        .animation(Animation.spring(dampingFraction: 0.5))
                             .zIndex(100)
                         .transition(AnyTransition.opacity.animation(Animation.default))
 
-                        HUDLoadingView().opacity(self.showHUDLoading ? 1 : 0)
-                            .scaleEffect(self.showHUDLoading ? 1 : 0.5).zIndex(101)
+                        HUDLoadingView()
+                            .opacity(self.showHUDLoading ? 1 : 0)
+                            .scaleEffect(self.showHUDLoading ? 1 : 0.5)
+                            .animation(Animation.spring(dampingFraction: 0.5))
+                            .zIndex(101)
                             .transition(AnyTransition.opacity.animation(Animation.default))
                     }
                 }
+                    .animation(Animation.spring(dampingFraction: 0.5))
+
                 .onAppear(perform: {
                     self.hudAlertState.hudVisible = true
                 })

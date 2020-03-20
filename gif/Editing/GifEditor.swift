@@ -25,7 +25,7 @@ class GifEditor {
                 return
             }
 
-            DispatchQueue.global().async {
+            serialQueue.async {
                 let url = gif.url
                 
                 let filename = UUID().uuidString

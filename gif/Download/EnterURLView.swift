@@ -172,6 +172,8 @@ struct EnterURLView: View {
 
             Text("type or paste a video URL").font(.headline)
             
+            
+            
             TextView(takeFocus: self.$takeFocus, resignFocus: self.$resignFocus, url: self.$url)
             
 //            TextField("URL", value: self.$url, formatter:URLFormatter(), onEditingChanged: { (_) in

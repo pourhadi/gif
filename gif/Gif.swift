@@ -45,14 +45,7 @@ extension Collection where Element == GifConfig.Selection {
     }
 }
 
-@propertyWrapper
-struct Clamped {
-    var number: CGFloat = 0
-    var wrappedValue: CGFloat {
-        get { return number }
-        set { number = newValue.clamp() }
-    }
-}
+
 
 class GifConfig: ObservableObject, Equatable {
     enum AnimationType: CaseIterable, Hashable, Identifiable {
@@ -72,19 +65,22 @@ class GifConfig: ObservableObject, Equatable {
         
     }
     
-    @Published var imageQuality: Float = 1 {
+//    @Published
+    var imageQuality: Float = 1 {
         didSet {
             self.sendValues()
         }
     }
     
-    @Published var regenerateFlag: UUID = UUID() {
+    @Published
+    var regenerateFlag: UUID = UUID() {
         didSet {
             self.sendValues()
         }
     }
     
-    @Published var animationType = AnimationType.regular {
+//    @Published
+    var animationType = AnimationType.regular {
         didSet {
             self.sendValues()
         }
@@ -103,7 +99,8 @@ class GifConfig: ObservableObject, Equatable {
         }
         
         
-        @Clamped var startTime: CGFloat {
+//        @Clamped
+        var startTime: CGFloat = 0 {
             didSet {
                 if endTime < startTime {
                     endTime = startTime + fiveSecondValue
@@ -111,7 +108,8 @@ class GifConfig: ObservableObject, Equatable {
             }
         }
         
-        @Clamped var endTime: CGFloat {
+//        @Clamped
+        var endTime: CGFloat = 0 {
             didSet {
                 if endTime.isInfinite {
                     self.endTime = 1
@@ -177,32 +175,37 @@ class GifConfig: ObservableObject, Equatable {
     
     
     
-    @Published var animationQuality: AnimationQuality = .medium {
+//    @Published
+    var animationQuality: AnimationQuality = .medium {
         didSet {
             self.sendValues()
         }
     }
     
-    @Published var speed: CGFloat = 1.0 {
+//    @Published
+    var speed: CGFloat = 1.0 {
         didSet {
             self.sendValues()
         }
     }
     
-    @Published var sizeScale: CGFloat = 1.0 {
+//    @Published
+    var sizeScale: CGFloat = 1.0 {
         didSet {
             self.sendValues()
         }
     }
     
-    @Published var selections = [Selection()] {
+//    @Published
+    var selections = [Selection()] {
         didSet {
             self.sendValues()
         }
     }
     
     
-    @Published var selection = Selection() {
+//    @Published
+    var selection = Selection() {
         didSet {
             self.sendValues()
         }
@@ -439,7 +442,7 @@ class TextFrameGenerator: ExistingFrameGenerator {
                     self.drawsana.selectionIndicatorView.alpha = 1
                 }
                 
-                DispatchQueue.global().async {
+                serialQueue.async {
                     autoreleasepool {
                         for x in startFrame..<endFrame {
                             let image = images[x]
@@ -533,7 +536,7 @@ class ExistingFrameGenerator: GifGenerator {
     
     func getFrames(preview: Bool = true) -> AnyPublisher<[UIImage], Never> {
         return Future<[UIImage], Never> { (promise) in
-            DispatchQueue.global().async {
+            serialQueue.async {
                 if let images = self.image.images {
                     let startFrame = Int(CGFloat(images.count) * self.config.selection.startTime)
                     let endFrame = Int(CGFloat(images.count) * self.config.selection.endTime)
@@ -695,7 +698,8 @@ class VideoGifGenerator: GifGenerator {
             let end = self.gifConfig.assetInfo.duration * Double(self.config.selection.endTime)
             
             for x in stride(from: start, to: (end - inc), by: inc) {
-                let time = CMTime(seconds: x, preferredTimescale: 1000)
+//                let time = CMTime(seconds: x, preferredTimescale: 1000)
+                let time = CMTime(value: CMTimeValue((x * 1000)), timescale: 1000)
                 if time.seconds < self.gifConfig.assetInfo.duration {
                     times.append(NSValue(time:time))
                 }
@@ -1015,10 +1019,53 @@ struct AnimatedGIFView : View {
     }
 }
 
-class ImageIOAnimationView : UIImageView, AnimationSubscriber {
+class ImageIOAnimationView : UIView, UIScrollViewDelegate, AnimationSubscriber {
     
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        return imageView
+    }
+    
+    func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
+        zooming = true
+    }
+    
+    func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
+        if scale == 1.0 {
+            zooming = false
+        }
+    }
+    
+    let imageView = UIImageView()
+    lazy var overlay: UIView = {
+       let v = UIView()
+        v.backgroundColor = UIColor.black
+        addSubview(v)
+        v.snp.makeConstraints { (make) in
+            make.edges.equalToSuperview()
+        }
+        
+        v.isHidden = true
+        return v
+    }()
+    
+    
+    let scrollView = UIScrollView()
     init() {
         super.init(frame: CGRect.zero)
+        
+        addSubview(scrollView)
+        scrollView.addSubview(imageView)
+        
+        scrollView.frame = self.bounds
+        scrollView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
+        imageView.frame = scrollView.bounds
+        imageView.contentMode = .scaleAspectFit
+        scrollView.delegate = self
+        scrollView.maximumZoomScale = 3
+        
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.isScrollEnabled = false
         
         self.layer.drawsAsynchronously = true
         self.mask = UIView()
@@ -1031,6 +1078,9 @@ class ImageIOAnimationView : UIImageView, AnimationSubscriber {
         super.layoutSubviews()
         
         self.mask?.frame = self.bounds
+        
+        self.imageView.frame = self.bounds
+
     }
     
     override func willMove(toSuperview newSuperview: UIView?) {
@@ -1063,7 +1113,7 @@ class ImageIOAnimationView : UIImageView, AnimationSubscriber {
     var gif: GIF?
     
     deinit {
-        self.cancellable?.cancel()
+        self.stopAnimating()
     }
     
     var speed: Double = 1 {
@@ -1084,17 +1134,34 @@ class ImageIOAnimationView : UIImageView, AnimationSubscriber {
 //        return self.cancellable != nil
 //    }
     
+    @Published var zooming = false
+    func resize(for size: CGSize) {
+        if zooming { return }
+        var newSize = self.bounds.size
+        if size.width > size.height {
+            newSize = size.fittingWidth(self.bounds.size.width)
+        } else {
+            newSize = size.fittingHeight(self.bounds.size.height)
+        }
+        
+        if imageView.frame.size != newSize {
+            imageView.frame.size = newSize
+            imageView.center.x = scrollView.bounds.midX
+            imageView.center.y = scrollView.bounds.midY
+        }
+    }
+    
     var cancellable: AnyCancellable?
     var connectedToAnimation = false
-    override func startAnimating() {
+    func startAnimating() {
         guard let gif = self.gif else { return }
         self.connectedToAnimation = true
         self.cancellable = gif.nextAnimationPublisher
 //            .receive(on: DispatchQueue.main)
             .sink { [weak self] image in
                 
-                self?.image = image
-                
+                self?.imageView.image = image
+//                self?.resize(for: image.size)
 //                if !(self?.cancelAnimation ?? false) {
 //                    self?.image = image
 //                } else {
@@ -1103,8 +1170,10 @@ class ImageIOAnimationView : UIImageView, AnimationSubscriber {
         }
     }
     
+
+    
     var cancelAnimation = false
-    override func stopAnimating() {
+    func stopAnimating() {
         self.cancellable?.cancel()
         self.cancellable = nil
         
@@ -1127,12 +1196,14 @@ class ImageIOAnimationView : UIImageView, AnimationSubscriber {
         
         self.stopAnimating()
         
-        self.image = nil
+        self.imageView.image = nil
         
         self.gif = gif
         
-        self.image = self.gif?.thumbnail
+        self.imageView.image = self.gif?.thumbnail
         //        self.layer.contents = self.gif?.thumbnail?.cgImage
+        
+        
         
         if animating {
             self.startAnimating()

@@ -238,6 +238,23 @@ extension Video {
 
 class Video: ObservableObject, Identifiable, Editable {
 
+    var editingContext_blocking : EditingContext<VideoGifGenerator> {
+        let sem = DispatchSemaphore(value: 0)
+        
+        var c: EditingContext<VideoGifGenerator>?
+        serialQueue.async {
+            while self.videoTrack == nil {
+                continue
+            }
+            
+            c = self.editingContext
+            sem.signal()
+        }
+        
+        sem.wait()
+        return c!
+    }
+    
     var editingContext: EditingContext<VideoGifGenerator> {
         if let context = ContextStore.context as? EditingContext<VideoGifGenerator> {
             return context
@@ -279,6 +296,8 @@ class Video: ObservableObject, Identifiable, Editable {
     
     func reset(_ url: URL? = nil) {
         
+        EditorStore.reset()
+        ContextStore.context = nil
         if let nonEmpty = url?.nilOrNotEmpty {
             GlobalState.instance.previousURL = nonEmpty
         }
@@ -306,6 +325,9 @@ class Video: ObservableObject, Identifiable, Editable {
                     self.isValid = false
                     self.updated.send(self)
 
+                    Delayed(0.2) {
+                        self.readyToEdit.send(false)
+                    }
                     return
                 }
 
@@ -327,6 +349,8 @@ class Video: ObservableObject, Identifiable, Editable {
             }
         } else {
             self.url = URL.init(string: "/")!
+            self.readyToEdit.send(nil)
+
             self.updated.send(self)
         }
     }
@@ -384,7 +408,11 @@ class Video: ObservableObject, Identifiable, Editable {
     }
     
     static var preview: Video {
-        return Video(data: nil, url: Bundle.main.url(forResource: "test_movie", withExtension: "mov")!)
+        let v = Video(data: nil, url: Bundle.main.url(forResource: "test_movie", withExtension: "mov")!)
+        v.reset(Bundle.main.url(forResource: "test_movie", withExtension: "mov")!)
+        
+        Thread.sleep(forTimeInterval: 2)
+        return v
     }
     
     var videoTrack: AVAssetTrack? {
@@ -437,7 +465,7 @@ class ThumbGenerator {
         
         return Future { (doneBlock) in
             if let gif = self.gif, let animatedImages = gif.animatedImage?.images {
-                DispatchQueue.global().async {
+                serialQueue.async {
                     
                     var results = [TimelineThumb]()
 
@@ -492,7 +520,7 @@ class ThumbGenerator {
 struct ImagePickerController: UIViewControllerRepresentable {
     
     //     var selectedVideo: CurrentValueSubject<Video?, Never>
-    @Binding var video: Video
+    var video: Video
     
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePickerController>) {
         
@@ -509,7 +537,7 @@ struct ImagePickerController: UIViewControllerRepresentable {
         let vc = UIImagePickerController()
         vc.delegate = context.coordinator
         vc.mediaTypes = ["public.movie"]
-        //        vc.videoQuality = .typeLow
+        vc.videoQuality = .type640x480
         return vc
     }
     
@@ -522,7 +550,9 @@ struct ImagePickerController: UIViewControllerRepresentable {
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let url = info[.mediaURL] as? URL {
-                self.parent.video.url = url
+                self.parent.video.reset(url)
+                picker.dismiss(animated: true, completion: nil)
+
             }
             
         }
@@ -538,7 +568,7 @@ class Converter {
     static var exportSession: AVAssetExportSession?
     
     static func convert(url: URL, done: @escaping (URL?) -> Void) {
-        DispatchQueue.global().async {
+        serialQueue.async {
             let anAsset = AVURLAsset(url: url)
             let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmpvid.mp4")
             

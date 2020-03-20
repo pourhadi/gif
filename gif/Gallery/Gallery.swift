@@ -16,7 +16,6 @@ import SwiftUI
 import UIKit
 import YYImage
 
-let DEMO = false
 
 class CloudGIF: GIFFile {
     override func getData(done: @escaping (Data?, GIF, Bool) -> Void) -> Bool {
@@ -81,6 +80,11 @@ extension GIF {
 
 class GIF: Identifiable, Equatable, Editable {
     var isDeletable = true
+    var isSharable = true
+    
+    var listIndex = 0
+    
+    @Published var publicURL: URL?
     
     var confirmedExists = false
     
@@ -99,7 +103,20 @@ class GIF: Identifiable, Equatable, Editable {
         return self.subscribers > 0
     }
     
-    var subscribers = 0
+    static var subscribers = [GIF.ID: Int]()
+    
+    var subscribers: Int {
+        get {
+            if let num = GIF.subscribers[self.id] {
+                return num
+            } else { return 0 }
+        }
+        
+        set {
+
+            GIF.subscribers[self.id] = newValue >= 0 ? newValue : 0
+        }
+    }
     
     var speed: Double = 1 {
         didSet {
@@ -109,7 +126,7 @@ class GIF: Identifiable, Equatable, Editable {
             print("set speed: \(speed)")
             
             if self.subscribers >= 1 {
-                DispatchQueue.global().async {
+                serialQueue.async {
                     while self.killAnimation {
                         // wait
                     }
@@ -143,7 +160,7 @@ class GIF: Identifiable, Equatable, Editable {
             print(self.id + " + 1, total: \(self.subscribers)")
             
             if self.subscribers == 1 {
-                DispatchQueue.global().async {
+                serialQueue.async {
                     while self.killAnimation {
                         // wait
                     }
@@ -167,7 +184,7 @@ class GIF: Identifiable, Equatable, Editable {
         guard !self.isAnimating else { return }
         self.isAnimating = true
         
-        DispatchQueue.global().async {
+        serialQueue.async {
             _ = self.getData { data, _, _ in
                 
                 if let data = data {
@@ -460,6 +477,7 @@ class GIF: Identifiable, Equatable, Editable {
         return foundData
     }
     
+    @discardableResult
     func getData(done: @escaping (_ data: Data?, _ context: GIF, _ synchronous: Bool) -> Void) -> Bool {
         return false
     }
@@ -503,6 +521,7 @@ class GIF: Identifiable, Equatable, Editable {
 extension GIF {}
 
 class GIFFile: GIF {
+    @discardableResult
     override func getData(done: @escaping (_ data: Data?, _ context: GIF, _ synchronous: Bool) -> Void) -> Bool {
         if let data = self.data {
             done(data, self, true)
@@ -584,102 +603,100 @@ class GIFFile: GIF {
     }
 }
 
-class GalleryStore: ObservableObject {
-    @Published var galleries: [Gallery] = []
-    
-    var fileGallery: Gallery = {
-        FileGallery()
-    }()
-    
-    init() {
-        self.galleries.append(self.fileGallery)
-        self.galleries.append(LibraryGallery(galleryStore: self))
-    }
-    
-    func addToMyGIFs(data: Data, completion: ((String?, Error?) -> Void)?) {
-        self.fileGallery.add(data: data, completion)
-    }
-    
-    //    init() {
-    //
-    //    }
-    //
-    //    init(local: F = FileGallery() as! F, photoLibrary: L = LibraryGallery() as! L) {
-    //        self.local = local
-    //        self.photoLibrary = photoLibrary
-    //    }
-}
+//class GalleryStore: ObservableObject {
+//    @Published var galleries: [Gallery] = []
+//
+//    var fileGallery: Gallery = {
+//        FileGallery()
+//    }()
+//
+//    init() {
+//        self.galleries.append(self.fileGallery)
+//        self.galleries.append(LibraryGallery(galleryStore: self))
+//    }
+//
+//    func addToMyGIFs(data: Data, completion: ((String?, Error?) -> Void)?) {
+//        self.fileGallery.add(data: data, completion)
+//    }
+//
+//    //    init() {
+//    //
+//    //    }
+//    //
+//    //    init(local: F = FileGallery() as! F, photoLibrary: L = LibraryGallery() as! L) {
+//    //        self.local = local
+//    //        self.photoLibrary = photoLibrary
+//    //    }
+//}
 
-class PreviewGalleryStore: GalleryStore {
-    override init() {
-        super.init()
-        self.galleries = [PreviewGallery()]
-    }
-}
+//class PreviewGalleryStore: GalleryStore {
+//    override init() {
+//        super.init()
+//        self.galleries = [PreviewGallery()]
+//    }
+//}
 
-struct ViewConfig<ToolbarContent: View, NavBarItem: View> {
-    let toolbarContent: (Gallery, Binding<[GIF]>, Binding<GIFViewState>) -> ToolbarContent
-    let trailingNavBarItem: (Gallery, Binding<[GIF]>) -> NavBarItem
-    
-    init(_ gallery: Gallery, @ViewBuilder toolbarContent: @escaping (Gallery, Binding<[GIF]>, Binding<GIFViewState>) -> ToolbarContent, @ViewBuilder trailingNavBarItem: @escaping (Gallery, Binding<[GIF]>) -> NavBarItem) {
-        self.toolbarContent = toolbarContent
-        self.trailingNavBarItem = trailingNavBarItem
-    }
-}
 
-class Gallery: ObservableObject, Identifiable, Equatable {
-    //    var gifs: Published<[G]> { get set }
+protocol Gallery: ObservableObject, Identifiable, Equatable {
+    var id: UUID { get }
+    var unableToLoad: AnyView? { get }
+    var title: String { get }
+    var tabItem: AnyView { get }
+    var tabImage: Image { get }
     
-    var unableToLoad: AnyView?
+    var gifs: [GIF] { get set }
     
-    @Published var croppingGIF: GIF?
+    var toolbarContent: (Binding<[GIF]>) -> AnyView { get }
     
-    @Published var editingGIF: GIF?
+    var trailingNavBarItem: (Binding<[GIF]>) -> AnyView { get }
     
-    var gifsState = State<[GIF]>(initialValue: [])
+    var gifPublisher: AnyPublisher<[GIF], Never> { get }
     
-    @Published var gifs = [GIF]()
-    
-    var gifsUpdatedPublisher = PassthroughSubject<[GIF], Never>()
-    
-    var cancellables = Set<AnyCancellable>()
-    
-    init() {
-        $gifs
-            .removeDuplicates()
-            .subscribe(self.gifsUpdatedPublisher)
-            //            .sink { gifs in
-            //            self.gifsUpdatedPublisher.send(gifs)
-            .store(in: &self.cancellables)
-    }
-    
-    func add(data: Data, _ completion: ((String?, Error?) -> Void)? = nil) {}
-    
-    func add(data: Data) -> AnyPublisher<String, Error> {
-        return Future<String, Error> { promise in
-            self.add(data: data) { id, error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(id ?? ""))
-                }
-            }
-        }.eraseToAnyPublisher()
-    }
-    
-    func remove(_ gifs: [GIF]) {}
-    
-    var title: String { return "" }
-    
-    var tabItem: AnyView { EmptyView().any }
-    
-    var tabImage: Image { fatalError() }
-    
-    lazy var viewConfig = ViewConfig(self, toolbarContent: { _, _, _ in EmptyView().any }, trailingNavBarItem: { _, _ in EmptyView().any })
+    var estimatedIsEmpty: Bool { get }
 }
 
 extension Gallery {
-    static func == (lhs: Gallery, rhs: Gallery) -> Bool {
+    var estimatedIsEmpty: Bool { return false }
+}
+
+//struct Gallery: Identifiable, Equatable {
+//    var id = UUID()
+//
+//    //    var gifs: Published<[G]> { get set }
+//
+//    var unableToLoad: AnyView?
+//
+//
+//    var gifs = [GIF]()
+//
+//    func add(data: Data, _ completion: ((String?, Error?) -> Void)? = nil) {}
+//
+//    func add(data: Data) -> AnyPublisher<String, Error> {
+//        return Future<String, Error> { promise in
+//            self.add(data: data) { id, error in
+//                if let error = error {
+//                    promise(.failure(error))
+//                } else {
+//                    promise(.success(id ?? ""))
+//                }
+//            }
+//        }.eraseToAnyPublisher()
+//    }
+//
+//    func remove(_ gifs: [GIF]) {}
+//
+//    var title: String { return "" }
+//
+//    var tabItem: AnyView { EmptyView().any }
+//
+//    var tabImage: Image { fatalError() }
+//
+//    lazy var viewConfig = ViewConfig(self, toolbarContent: { _, _, _ in EmptyView().any }, trailingNavBarItem: { _, _ in EmptyView().any })
+//}
+
+extension Gallery {
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
         return lhs.id == rhs.id
     }
 }
@@ -702,9 +719,42 @@ extension Gallery {
 //
 // }
 
-internal final class PreviewGallery: Gallery {
-    override init() {
-        super.init()
+final class PreviewGallery: Gallery {
+    var unableToLoad: AnyView?
+    
+    var id: UUID = UUID()
+    
+    var tabItem: AnyView = EmptyView().any
+    
+    var tabImage: Image { Image.symbol("photo.on.rectangle.fill")! }
+
+    @Published var gifs: [GIF] = []
+    
+    var toolbarContent: (Binding<[GIF]>) -> AnyView
+    
+    var trailingNavBarItem: (Binding<[GIF]>) -> AnyView
+    
+    var gifPublisher: AnyPublisher<[GIF], Never> {
+        return self.$gifs.eraseToAnyPublisher()
+    }
+
+    
+     init() {
+        
+                self.toolbarContent =  { _ in
+            Group {
+                Button(action: {}, label: { Image.symbol("square.and.arrow.up") })
+                    .padding(12)
+                Spacer()
+                Button(action: {}, label: { Image.symbol("trash") })
+                    .padding(12)
+            }.any
+        }
+        
+        self.trailingNavBarItem =  { _ in
+            EmptyView().any
+        }
+        
         for x in 1..<6 {
             if let url = Bundle.main.url(forResource: "\(x)", withExtension: "gif") {
                 if let data = try? Data(contentsOf: url), let gif = GIFFile(url: url, thumbnail: UIImage(data: data), image: nil, id: "\(x)") {
@@ -713,30 +763,38 @@ internal final class PreviewGallery: Gallery {
             }
         }
         
-        self.viewConfig = ViewConfig(self, toolbarContent: { _, _, _ in
-            Group {
-                Button(action: {}, label: { Image.symbol("square.and.arrow.up") })
-                    .padding(12)
-                Spacer()
-                Button(action: {}, label: { Image.symbol("trash") })
-                    .padding(12)
-            }.any
-        }, trailingNavBarItem: { _, _ in
-            EmptyView().any
-        })
+
     }
     
-    override var title: String { return "Preview" }
+    var title: String { return "Preview" }
 }
 
 final class LibraryGallery: Gallery {
-    override var title: String { return "Photo Library" }
+    var id: UUID = UUID()
+
+        var gifPublisher: AnyPublisher<[GIF], Never> {
+        return self.$gifs.eraseToAnyPublisher()
+    }
+
+    var unableToLoad: AnyView? = nil
     
-    override var tabItem: AnyView {
+    
+    @Published var gifs: [GIF] = []
+    
+    var toolbarContent: (Binding<[GIF]>) -> AnyView
+    
+    var trailingNavBarItem: (Binding<[GIF]>) -> AnyView
+    
+    
+    
+    static let shared = LibraryGallery()
+     var title: String { return "Photo Library" }
+    
+     var tabItem: AnyView {
         TupleView((Image.symbol("photo.on.rectangle.fill"), Text("Photo Library"))).any
     }
     
-    override var tabImage: Image { Image.symbol("photo.on.rectangle.fill")! }
+     var tabImage: Image { Image.symbol("photo.on.rectangle.fill")! }
     
     let changeObserver = ChangeObserver()
     class ChangeObserver: NSObject, PHPhotoLibraryChangeObserver {
@@ -744,10 +802,42 @@ final class LibraryGallery: Gallery {
     }
     
     let cachingManager = PHCachingImageManager()
-    unowned var galleryStore: GalleryStore
-    init(galleryStore: GalleryStore) {
-        self.galleryStore = galleryStore
-        super.init()
+     init() {
+        self.toolbarContent = { _ in
+            Group {
+                Button(action: {}, label: { Image.symbol("square.and.arrow.up") })
+                    .padding(12)
+                Spacer()
+                Spacer()
+            }.any
+        }
+        
+        self.trailingNavBarItem = { selectedGIFs in
+            Button(action: {
+                let hud = HUDAlertState.global
+                hud.showLoadingIndicator = true
+                guard let gif = selectedGIFs.wrappedValue.first, let data = gif.data else {
+                    hud.showLoadingIndicator = false
+                    return
+                }
+                
+                Delayed(0.2) {
+                    FileGallery.shared.add(data: data) { (_, error) in
+                        if let _ = error {
+                            let message = HUDAlertMessage(text: "Error adding GIF", symbolName: "xmark.octagon.fill")
+                            hud.hudAlertMessage = [message]
+                        } else {
+                            let message = HUDAlertMessage(text: "Added to My GIFs", symbolName: "checkmark")
+                            hud.hudAlertMessage = [message]
+                        }
+                    }
+                }
+                
+            }, label: { Image.symbol("arrow.down.to.line.alt").padding(12)})
+                .any
+        }
+        
+        
         PHPhotoLibrary.requestAuthorization { status in
             guard status == .authorized else {
                 self.unableToLoad = AnyView(VStack {
@@ -760,7 +850,7 @@ final class LibraryGallery: Gallery {
                 
                 return
             }
-            DispatchQueue.global().async {
+            serialQueue.async {
                 var gifs = [GIF]()
 
                 //            PHPhotoLibrary.shared().register(self.changeObserver)
@@ -785,9 +875,9 @@ final class LibraryGallery: Gallery {
                         reqs.append(PHImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFit, options: opts) { image, _ in
                             if let gif = GIFFile(url: URL(fileURLWithPath: asset.localIdentifier), thumbnail: image, asset: asset, id: asset.localIdentifier) {
                                 //                            gif.cacheManager = self.cachingManager
-                                
+                                gif.listIndex = doneCount
                                 gif.isDeletable = false
-                                
+                                gif.isSharable = false
 //                                DispatchQueue.main.async {
                                 gifs.append(gif)
 //                                    self.gifs.append(gif)
@@ -811,43 +901,40 @@ final class LibraryGallery: Gallery {
             }
         }
         
-        self.viewConfig = ViewConfig(self, toolbarContent: { _, _, _ in
-            Group {
-                Button(action: {}, label: { Image.symbol("square.and.arrow.up") })
-                    .padding(12)
-                Spacer()
-                Spacer()
-            }.any
-        }, trailingNavBarItem: { _, selectedGIFs in
-            Button(action: {
-                let hud = HUDAlertState.global
-                hud.showLoadingIndicator = true
-                guard let gif = selectedGIFs.wrappedValue.first, let data = gif.data else {
-                    hud.showLoadingIndicator = false
-                    return
-                }
-                
-                Delayed(0.2) {
-                    self.galleryStore.addToMyGIFs(data: data) { _, error in
-                        if let _ = error {
-                            let message = HUDAlertMessage(text: "Error adding GIF", symbolName: "xmark.octagon.fill")
-                            hud.hudAlertMessage = [message]
-                        } else {
-                            let message = HUDAlertMessage(text: "Added to My GIFs", symbolName: "checkmark")
-                            hud.hudAlertMessage = [message]
-                        }
-                    }
-                }
-                
-            }, label: { Image.symbol("arrow.down.to.line.alt") })
-                .padding(12).any
-        })
+        
     }
 }
 
-extension FileGallery: iCloudDelegate {}
 
 final class FileGallery: Gallery, FileGalleryUtils {
+    var id: UUID = UUID()
+    
+        var gifPublisher: AnyPublisher<[GIF], Never> {
+        return self.$gifs.eraseToAnyPublisher()
+    }
+
+    var unableToLoad: AnyView? = nil
+    
+    @Published var gifs: [GIF] = []
+    
+    var toolbarContent: ( Binding<[GIF]>) -> AnyView
+    
+    var trailingNavBarItem: (Binding<[GIF]>) -> AnyView
+    
+    var estimatedIsEmpty: Bool {
+        if let files = try? FileManager.default.contentsOfDirectory(atPath: self.gifURL.path) {
+            if files.contains(where: { (file) -> Bool in
+                file.contains(".gif")
+            }) {
+                return false
+            }
+        }
+        
+        return true
+    }
+    
+    static var shared = FileGallery()
+    
     var updating = false {
         didSet {
             guard self.updating != oldValue else { return }
@@ -873,7 +960,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
             set {}
         }
         
-        let parent: FileGallery
+        var parent: FileGallery
         
         func iCloudFileConflictBetweenCloudFile(_ cloudFile: [String: Any]?, with localFile: [String: Any]?) {
             print("conflict, local: \(localFile), cloud: \(cloudFile)")
@@ -890,7 +977,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
 //        }
         
         func iCloudFilesDidChange(_ files: [NSMetadataItem], with filenames: [String]) {
-            if !self.initialized { return }
+            if !self.initialized || DEMO { return }
             
             print("icloud list changed")
 //            if self.parent.updating { return }
@@ -908,7 +995,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
             print("query gathering? \(iCloud.shared.query.isGathering ? "true" : "false")")
             print("query started? \(iCloud.shared.query.isStarted ? "true" : "false")")
             
-            DispatchQueue.global().async {
+            serialQueue.async {
                 var gifs = [GIF]()
                 
                 var fileDownloading = [String]()
@@ -1008,21 +1095,78 @@ final class FileGallery: Gallery, FileGalleryUtils {
     
     lazy var icloudObserver = iCloudObserver(self)
     
-    override var title: String { return "Your GIFs" }
+     var title: String { return "My GIFs" }
     
-    override var tabItem: AnyView {
+     var tabItem: AnyView {
         TupleView((Image.symbol("person.2.square.stack.fill"),
-                   Text("Your GIFs"))).any
+                   Text("My GIFs"))).any
     }
     
-    override var tabImage: Image { Image.symbol("person.2.square.stack.fill")! }
+     var tabImage: Image { Image.symbol("person.2.square.stack.fill")! }
     
     var cloudAvailable: Bool {
         return !DEMO && iCloud.shared.cloudAvailable && Settings.shared.icloudEnabled
     }
     
-    override init() {
-        super.init()
+    
+    let userId: String
+    
+    init() {
+        if Settings.shared.icloudEnabled {
+            if let id = NSUbiquitousKeyValueStore.default.string(forKey: "_userId") {
+                self.userId = id
+            } else {
+                if let id = UserDefaults.standard.string(forKey: "_userId") {
+                    NSUbiquitousKeyValueStore.default.set(id, forKey: "_userId")
+                    self.userId = id
+                } else {
+                    let id = UUID().uuidString
+                    UserDefaults.standard.set(id, forKey: "_userId")
+                    NSUbiquitousKeyValueStore.default.set(id, forKey: "_userId")
+                    self.userId = id
+
+                }
+            }
+        } else {
+            if let id = UserDefaults.standard.string(forKey: "_userId") {
+                self.userId = id
+            } else {
+                let id = UUID().uuidString
+                UserDefaults.standard.set(id, forKey: "_userId")
+                self.userId = id
+
+            }
+        }
+        
+        self.toolbarContent = { selectedGIFs in
+            Group {
+                Button(action: {
+                    GlobalPublishers.default.showShare.send([selectedGIFs.wrappedValue[0]])
+                    
+                }, label: { Image.symbol("square.and.arrow.up") })
+                    .padding(12)
+                
+                Spacer()
+                Button(action: {
+                    withAnimation {
+                        FileGallery.shared.remove(selectedGIFs.wrappedValue)
+                        selectedGIFs.animation().wrappedValue = []
+                        //                        gallery.remove(gallery.viewState.selectedGIFs)
+                        //                        gallery.viewState.selectedGIFs = []
+                    }
+                }, label: { Image.symbol("trash") })
+                    .padding(12)
+            }.any
+        }
+        
+        self.trailingNavBarItem = { selectedGIFs in
+            Button(action: {
+                GlobalPublishers.default.edit.send(selectedGIFs.wrappedValue[0])
+                
+            }, label: { Text("Edit") .padding([.leading, .top, .bottom], 12).padding(.trailing, 6) })
+                .any
+        }
+        
         do {
             try FileManager.default.createDirectory(at: thumbURL, withIntermediateDirectories: true, attributes: nil)
         } catch {
@@ -1047,51 +1191,35 @@ final class FileGallery: Gallery, FileGalleryUtils {
 //            print(error)
 //        }
         
-        self.viewConfig = ViewConfig(self, toolbarContent: { gallery, selectedGIFs, _ in
-            Group {
-                Button(action: {
-                    GlobalPublishers.default.showShare.send([selectedGIFs.wrappedValue[0]])
-                    
-                }, label: { Image.symbol("square.and.arrow.up") })
-                    .padding(12)
-                
-                Spacer()
-                Button(action: {
-                    withAnimation {
-                        gallery.remove(selectedGIFs.wrappedValue)
-                        selectedGIFs.animation().wrappedValue = []
-                        //                        gallery.remove(gallery.viewState.selectedGIFs)
-                        //                        gallery.viewState.selectedGIFs = []
-                    }
-                }, label: { Image.symbol("trash") })
-                    .padding(12)
-            }.any
-        }, trailingNavBarItem: { _, selectedGIFs in
-            Button(action: {
-                GlobalPublishers.default.edit.send(selectedGIFs.wrappedValue[0])
-                
-            }, label: { Text("Edit") })
-                .padding(12).any
-        })
+        
         
         iCloud.shared.delegate = self.icloudObserver
         
         iCloud.shared.setupiCloud(nil)
         
-        if self.cloudAvailable {
-            iCloud.shared.verboseLogging = true
-            
-//            iCloud.shared.updateFiles()
-        }
+
+        
         
         self.load()
     }
     
+        func add(data: Data) -> AnyPublisher<String, Error> {
+            return Future<String, Error> { promise in
+                self.add(data: data) { id, error in
+                    if let error = error {
+                        promise(.failure(error))
+                    } else {
+                        promise(.success(id ?? ""))
+                    }
+                }
+            }.eraseToAnyPublisher()
+        }
+    
     func add(url: URL) {}
     
-    override func remove(_ gifs: [GIF]) {
+    func remove(_ gifs: [GIF]) {
         
-        DispatchQueue.global().async {
+        serialQueue.async {
             
             
             var finished = 0 {
@@ -1104,7 +1232,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
                     }
                 }
             }
-            //        DispatchQueue.global().async {
+            //        serialQueue.async {
             self.updating = true
             
             for gif in gifs {
@@ -1171,7 +1299,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
         return nil
     }
     
-    override func add(data: Data, _ completion: ((String?, Error?) -> Void)? = nil) {
+    func add(data: Data, _ completion: ((String?, Error?) -> Void)? = nil) {
         self.updating = true
         
         _galleryAdd(data: data) { id, error in
@@ -1228,7 +1356,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
     }
     
     func load() {
-        DispatchQueue.global().async {
+        serialQueue.async {
             do {
                 var gifsToAdd = [GIF]()
                 let files = try FileManager.default.contentsOfDirectory(atPath: self.gifURL.path)
@@ -1237,7 +1365,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
                     do {
                         let thumbData = try Data(contentsOf: self.thumbURL.appendingPathComponent(file.replacingOccurrences(of: ".gif", with: ".jpg")))
                         let thumbImage = UIImage(data: thumbData)!
-                        
+                                                
                         if let gif = GIFFile(url: self.gifURL.appendingPathComponent(file), thumbnail: thumbImage, id: file.replacingOccurrences(of: ".gif", with: "")) {
                             gifsToAdd.append(gif)
                         }
@@ -1250,14 +1378,20 @@ final class FileGallery: Gallery, FileGalleryUtils {
                     lhs.creationDate ?? Date() > rhs.creationDate ?? Date()
                 }
                 
+                for (index, gif) in gifsToAdd.enumerated() {
+                    gif.listIndex = index
+                }
+                
+//                gifsToAdd.sort { (lhs, rhs) -> Bool in
+//                    lhs.creationDate ?? Date() < rhs.creationDate ?? Date()
+//                }
+                
                 gifsToAdd += self.downloadingGIFs
                 
-                Async {
-                    withAnimation(Animation.default) {
+                Delayed(0.1) {
                         if self.gifs != gifsToAdd {
                             self.gifs = gifsToAdd
                         }
-                    }
                 }
                 
                 //                .sorted(by: { (lhs, rhs) -> Bool in

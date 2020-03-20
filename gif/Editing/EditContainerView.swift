@@ -260,7 +260,7 @@ struct EditContainerView: View {
             
             
             imageEditor.createRenderedGif(for: self.gif)
-                .subscribe(on: DispatchQueue.global())
+                .subscribe(on: serialQueue)
                 .receive(on: DispatchQueue.main)
                 .sink { newGif in
                     
@@ -280,7 +280,7 @@ struct EditContainerView: View {
             }.store(in: &self.store.cancellables)
             
             //            generateGif(photos: imageEditor.images, filename: "edited.gif", frameDelay: imageEditor.duration / Double(imageEditor.images.count))
-            //                .subscribe(on: DispatchQueue.global())
+            //                .subscribe(on: serialQueue)
             //                .receive(on: DispatchQueue.main)
             //                .sink { url in
             //                    if let url = url {

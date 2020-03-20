@@ -36,7 +36,7 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
     @EnvironmentObject var context: EditingContext<Generator>
     
     var showText: Bool {
-
+        
         
         return false
     }
@@ -52,25 +52,25 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
                        playerType: .playhead)
                     
                     /*.background(BlurredPlayerView(playerView:
-                        Player(item: self.context.item,
-                               timestamp: self.$context.playState.currentPlayhead,
-                               playing: self.$context.playState.playing, contentMode: .fill),
-                                                  effect: .init(style: .systemThinMaterial)))*/
+                     Player(item: self.context.item,
+                     timestamp: self.$context.playState.currentPlayhead,
+                     playing: self.$context.playState.playing, contentMode: .fill),
+                     effect: .init(style: .systemThinMaterial)))*/
                     .overlay(
                         ZStack {
                             
                             if !(self.context.mode == .text) {
                                 Button(action: {
                                     self.context.playState.playing.toggle()
-                                }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70).zIndex(1)
+                                }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70).zIndex(2)
                             }
                             
-                            self.getTimestampLabel().zIndex(2)
+                            self.getTimestampLabel().zIndex(1)
                         }
                 )
-                   
-                    
-                 
+                
+                
+                
             }
         }
     }
@@ -81,16 +81,37 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
         
         let formatted = seconds.secondsToFormattedTimestamp()
         
-        return VStack {
+        return TimestampLabel(text: formatted)
+    }
+}
+
+struct TimestampLabel : View {
+    
+    var text: String
+    
+    var body : some View {
+        VStack {
             Spacer()
-            Text(formatted)
-            .fontWeight(.medium)
-                .shadow(color: Color.black, radius: 2, x: 0, y: 0)
-            .scaledToFill()
-            .padding(.bottom, 12)
-            .frame(alignment: .bottom)
+            Text(text)
+                .fontWeight(.medium)
+                //                .shadow(color: Color.black, radius: 2, x: 0, y: 0)
+                .scaledToFill()
+                .padding(6)
+                .background(Color.black.opacity(0.5).cornerRadius(4))
+                .frame(alignment: .bottom)
         }
     }
+    
+}
+
+struct PercentCompleteLine: View {
+    
+    @Binding var percent: CGFloat
+    
+    var body : some View{
+        Rectangle().fill(Color.accent).frame(height: 2).scaleEffect(x: self.percent, y: 1, anchor: .leading)
+    }
+    
 }
 
 struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Generator: GifGenerator {
@@ -106,13 +127,14 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
     @Binding var playersHeight: CGFloat?
     
     @Environment(\.deviceDetails) var deviceDetails: DeviceDetails
+    @Environment(\.verticalSizeClass) var verticalSize: UserInterfaceSizeClass?
     
     var editorHeight: CGFloat
     
     var body: some View {
         let spacing: CGFloat = 6
         
-        if self.deviceDetails.compact || (deviceDetails.uiIdiom == .pad && deviceDetails.orientation == .landscape) {
+        if self.verticalSize == .compact {
             return HStack {
                 self.getStartFrameView().shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
                 self.getMainView().shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
@@ -130,55 +152,67 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
         }
         
         return GeometryReader { metrics in
-            Run {
-                if videoSize.width > videoSize.height {
-                    let height = self.size(for: metrics.size,
-                                           videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0)
-                    if height != self.playersHeight {
-                        self.playersHeight = height
+            
+            Run(true) {
+                let size = metrics.size
+                Async {
+                    if videoSize.width > videoSize.height {
+                        let height = self.size(for: size,
+                                               videoSize: videoSize).height + (self.heightForSecondary(for: (size.width / 2) - spacing, videoSize: videoSize) ?? 0)
+                        if height != self.playersHeight {
+                            
+                            self.$playersHeight.animation(Animation.linear(duration: 0.2).delay(0.1)).wrappedValue = height
+                        }
                     }
                 }
             }
             
-            Stack(outer, spacing: spacing) {
-                self.getMainView()
-                    .frame(width: self.size(for: metrics.size,
-                                            videoSize: videoSize).width,
-                           height: self.size(for: metrics.size,
-                                             videoSize: videoSize).height)
-                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
-                        val.mainPlayerCenter = anchor
-                }
-                .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+            ZStack {
+                
+                PercentCompleteLine(percent: self.$context.playState.currentPlayhead)
+                    .frame(width: metrics.size.width, height: metrics.size.height, alignment: .top).zIndex(2)
+                Stack(outer, spacing: spacing) {
+                    self.getMainView()
+                        .frame(width: self.size(for: metrics.size,
+                                                videoSize: videoSize).width,
+                               height: self.size(for: metrics.size,
+                                                 videoSize: videoSize).height)
+                        .transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
+                            val.mainPlayerCenter = anchor
+                    }
+                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
                         val.mainPlayerBounds = anchor
-                }
+                    }
                     //.shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
-                
-                Stack(inner, spacing: spacing) {
-                    self.getStartFrameView().transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
-                            val.startPlayerCenter = anchor
-                    }
-                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
-                            val.startPlayerBounds = anchor
-                    } // .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
-                   
                     
-                    self.getEndFrameView().transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
+                    Stack(inner, spacing: spacing) {
+                        self.getStartFrameView().transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
+                            val.startPlayerCenter = anchor
+                        }
+                        .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+                            val.startPlayerBounds = anchor
+                        } // .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+                        
+                        
+                        self.getEndFrameView().transformAnchorPreference(key: EditorPreferencesKey.self, value: .center) { (val, anchor) in
                             val.endPlayerCenter = anchor
-                    }
-                    .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
+                        }
+                        .transformAnchorPreference(key: EditorPreferencesKey.self, value: .bounds) { (val, anchor) in
                             val.endPlayerBounds = anchor
-                    } // .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
-                }.frame(height: self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize))
+                        } // .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+                    }.frame(height: self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize))
+                    
+                }.frame(height: inner == .horizontal ? self.size(for: metrics.size,
+                                                                 videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0) : nil)
+                    .backgroundPreferenceValue(EditorPreferencesKey.self, { (val: EditorPreferences) in
+                        GeometryReader { metrics in
+                            self.getShadowBackground(metrics: metrics, values: val)
+                            
+                        }
+                    })
+                    .zIndex(1)
                 
-            }.frame(height: inner == .horizontal ? self.size(for: metrics.size,
-                                                             videoSize: videoSize).height + (self.heightForSecondary(for: (metrics.size.width / 2) - spacing, videoSize: videoSize) ?? 0) : nil)
-                .backgroundPreferenceValue(EditorPreferencesKey.self, { (val: EditorPreferences) in
-                    GeometryReader { metrics in
-                        self.getShadowBackground(metrics: metrics, values: val)
-                       
-                    }
-                })
+            }
         }.onAppear(perform: {
             self.controlsState.resetTimer()
             
@@ -198,21 +232,21 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
             Rectangle()
                 .foregroundColor(Color.black.opacity(0.4))
                 .frame(width: mainPlayerBounds.width, height: mainPlayerBounds.height)
-            .position(mainPlayerCenter)
+                .position(mainPlayerCenter)
             
             Rectangle()
                 .foregroundColor(Color.black.opacity(0.4))
-
+                
                 .frame(width: startPlayerBounds.width, height: startPlayerBounds.height)
-            .position(startPlayerCenter)
+                .position(startPlayerCenter)
             
             Rectangle()
                 .foregroundColor(Color.black.opacity(0.4))
-
+                
                 .frame(width: endPlayerBounds.width, height: endPlayerBounds.height)
-            .position(endPlayerCenter)
+                .position(endPlayerCenter)
         }
-//        .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+            //        .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
             .shadow(color: Color.black, radius: 8, x: 0, y: 0)
     }
     
@@ -238,11 +272,11 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
         let width: CGFloat
         let height: CGFloat
         if videoSize.width > videoSize.height {
-            height = videoSize.scaledToFit(metricsSize).height.clamp(min: 0, max: self.editorHeight / 3)
+            height = videoSize.scaledToFit(metricsSize).height.clamp(0, self.editorHeight / 3)
             width = metricsSize.width
         } else {
             height = metricsSize.height
-            width = videoSize.fittingHeight(metricsSize.height).width.clamp(min: 0, max: metricsSize.width * 0.6)
+            width = videoSize.fittingHeight(metricsSize.height).width.clamp(0, metricsSize.width * 0.6)
         }
         
         return CGSize(width: width, height: height)

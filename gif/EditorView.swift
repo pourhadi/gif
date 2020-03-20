@@ -139,10 +139,12 @@ struct EditorView<Player, Generator>: View where Player : PlayerView, Generator 
         return Group {
             if self.context.mode == .text && self.keyboardVisible {
                 VStack {
+//                    Rectangle().fill(Color.clear).frame(height: mainBounds.size.height + 20)
                     Spacer(minLength: mainBounds.size.height)
                     ZStack {
                         Rectangle().fill(Color.background.opacity(0.95)).zIndex(0)
-                        VStack { TextFormatView().environmentObject(self.context.textFormat).zIndex(1).frame(height: 50)
+                        VStack {
+                            TextFormatView().environmentObject(self.context.textFormat).zIndex(1).frame(height: 50)
                             Spacer()
                         }
                     }.frame(alignment: .top)
@@ -153,6 +155,21 @@ struct EditorView<Player, Generator>: View where Player : PlayerView, Generator 
 
 }
 
+struct BlurredPlayerView<Player>: View where Player: PlayerView {
+    let playerView: Player
+    
+    let effect: UIBlurEffect
+    var body: some View {
+        ZStack {
+            playerView
+                .blur(radius: 50)
+//                .blendMode(.plusDarker)
+                .overlay(Color.black.opacity(0.7).blendMode(.darken))
+//            VisualEffectView(effect: effect)
+        }
+    }
+}
+
 
 struct BlurredPlayerBackgroundModifier<Player>: ViewModifier where Player : PlayerView {
     
@@ -160,15 +177,16 @@ struct BlurredPlayerBackgroundModifier<Player>: ViewModifier where Player : Play
     @Binding var playState: PlayState
     @State var playing = false
     
-    func body(content: _ViewModifier_Content<BlurredPlayerBackgroundModifier>) -> some View {
+    func body(content: Content) -> some View {
         return content.background(BlurredPlayerView(playerView:
             
             Player(item: self.item, timestamp: self.$playState.currentPlayhead, playing: self.$playing, contentMode: .fill, playerType: .playhead)
             
             
-            , effect: .init(style: .systemThickMaterial))
-            .brightness(-0.05)
-//            .saturation(1.5)
+            , effect: .init(style: .systemChromeMaterial))
+//            .brightness(-0.3)
+//            .contrast(0.7)
+//            .grayscale(0.2)
             .edgesIgnoringSafeArea(.all))
     }
 }

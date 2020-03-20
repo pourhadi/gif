@@ -12,6 +12,9 @@ import Combine
 import mobileffmpeg
 import MobileCoreServices
 
+
+let serialQueue = DispatchQueue(label: "com.pourhadi.gif.global", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem, target: nil)
+
 enum GenerateGIFError: Error {
       case unknownFailure
   }
@@ -80,10 +83,9 @@ class GlobalState: ObservableObject {
             return UserDefaults.standard.url(forKey: "_previousURL")
         }
     }
-    
-    @Published var video: Video = Video.empty()
+        
+    let video: Video = Video.empty()
     var visualState = VisualState()
-    var galleryStore: GalleryStore = GalleryStore()
     @Published var activePopover: ActivePopover? = nil
     
     @Published var createdGIF: GIF? = nil
@@ -147,7 +149,7 @@ class GlobalState: ObservableObject {
             self.hudAlertState.showLoadingIndicator = true
         }
         
-        DispatchQueue.global().async {
+        serialQueue.async {
             let url = gif.url
             let tmpDirURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmp.gif")
             
@@ -178,7 +180,7 @@ class GlobalState: ObservableObject {
                 if MobileFFmpeg.execute("-i \(localGIFURL.path) -filter:v \"\(cropString)\" \(tmpDirURL.path)") == 0 {
                     
                     let data = try Data(contentsOf: tmpDirURL)
-                    self.galleryStore.addToMyGIFs(data: data) { (_, error) in
+                    FileGallery.shared.add(data: data) { (_, error) in
                         if let _ = error {
                             Async {
                                 self.hudAlertState.hudAlertMessage = [.thumbdown("Error cropping")]
@@ -222,14 +224,12 @@ class GlobalState: ObservableObject {
         
         
         
-        self.galleryStore
-            .fileGallery
+        FileGallery.shared
             .add(data: data)
             
             .replaceError(with: "")
             .flatMap { id in
-                self.galleryStore
-                    .fileGallery
+                FileGallery.shared
                     .$gifs
 
                     .debounce(for: 0.5, scheduler: DispatchQueue.main)

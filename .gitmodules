@@ -1,3 +1,6 @@
 [submodule "Dawsana"]
 	path = Dawsana
 	url = git@github.com:Asana/Drawsana.git
+[submodule "SwiftPasscodeLock"]
+	path = SwiftPasscodeLock
+	url = git@github.com:garanda21/SwiftPasscodeLock.git

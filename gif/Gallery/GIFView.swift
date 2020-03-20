@@ -34,20 +34,24 @@ struct GIFViewTopBar: View {
     }
 }
 
-struct GIFViewState {
-    
-    var showCrop = false
-    
-    var cropState: CropState? = nil
-}
 
-struct GIFView: View {
-    @State var gifViewState = GIFViewState()
+struct GIFView<G>: View where G : Gallery  {
+   
+    enum ActiveActionSheet : Identifiable {
+        
+        var id: String { return "\(self)" }
+        
+        case viewUrl
+        case createUrl
+        case deleteUrl
+    }
+    
+    @State var activeActionSheet : ActiveActionSheet? = nil
     
     @State var croppingGIF: GIF?
     
-    @ObservedObject var gallery: Gallery
-    
+    @ObservedObject var gallery: G
+        
     @Binding var removeGIFView: Bool
     
     @ObservedObject var transitionContext: TransitionContext
@@ -81,6 +85,10 @@ struct GIFView: View {
     @Binding var imageOffset: CGPoint
     
     @ObservedObject var transitionAnimation: TransitionAnimationContext
+    
+    @State var showURLActionSheet = false
+    
+    @State var showLinkCopied = false
     
     var title: String {
         if let gif = selectedGIFs.first {
@@ -178,9 +186,9 @@ struct GIFView: View {
     }, label: { HStack {
         Image.symbol("chevron.compact.left")
         Text("GIFs")
-        } }).padding(.leading, 10).any }
+        }.padding(.leading, 6) }).any }
     
-    var navTrailing:AnyView { self.gallery.viewConfig.trailingNavBarItem(self.gallery, self.$selectedGIFs).any }
+    var navTrailing:AnyView { self.gallery.trailingNavBarItem(self.$selectedGIFs) }
     
     var body: some View {
         GeometryReader { containerMetrics in
@@ -232,21 +240,12 @@ struct GIFView: View {
                     }, label: { HStack {
                         Image.symbol("chevron.compact.left")
                         Text("GIFs")
-                        } }).padding(.leading, 10), trailing: self.gallery.viewConfig.trailingNavBarItem(self.gallery, self.$selectedGIFs))
+                        } }).padding(.leading, 10), trailing: self.gallery.trailingNavBarItem(self.$selectedGIFs))
                 }
                 
                 .navigationViewStyle(StackNavigationViewStyle())
                 .statusBar(hidden: self.transitionContext.fullscreen)
-                .onReceive(self.gallery.$editingGIF) { (gif) in
-                    self.editingGIF = gif
-                    
-                    Delayed(0.2) {
-                        self.editingGIF?.editingContext.gifConfig.selection.startTime = 0
-                        self.editingGIF?.editingContext.gifConfig.selection.endTime = 1
-                        
-                    }
-                    
-                }
+                
 //                .opacity(self.opacity)
                 .zIndex(1)
                 
@@ -254,6 +253,66 @@ struct GIFView: View {
             
         }
         .background((self.transitionAnimation.isInProgress ?  self.transitionContext.fullscreen ? Color.black.opacity(self.opacity) : Color.background.opacity(self.opacity) : Color.clear).edgesIgnoringSafeArea(.all))
+
+
+        .actionSheet(item: self.$activeActionSheet, content: { (sheet) -> ActionSheet in
+            if sheet == .viewUrl {
+                let url = self.selectedGIFs.first!.publicURL!
+                return ActionSheet(title: Text(url.absoluteString), message: nil, buttons: [.default(Text("Copy URL"), action: {
+                    UIPasteboard.general.url = url
+                    
+                    self.showLinkCopied = true
+                }),
+                                                                            .default(Text("View in browser"), action: {
+                                                                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                                                                            }),
+                                                                            .destructive(Text("Delete URL"), action: {
+                                                                                Async {
+                                                                                self.activeActionSheet = .deleteUrl
+                                                                                }
+                                                                            }), .cancel()])
+            } else if sheet == .createUrl {
+                return ActionSheet(title: Text("Upload your GIF, and create a public URL?").font(.largeTitle), message: nil, buttons: [.default(Text("Upload and get URL"), action: {
+                                   
+                                   Async {
+                                       HUDAlertState.global.showLoadingIndicator = true
+                                   }
+                                       
+                                   Uploader.upload(gif: self.selectedGIFs.first!, user: FileGallery.shared.userId)
+                                       .receive(on: DispatchQueue.main)
+                                       .sink { (url) in
+                                           Delayed(0.1) {
+                                               HUDAlertState.global.showLoadingIndicator = false
+                                           }
+                                           
+                                        self.selectedGIFs.first?.publicURL = Uploader.publicURL.appendingPathComponent(FileGallery.shared.userId).appendingPathComponent(self.selectedGIFs.first!.id).appendingPathExtension("gif")
+                                        self.activeActionSheet = .viewUrl
+                                   }.store(in: &Uploader.cancellables)
+                                   
+                                   
+                               }), .cancel()])
+            } else {
+                return ActionSheet(title: Text("Stop sharing this GIF?"), message: nil, buttons: [.destructive(Text("Yes, delete"), action: {
+                    Async {
+                        HUDAlertState.global.showLoadingIndicator = true
+                    }
+                    
+                    Uploader.delete(gif: self.selectedGIFs.first!, user: FileGallery.shared.userId)
+                        .receive(on: DispatchQueue.main)
+                        .sink { _ in
+                            Delayed(0.1) {
+                                HUDAlertState.global.show(.thumbup("public URL deleted"))
+                            }
+                    }.store(in: &Uploader.cancellables)
+                    
+                }), .cancel()])
+            }
+        })
+        .alert(isPresented: self.$showLinkCopied) { () -> Alert in
+            
+            return Alert(title: Text("URL copied"), message: nil, dismissButton: .default(Text("OK")))
+
+        }
     }
     
     func getPopover(metrics: GeometryProxy, values: PopoverPrefs) -> some View {
@@ -300,53 +359,92 @@ struct GIFView: View {
     }
     
     func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .systemChromeMaterial)) .any) -> AnyView {
-        return ToolbarView(metrics: metrics, bottomAdjustment: metrics.safeAreaInsets.bottom, background: background) {
+        return ToolbarView(metrics: metrics, bottomAdjustment: metrics.safeAreaInsets.bottom, background: VisualEffectView.barBlur().any) {
             //            self.gallery.viewConfig.toolbarContent(self.gallery, self.$selectedGIFs, self.$gifViewState)
             
             Group {
                 
                 if self.showSpeedPopover {
                     HStack(spacing: 12) {
-                        Slider(value: self.$speed, in: 0.25...2)
+                        if self.speed != 1 {
+                            Button(action: {
+                                self.$speed.animation(Animation.default).wrappedValue = 1.0
+                            }, label: { Text("Reset") .padding(12) })
+                                .transition(AnyTransition.move(edge: .leading).animation(Animation.default))
+                        }
+                        
+                        Slider(value: self.$speed.animation(Animation.default), in: 0.25...3)
                         Button(action: {
                             self.$showSpeedPopover.animation().wrappedValue = false
-                        }, label: { Image.symbol("xmark") } )
+                        }, label: { Image.symbol("xmark") .padding(12) })
                     }
+                    .overlay(Text("\(Int(self.speed * 100.0))%")
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.4)))
+                    .offset(y: -60).noAnimations())
                 } else {
                     
                     
-                    Group {
                         Button(action: {
                             GlobalPublishers.default.showShare.send([self.selectedGIFs[0]])
                             
-                        }, label: { Image.symbol("square.and.arrow.up") } )
-                            .padding(12)
+                        }, label: { Image.symbol("square.and.arrow.up") .padding(12) } )
+                           
                         
                         Spacer()
                         
                         Button(action: {
                             self.$showSpeedPopover.animation().wrappedValue.toggle()
-                        }, label: { Image.symbol("speedometer") } )
+                        }, label: { Image.symbol("speedometer").padding(12) } )
                             .transformAnchorPreference(key: PopoverPreferencesKey.self, value: .center) { (val, anchor) in
                                 val.origin = anchor
                         }
                         
+                    if self.selectedGIFs.first?.isSharable ?? false {
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            
+                            Async {
+                                HUDAlertState.global.showLoadingIndicator = true
+                            }
+                            
+                            Uploader.checkExists(user: FileGallery.shared.userId, fileId: (self.selectedGIFs.first?.id) ?? "")
+                                .receive(on: DispatchQueue.main)
+                                .sink { (url) in
+                                    Delayed(0.1) {
+                                        HUDAlertState.global.showLoadingIndicator = false
+                                    }
+                                    
+                                    self.selectedGIFs.first?.publicURL = url
+                                    
+                                    if let _ = url {
+                                        self.activeActionSheet = .viewUrl
+                                    } else {
+                                        self.activeActionSheet = .createUrl
+                                    }
+                            }.store(in: &Uploader.cancellables)
+                            
+                        }, label: { Image.symbol("link").padding(12) })
+                        
+                    }
+                    
                         
                         if self.selectedGIFs.first?.isDeletable ?? false {
                             Spacer()
                             
                             Button(action: {
                                 withAnimation {
-                                    self.gallery.remove(self.selectedGIFs)
+                                    FileGallery.shared.remove(self.selectedGIFs)
                                     self.$selectedGIFs.animation().wrappedValue = []
                                     //                        gallery.remove(gallery.viewState.selectedGIFs)
                                     //                        gallery.viewState.selectedGIFs = []
                                 }
-                            }, label: { Image.symbol("trash") } )
-                                .padding(12)
+                            }, label: { Image.symbol("trash").padding(12) } )
+                                
                             
                         }
-                    }
                 }
             }
             
@@ -394,7 +492,6 @@ struct GIFImageScrollerView: UIViewRepresentable {
     var contentMode: ContentMode
     
     func action(_ action: GIFImageScroller.Action) {
-        DispatchQueue.main.async {
             self.speed = 1
             if let index = self.items.firstIndex(of: self.selectedGIFs[0]) {
                 switch action {
@@ -414,7 +511,6 @@ struct GIFImageScrollerView: UIViewRepresentable {
                     }
                 }
             }
-        }
     }
     
     func dragDismiss(_ percent: CGFloat, _ dismiss: Bool) {
@@ -550,6 +646,7 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
     let offsetUpdateBlock: (CGPoint) -> Void
     
     @IBAction public func drag() {
+        if zooming { return }
         if self.dragGesture.state == .changed {
             self.imageViews[1].alpha = 0
 
@@ -623,8 +720,11 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
 //        }
     }
     
+    var didStepForward = false
+    var didStepBackward = false
+    
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        
+        if zooming { return }
         
         let offset: CGFloat = 40
         
@@ -666,9 +766,61 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
         }
         self.imageViews[2].mask?.frame = lastFrame
         
+        /*
+        if self.didStepForward {
+            if !self.isInForwardZone(scrollView) {
+                self.actionBlock(.backward)
+                self.didStepForward = false
+            }
+        } else {
+            if self.isInForwardZone(scrollView) {
+                self.actionBlock(.forward)
+                self.didStepForward = true
+            }
+        }
         
+        if self.didStepBackward {
+            if !self.isInBackwardZone(scrollView) {
+                self.actionBlock(.forward)
+                self.didStepBackward = false
+            }
+        } else {
+            if self.isInBackwardZone(scrollView) {
+                self.actionBlock(.backward)
+                self.didStepBackward = true
+            }
+        }
+        */
     }
     
+//    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+//        self.didStepBackward = false
+//
+//        self.didStepBackward = false
+//
+//        if targetContentOffset.pointee.x == self.imageViews[0].frame.origin.x, !self.imageViews[0].isHidden {
+//            self.actionBlock(.backward)
+//        } else if targetContentOffset.pointee.x == self.imageViews[2].frame.origin.x, !self.imageViews[2].isHidden {
+//            self.actionBlock(.forward)
+//        }
+//    }
+    
+    func isInForwardZone(_ scrollView : UIScrollView) -> Bool {
+        if scrollView.contentOffset.x >= self.imageViews[2].frame.origin.x - 50, !self.imageViews[2].isHidden {
+            return true
+        }
+        
+        return false
+    }
+    
+    
+    func isInBackwardZone(_ scrollView: UIScrollView) -> Bool {
+        if scrollView.contentOffset.x <= self.imageViews[0].frame.origin.x + 50, !self.imageViews[0].isHidden {
+            return true
+        }
+        
+        return false
+    }
 //    scroll
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -678,7 +830,7 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
             self.actionBlock(.forward)
         }
     }
-    
+
     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         if scrollView.contentOffset.x == self.imageViews[0].frame.origin.x, !self.imageViews[0].isHidden {
             self.actionBlock(.backward)
@@ -687,11 +839,38 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
         }
     }
     
+    var zooming: Bool {
+        get {
+            return imageViews[1].zooming
+        }
+        set {
+            imageViews[1].zooming = newValue
+        }
+    }
+    func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
+        zooming = true
+        scrollView.isScrollEnabled = false
+        stack?.alpha = 0
+//        zoomView.alpha = 1
+        self.imageViews[0].overlay.isHidden = false
+        self.imageViews[2].overlay.isHidden = false
+    }
     
-    
-    //    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
-    //        return self.zoomView
-    //    }
+    func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
+        if scale == 1.0 {
+            zooming = false
+            scrollView.isScrollEnabled = true
+            stack?.alpha = 1
+//            zoomView.alpha = 0
+            self.imageViews[0].overlay.isHidden = true
+            self.imageViews[2].overlay.isHidden = true
+        }
+    }
+//    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+//        return imageViews[1].imageView
+//    }
+//
+
     ////
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -734,7 +913,7 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        
+        if zooming { return }
         for (x, gif) in self.images.enumerated() {
             if let gif = gif {
                 self.imageViews[x].isHidden = false
@@ -743,6 +922,9 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
                     print("set 1 animating: " + (self.animated && !self.disableAnimation ? "true" : "false"))
                     self.imageViews[x].set(gif: gif, animating: self.animated && !self.disableAnimation)
                     self.imageViews[x].speed = self.speed
+                    
+//                zoomView.set(gif: gif, animating: self.animated && !self.disableAnimation)
+//                zoomView.speed = self.speed
                 } else {
                     self.imageViews[x].set(gif: gif, animating: false)
                 }
@@ -756,6 +938,7 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
         
         self.imageViews[1].mask?.frame = self.imageViews[1].bounds
         
+//        zoomView.center = scrollView.convert(self.imageViews[1].center, from: self.imageViews[1].superview)
 //        let translatedFrame = self.convert(self.imageViews[1].bounds.origin, from: self.imageViews[1])
 //                self.offsetUpdateBlock(translatedFrame)
     }
@@ -783,7 +966,16 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
         return scrollView
     }()
     
-    let zoomView = GifuImageView()
+    lazy var zoomView: ImageIOAnimationView = {
+        
+        fatalError()
+//       let v = ImageIOAnimationView()
+//        v.frame = self.bounds
+////        scrollView.addSubview(v)
+//        v.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+//        v.alpha = 0
+//        return v
+    }()
     
     var containers = [UIView(), UIView(), UIView()]
     var stack: UIStackView?
@@ -814,8 +1006,7 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
         
         scrollView.addSubview(stack)
         stack.snp.makeConstraints { make in
-            make.leading.trailing.bottom.equalToSuperview()
-            make.top.equalToSuperview()
+            make.edges.equalTo(scrollView.contentLayoutGuide)
         }
         imgViews.forEach { $0.snp.makeConstraints { make in
             make.width.equalTo(self)
@@ -832,11 +1023,11 @@ class GIFImageScroller: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegat
         }
         
         
-        imgViews[1].addGestureRecognizer(self.pinch)
         imgViews[1].alpha = 0
         
-
-        self.pinch.addTarget(self, action: Selector(("didPinch")))
+        self.scaleCancellable = imgViews[1].$zooming.removeDuplicates().sink { [weak self] zooming in
+            self?.scrollView.isScrollEnabled = !zooming
+        }
         return imgViews
     }()
 }

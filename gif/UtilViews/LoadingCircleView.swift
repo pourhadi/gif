@@ -75,8 +75,29 @@ func InOutQuadBlend(_ t: Double) -> Double
     return 2.0 * t * (1.0 - t) + 0.5
 }
 
+struct ProgressRing : SwiftUI.Shape {
+    var pct: Double
+    
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        
+        let end = ExtrapolateValue(from: 0, to: 360, percent: pct)
+        p.addArc(center: CGPoint(x: rect.size.width/2, y: rect.size.width/2),
+             radius: rect.size.width/2,
+             startAngle: Angle(degrees: 0),
+             endAngle: Angle(degrees: end),
+        clockwise: false)
+        return p
+    }
+    
+    var animatableData: Double {
+        get { pct }
+        set { pct = newValue }
+    }
+}
 
-struct InnerRing : Shape {
+
+struct InnerRing : SwiftUI.Shape {
 
     @State var store: LoadingCircleStore
     var lagAmmount = 0.15
@@ -122,18 +143,7 @@ struct InnerRing : Shape {
         self.store.percent = self.pct
         
         
-        
-//        if pct > (1 - lagAmmount) {
-//            start = 360 * (2 * pct - 1.0)
-//        } else if pct > lagAmmount {
-//            start = self.store.lastStart * (pct - lagAmmount)
-//        } else {
-//            start = self.store.lastStart
-//            self.store.lastStart += 80
-//            if self.store.lastStart >= 360 {
-//                self.store.lastStart = 0
-//            }
-//        }
+
 
         var p = Path()
 
@@ -176,52 +186,57 @@ struct LoadingCircleView: View {
 //        self._percent.wrappedValue = self.store.percent
 //    }
 //
+    
+    var progress: Bool
+    
+    init(progress: Double? = nil) {
+        if let progress = progress {
+            self.progress = true
+            self.progressPercent = progress
+        } else {
+            self.progress = false
+        }
+    }
+    
     let store: LoadingCircleStore = LoadingCircleStore.instance
+    var progressPercent: Double = 0
     @State var percent: Double = 0
     @State var angle: Double = 0
     @State var rotation: Double = 0
     @State var end: Double = 0
     var body: some View {
         
-        InnerRing(store: self.store, pct: self.percent, rotation: self.rotation)
-            .stroke(Color.accent, lineWidth: 3)
-            .animation(Animation.linear(duration: 1.25).repeatForever(autoreverses: false))
-            //            .rotationEffect(Angle.init(degrees: self.angle))
-            .onAppear {
-//                Async {
-                    print("start animating")
-//                    self.store.startAnimating(pct: self.$percent, duration: 1.25)
-                    //                RunLoop.main.perform(inModes: [.common]) {
-                    self.percent = 1
-//                    self.rotation = 0.5
-//                }
-                //                }
+        Group {
+            if self.progress {
+                ProgressRing(pct: self.progressPercent)
+                    .stroke(Color.accent, lineWidth: 3)
+                    .animation(Animation.linear)
                 
-                
-                //                    self.$percent.animation(Animation.linear(duration: 1).repeatForever(autoreverses: false)).wrappedValue = 1
-                //                    self.$rotation.animation(Animation.linear(duration: 2).repeatForever(autoreverses: false)).wrappedValue = 180
-                //
-                //                self.$end.animation(Animation.linear(duration: 2).repeatForever(autoreverses: true)).wrappedValue = 1
-                
-        }
-            //        .drawingGroup()
-            .frame(width: 40, height: 40)
-            .frame(width: 60, height: 60)
-//            .drawingGroup()
-            .onDisappear {
-                print("stop animating")
-                Async {
-                    self.store.stopAnimating()
+            } else {
+                InnerRing(store: self.store, pct: self.percent, rotation: self.rotation)
+                    .stroke(Color.accent, lineWidth: 3)
+                    .animation(Animation.linear(duration: 1.25).repeatForever(autoreverses: false))
+                    
+                    .onAppear {
+                        print("start animating")
+                        
+                        self.percent = 1
+                        
                 }
+                
+            }
         }
-    .compositingGroup()
-//        .onReceive(self.store.$percent) { (percent) in
-//            print(percent)
-//
-//            self.$percent.animation(.none).wrappedValue = percent
-//        }
-        //        .rotationEffect(.degrees(self.rotation))
-        //            .animation(Animation.linear(duration: 10).repeatForever(autoreverses: false))
+            
+            
+        .frame(width: 40, height: 40)
+        .frame(width: 60, height: 60)
+        .onDisappear {
+            print("stop animating")
+            Async {
+                self.store.stopAnimating()
+            }
+        }
+        .compositingGroup()
         
     }
 }

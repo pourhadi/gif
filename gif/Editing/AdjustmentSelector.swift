@@ -35,16 +35,16 @@ struct AdjustmentSelector: View {
     }
     
     var renderedButtons: some View {
-        ForEach(0..<AdjustmentType.allCases.count) { x in
+        ForEach(AdjustmentType.allCases) { (x: AdjustmentType) in
             
             Button(action: {
-                self.selectedType = AdjustmentType.allCases[x]
+                self.selectedType = x
             }, label: {
                 VStack {
-                    Image.symbol(AdjustmentType.allCases[x].symbol)
-                    Text(AdjustmentType.allCases[x].name).font(.footnote)
+                    Image.symbol(x.symbol)
+                    Text(x.name).font(.footnote)
                 }
-                .foregroundColor(self.selectedType == AdjustmentType.allCases[x] ? Color.accent : Color.white.opacity(0.5))
+                .foregroundColor(self.selectedType == x ? Color.accent : Color.white.opacity(0.5))
                 .padding([.top, .bottom], 12)
                     
                     //                        .padding(.bottom, self.bottomPadding)
@@ -52,12 +52,12 @@ struct AdjustmentSelector: View {
                     .scaledToFill()
             })
                 .frame(width: 80)
-                .scaleEffect(self.selectedType == AdjustmentType.allCases[x] ? 1.15 : 1)
-                .zIndex(self.selectedType == AdjustmentType.allCases[x] ? 1 : 0)
-                .shadow(radius: self.selectedType == AdjustmentType.allCases[x] ? 3 : 0)
+                .scaleEffect(self.selectedType == x ? 1.15 : 1)
+                .zIndex(self.selectedType == x ? 1 : 0)
+                .shadow(radius: self.selectedType == x ? 3 : 0)
                 
                 .animation(Animation.default.delay(0))
-                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.2 + (Double(x) / 10)))
+                .modifier(SlideUpModifier(visible: self.$visible, delay: 0.2 + (Double(AdjustmentType.allCases.firstIndex(of: x)!) / 10)))
             
         }
     }

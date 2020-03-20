@@ -34,6 +34,9 @@ struct GifSettingsView: View {
                     Text("\(Int(self.settings.speed * 100))%").centered()
                     Slider(value: self.$settings.speed, in: ClosedRange(uncheckedBounds: (0.25, 2)))
                 }
+                
+                
+
 //                Section(header: Text("Size")) {
 //                    Text(self.settings.assetInfo.size.applying(.init(scaleX: self.settings.sizeScale, y: self.settings.sizeScale)).displayString).centered()
 //                    Slider(value: self.$settings.sizeScale, in: 0.10...1.0)
