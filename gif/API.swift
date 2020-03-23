@@ -39,7 +39,7 @@ class API: NSObject, URLSessionTaskDelegate, RedirectHandler {
     
     lazy var session = URLSession(configuration: URLSessionConfiguration.default, delegate: self, delegateQueue: nil)
     
-    static var debug = true
+    static var debug = false
     
     static var token : String? = nil
     

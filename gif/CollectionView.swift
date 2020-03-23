@@ -106,8 +106,6 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         self.longPressAction = longPressAction
         self.pressAction = pressAction
         self.previewContent = previewContent
-        
-        print("\(layout.numberOfColumns)")
         self.layout = layout
     }
     
@@ -122,9 +120,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         cv.dataSource = context.coordinator
         cv.register(Cell.self, forCellWithReuseIdentifier: "cell")
         cv.contentInsetAdjustmentBehavior = .always
-        cv.isPrefetchingEnabled = false
-        
-     
+
         return cv
     }
     
@@ -144,10 +140,12 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
                 invalidateLayout = true
             }
             
-            if context.coordinator.previousValues.layout != self.layout || context.coordinator.firstRun {
+            if context.coordinator.previousValues.layout != self.layout
+                || context.coordinator.firstRun
+                || context.coordinator.size != uiView.frame.size {
                 print("layout changed")
                 context.coordinator.firstRun = false
-
+                
                 
                 let layout = uiView.collectionViewLayout as! UICollectionViewFlowLayout
                 
@@ -199,6 +197,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
                 context.coordinator.selectedItems = self.selectedItems
                 context.coordinator.selectionMode = self.selectionMode
                 context.coordinator.items = self.items
+            context.coordinator.size = uiView.frame.size
                 
 //                uiView.insertItems(at: added)
 //                uiView.deleteItems(at: removed)
@@ -232,6 +231,8 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         var transaction: Transaction?
         
         var firstRun = true
+        
+        var size = CGSize.zero
         
         class PreviousValues {
             var itemCount: Int = 0
@@ -336,6 +337,19 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         
         func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! Cell
+            
+            return cell
+        }
+        
+        func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+            let cell = cell as! Cell
+            
+            cell.host.rootView = EmptyView().any
+        }
+        
+        func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+            let cell = cell as! Cell
+            
             let item = self.items[indexPath.item]
             let content = self.parent.itemBuilder(indexPath.item,
                                                   item,
@@ -361,20 +375,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
             }
             
             cell.host.rootView = anyContent
-            return cell
         }
-        
-        //        func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        //            let cell = cell as! Cell
-        //
-        //            cell.host.rootView = EmptyView().any
-        //        }
-        //
-        //        func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        //            let cell = cell as! Cell
-        //
-        //
-        //        }
         
         let parent: FlowCollectionView
         var cancellable: AnyCancellable?

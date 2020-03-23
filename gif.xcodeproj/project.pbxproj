@@ -61,7 +61,6 @@
 		DC4894AE23D5417C00E4C865 /* 6.gif in Resources */ = {isa = PBXBuildFile; fileRef = DC4894AD23D5417C00E4C865 /* 6.gif */; };
 		DC4894DA23D7219100E4C865 /* FileGalleryUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4894D923D7219100E4C865 /* FileGalleryUtils.swift */; };
 		DC6980712413F8EB00ADCE2C /* IAPController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC6980702413F8EB00ADCE2C /* IAPController.swift */; };
-		DC6980732413F9BF00ADCE2C /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DC6980722413F9BF00ADCE2C /* StoreKit.framework */; };
 		DC7F920723C5D6E500A959A4 /* Cropping.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC7F920623C5D6E500A959A4 /* Cropping.swift */; };
 		DC81FDB923E076E800017FAE /* CustomNavView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC81FDB823E076E800017FAE /* CustomNavView.swift */; };
 		DC81FDBC23E2A55000017FAE /* EnterURLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC81FDBB23E2A55000017FAE /* EnterURLView.swift */; };
@@ -241,7 +240,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AE04BEA60BA5D1A978564AAF /* Pods_giffed.framework in Frameworks */,
-				DC6980732413F9BF00ADCE2C /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -947,7 +945,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 34F1D85AD2524483E2A04C62 /* Pods-giffed.debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_GCD_PERFORMANCE = YES;
 				CODE_SIGN_ENTITLEMENTS = gif/gif.entitlements;
@@ -958,7 +955,7 @@
 				DEVELOPMENT_TEAM = 84476NUWZH;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = gif/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -978,7 +975,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0227E6A27022E8033DF53777 /* Pods-giffed.release.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_GCD_PERFORMANCE = YES;
 				CODE_SIGN_ENTITLEMENTS = gif/gif.entitlements;
@@ -989,7 +985,7 @@
 				DEVELOPMENT_TEAM = 84476NUWZH;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = gif/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

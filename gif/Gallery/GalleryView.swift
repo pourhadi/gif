@@ -167,7 +167,7 @@ struct CollectionViewWrapper<G>: View where G : Gallery {
     var body: some View {
         
         var layout = CollectionViewLayout(rowPadding:  EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0),
-                                          numberOfColumns: ((self.deviceDetails.uiIdiom == .pad && self.horizontalSize != .compact) || self.verticalSize == .compact ? 5 : 3) * columnMultipler,
+                                          numberOfColumns: ((self.deviceDetails.uiIdiom == .pad && self.horizontalSize != .compact) || self.verticalSize == .compact ? 5 : 3),
                                           itemSpacing: 2,
                                           rowHeight: .sameAsItemWidth,
                                           scrollViewInsets: EdgeInsets(top:  0, leading: 0, bottom: self.selectionMode ? 40 : 0, trailing: 0))

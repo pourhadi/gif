@@ -267,13 +267,13 @@ extension CGFloat {
     }
 }
 
-final class DeviceDetails {
+final class DeviceDetails: ObservableObject {
     enum Orientation {
         case portrait
         case landscape
     }
       
-    @Published var compact: Bool = false
+    var compact: Bool = false
     
     @Published var orientation: Orientation
     
@@ -304,12 +304,9 @@ final class DeviceDetails {
                 self?.orientation = .landscape
             }
             
-            self?.compact = self?.uiIdiom == .phone && device.orientation.isLandscape
 
         }
         
-        self.compact = self.uiIdiom == .phone && self.orientation == .landscape
-
     }
       
     deinit {
