@@ -8,7 +8,8 @@
 
 import UIKit
 import Firebase
-import InAppPurchase
+import StoreKit
+import Purchases
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,6 +18,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        
         
         FirebaseApp.configure()
         
@@ -28,9 +31,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             })
         }
         
-        let iap = InAppPurchase.default
-        iap.addTransactionObserver()
+ 
+        Purchases.debugLogsEnabled = true
+        Purchases.configure(withAPIKey: "vKmmTEQfrYvYzHuzvwNXziYnxoDmQylx")
         
+//        SKPaymentQueue.default().add(IAP.shared)
         return true
     }
 

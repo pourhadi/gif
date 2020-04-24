@@ -8,6 +8,130 @@
 
 import SwiftUI
 import SnapKit
+import UIKit
+import AVFoundation
+
+class _PreviewVideoView : CustomPlayerView {
+    
+}
+
+struct PreviewVideoView : UIViewRepresentable {
+    func makeCoordinator() -> Coordinator {
+        return Coordinator(self)
+    }
+    
+    
+    let url: URL
+    @Binding var config: GifConfig.Values
+    
+    func makeUIView(context: Context) -> _PreviewVideoView {
+        let v = _PreviewVideoView()
+        v.isOpaque = false
+        if let player = EditorStore.players[.preview] {
+            v.player = player
+        } else {
+            let player = AVPlayer(url: self.url)
+            EditorStore.players[.preview] = player
+            v.player = player
+        }
+        v.clipsToBounds = true
+        (v.layer as! AVPlayerLayer).videoGravity = .resizeAspect
+        
+        return v
+    }
+    
+    func updateUIView(_ uiView: _PreviewVideoView, context: Context) {
+        if let player = uiView.player,
+            let duration = player.currentItem?.duration {
+            
+            player.isMuted = true
+            
+            if let observer = context.coordinator.observer {
+                player.removeTimeObserver(observer)
+            }
+            
+            if let startObserver = context.coordinator.startObserver {
+                player.removeTimeObserver(startObserver)
+            }
+            
+            let startTime = CMTime(seconds: duration.seconds * Double(self.config.selection.startTime), preferredTimescale: 1000)
+            let endTime = CMTime(seconds: duration.seconds * Double(self.config.selection.endTime), preferredTimescale: 1000)
+            
+            context.coordinator.observer = player.addBoundaryTimeObserver(forTimes: [NSValue(time: endTime)], queue: nil, using: { [weak player] in
+                player?.pause()
+                
+                switch self.config.animationType {
+                case .palindrome:
+                    player?.playImmediately(atRate: -1)
+                case .regular:
+                    player?.seek(to: startTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
+                    player?.playImmediately(atRate: 1)
+                case .reverse:
+                    player?.playImmediately(atRate: -1)
+                }
+            })
+            
+            if self.config.animationType == .palindrome || self.config.animationType == .reverse {
+                context.coordinator.startObserver = player.addBoundaryTimeObserver(forTimes: [NSValue(time: startTime)], queue: nil, using: { [weak player] in
+                    player?.pause()
+                    
+                    switch self.config.animationType {
+                    case .palindrome:
+                        player?.playImmediately(atRate: 1)
+                    case .regular:
+                        break
+                    case .reverse:
+                        player?.seek(to: endTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
+                        player?.playImmediately(atRate: -1)
+                    }
+                })
+            }
+            
+            
+            if self.config.animationType == .reverse {
+                player.seek(to: endTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
+                player.playImmediately(atRate: -1)
+            } else {
+                player.seek(to: startTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero)
+                player.playImmediately(atRate: 1)
+            }
+        }
+    }
+    
+    static func dismantleUIView(_ uiView: _PreviewVideoView, coordinator: Coordinator) {
+        if let player = uiView.player {
+            player.pause()
+            
+            if let observer = coordinator.observer {
+                player.removeTimeObserver(observer)
+            }
+            
+            if let startObserver = coordinator.startObserver {
+                player.removeTimeObserver(startObserver)
+            }
+        }
+        
+        
+    }
+    
+    typealias UIViewType = _PreviewVideoView
+    
+    class Coordinator {
+        let parent: PreviewVideoView
+        
+        
+        var observer: Any?
+        var startObserver: Any?
+        
+        init(_ parent: PreviewVideoView) {
+            self.parent = parent
+            
+            
+        }
+    }
+    
+    
+}
 
 struct PreviewModal<Generator>: View where Generator : GifGenerator {
     @Binding var activePopover: ActivePopover?
@@ -39,6 +163,32 @@ struct PreviewView<Generator>: View where Generator : GifGenerator {
         }
     }
 }
+
+struct VideoPreviewView: View {
+    
+    @EnvironmentObject var generator: VideoGifGenerator
+
+    var body: some View {
+        PreviewVideoView(url: self.generator.url, config: self.$generator.config)
+    }
+}
+
+
+//extension PreviewView where Generator: GifG {
+//    var body: some View {
+//        GeometryReader { metrics in
+//            PreviewVideoView(url: self.generator.url, config: self.$generator.config)
+//        }
+//    }
+//}
+//
+//
+//extension PreviewView where Generator == VideoGifGenerator {
+//    var body: some View {
+//        GeometryReader { metrics in
+//        }
+//    }
+//}
 
 class AnimatedImageContainer: UIView {
     let imageView = UIImageView()

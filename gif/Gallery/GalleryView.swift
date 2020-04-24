@@ -164,16 +164,18 @@ struct CollectionViewWrapper<G>: View where G : Gallery {
     
     @State var columnMultipler = 1
     // self.verticalSize == .compact ? 40 : 100
+    
+    
     var body: some View {
         
-        var layout = CollectionViewLayout(rowPadding:  EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0),
+        let layout = CollectionViewLayout(rowPadding:  EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0),
                                           numberOfColumns: ((self.deviceDetails.uiIdiom == .pad && self.horizontalSize != .compact) || self.verticalSize == .compact ? 5 : 3),
                                           itemSpacing: 2,
                                           rowHeight: .sameAsItemWidth,
                                           scrollViewInsets: EdgeInsets(top:  0, leading: 0, bottom: self.selectionMode ? 40 : 0, trailing: 0))
         
         return
-            GeometryReader { metrics in
+//            GeometryReader { metrics in
             FlowCollectionView(items: self.$gallery.gifs,
                            selectedItems: self.$selectedGIFs,
                            selectionMode: self.$selectionMode,
@@ -245,7 +247,7 @@ struct CollectionViewWrapper<G>: View where G : Gallery {
 //                    }
             //            }
             
-        }
+//        }
         
         
     }
@@ -506,10 +508,19 @@ struct GalleryContainer: View {
     
     @State var showPlusMenu = false
     
+    @State var showSubscriptionView = false
+
+    var blurContents: Bool {
+        self.showPlusMenu || self.showSubscriptionView
+    }
+    
     
     let hudAlertState: HUDAlertState = HUDAlertState.global
     
     @Environment(\.deviceDetails) var deviceDetails: DeviceDetails
+    
+    @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
+
     
     var body: some View {
         var tabs = [TabModel]()
@@ -544,7 +555,7 @@ struct GalleryContainer: View {
                         Text(LibraryGallery.shared.title)
                 }.tag(1)
                 
-                SettingsView()
+                SettingsView(showSubscriptionView: self.$showSubscriptionView)
                     .environmentObject(Settings.shared).tabItem {
                         Image.symbol("gear")
                         Text("Settings")
@@ -552,21 +563,14 @@ struct GalleryContainer: View {
             }
             .navigationViewStyle(StackNavigationViewStyle())
                 
-            .opacity(self.loaded ? 1 : 0)
-                
-                .brightness(self.showPlusMenu ? -0.1 : 0)
-
-            .blur(radius: self.showPlusMenu ? 25 : 0)
-            .compositingGroup()
-            .disabled(self.showPlusMenu)
-            .zIndex(0)
+            
             
             /*
             CustomTabView(tabBarHidden: self.$selectionMode, selectedTab: self.$activeTab, tabs: tabs, content: { tab in
                 
                 Group {
                     if tab.id == tabs.count - 1 {
-                        SettingsView()
+                        SettingsView(showSubscriptionView: self.$showSubscriptionView)
                             .environmentObject(Settings.shared)
                         
                     } else {
@@ -586,17 +590,16 @@ struct GalleryContainer: View {
             })
                             .navigationViewStyle(StackNavigationViewStyle())
                     
-                .opacity(self.loaded ? 1 : 0)
-                    
-                    .brightness(self.showPlusMenu ? -0.1 : 0)
-
-                .blur(radius: self.showPlusMenu ? 25 : 0)
-                .compositingGroup()
-                .disabled(self.showPlusMenu)
-                .zIndex(0)
+*/
             
-            */
             
+            
+            .opacity(self.loaded ? 1 : 0)
+            .brightness(self.blurContents ? -0.2 : 0)
+            .blur(radius: self.blurContents ? 25 : 0)
+            .compositingGroup()
+            .disabled(self.blurContents)
+            .zIndex(0)
             
             if self.highlightedGIF != nil {
                 Group {
@@ -631,6 +634,13 @@ struct GalleryContainer: View {
                 self.getPlusMenu().zIndex(1)
             }
             
+            if self.showSubscriptionView {
+                SubscriptionSignupView({
+                    self.subscriptionState.showUI = false
+//                    self.$showSubscriptionView.animation(Animation.easeIn(duration: 0.5).delay(0.1)).wrappedValue = false
+                }).zIndex(1)
+            }
+            
         })
             .overlayPreferenceValue(SelectedItemFrameKey.self) { val in
                 GeometryReader { overlayMetrics in
@@ -652,6 +662,7 @@ struct GalleryContainer: View {
                     
                 }.background(Color.clear)
         }
+
     }
     
     @State var imageOffset = CGPoint.zero
@@ -700,8 +711,14 @@ struct GalleryContainer: View {
                                     text: Text("From URL"),
                                     action: .action {
                                         
+                                        
+                                        
                                         Delayed(0.1) {
+                                            if !self.subscriptionState.active {
+                                            
                                             self.activePopover = .urlDownload
+                                                                                
+                                            }
                                         }
                                                                                 
                             })]
@@ -732,6 +749,7 @@ struct GalleryContainer: View {
         }.onDisappear {
             self.showPlusMenu = false
         }
+        .frame(width: self.deviceDetails.uiIdiom == .pad ? 300 : nil)
     }
     
     func handlePaste() {
@@ -886,7 +904,7 @@ struct GalleryContainer: View {
                               }
                               
             }, label: { Text("Select").frame(height:26).padding(8).padding([.trailing], 10) })
-                .font(.system(size: 20, weight: .regular, design: .rounded))
+               // .font(.system(size: 20, weight: .regular, design: .rounded))
             .any
         }
         
@@ -902,17 +920,17 @@ struct GalleryContainer: View {
                     self.showToolbar = false
                 }
                 
-            }, label: { Text("Done").frame(height:26).padding(8).padding([.leading, .trailing], 10) })
-                .font(.system(size: 20, weight: .regular, design: .rounded))
+            }, label: { Text("Done").frame(height:26).padding(8).padding([.leading], 10) })
+                //.font(.system(size: 20, weight: .regular, design: .rounded))
                 .any
         } else {
             return Button(action: {
                 //                    self.visibleActionSheet = .addMenu
                 self.$showPlusMenu.animation(Animation.easeIn(duration: 0.5).delay(0.1)).wrappedValue = true
-            }, label: { Image.symbol("plus", .init(pointSize: 22, weight: .regular))?
+            }, label: { Image.symbol("plus", .init(weight: .regular))?
 //                .frame(width: 32, height:32)
                 .padding(12) })
-                .font(.system(size: 24, weight: .regular, design: .rounded))
+//                .font(.system(size: 24, weight: .regular, design: .rounded))
                 .any
         }
     }
@@ -983,11 +1001,11 @@ struct GalleryContainer: View {
 
 struct GalleryMainView<Content, L, T, G>: View, Equatable where Content : View, L: View, T: View, G: Gallery {
     static func == (lhs:Self, rhs: Self) -> Bool {
-        return lhs.title == rhs.title && lhs.selectionMode == rhs.selectionMode && lhs.gallery.gifs == rhs.gallery.gifs && lhs.selectedGIFs == rhs.selectedGIFs && lhs.colorScheme == rhs.colorScheme && lhs.gallery.estimatedIsEmpty == rhs.gallery.estimatedIsEmpty && lhs.verticalSizeClass != rhs.verticalSizeClass
+        return lhs.title == rhs.title && lhs.selectionMode == rhs.selectionMode && lhs.gallery.gifs == rhs.gallery.gifs && lhs.selectedGIFs == rhs.selectedGIFs && lhs.gallery.estimatedIsEmpty == rhs.gallery.estimatedIsEmpty && lhs.verticalSizeClass != rhs.verticalSizeClass
     }
     
     @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
-    @Environment(\.colorScheme) var colorScheme
+//    @Environment(\.colorScheme) var colorScheme
     
     @ObservedObject var gallery: G
     let title: String

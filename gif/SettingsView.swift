@@ -103,11 +103,15 @@ struct PasscodeView : UIViewRepresentable {
 
 struct SettingsView: View {
     
-    init() {
+    init(showSubscriptionView : Binding<Bool>) {
         _hue = _accentHue
         _sat = _accentSaturation
         _hueColor = _accentColorBinding
+        _showSubscriptionView = showSubscriptionView
     }
+    
+    @Binding var showSubscriptionView: Bool
+    
     @Binding var hueColor: UIColor
     @Binding var hue : CGFloat
     @State var hueState: CGFloat = _accentHue.wrappedValue
@@ -117,11 +121,26 @@ struct SettingsView: View {
     
     @EnvironmentObject var settings: Settings
     @ObservedObject var privacySettings = PrivacySettings.shared
+    
+        @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
+
     var body: some View {
         NavigationView {
             Form {
                 Section {
                     Toggle(isOn: _DEMO, label: { Text("Demo Mode")})
+                }
+                
+                Section {
+                    Button(action: {
+                        self.subscriptionState.showUI = true
+                    }, label: {
+                        HStack {
+                            Spacer()
+                            Text("Subscription")
+                            Spacer()
+                        }
+                    })
                 }
                 
                 Section(header: Text("iCloud")) {
@@ -198,7 +217,9 @@ struct SettingsView: View {
 }
 
 struct SettingsView_Previews: PreviewProvider {
+    
+    @State static var showSubView = false
     static var previews: some View {
-        SettingsView().environmentObject(Settings())
+        SettingsView(showSubscriptionView: $showSubView).environmentObject(Settings())
     }
 }

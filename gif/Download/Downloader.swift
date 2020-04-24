@@ -43,8 +43,7 @@ class Downloader: NSObject, ObservableObject, URLSessionDownloadDelegate, URLSes
     
     lazy var session = URLSession(configuration: URLSessionConfiguration.default, delegate: self, delegateQueue: nil)
     
-    var apiURL: URL { API.debug ? URL(string:"http://192.168.1.12:8080/")! : URL(string: "https://app.giffed.app/")! }
-    
+    var apiURL: URL { API.apiURL }
     var cancellables = Set<AnyCancellable>()
     
     var failed = false

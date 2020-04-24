@@ -7,15 +7,14 @@
 //
 
 import SwiftUI
+import UIKit
 
-struct ScrollViewUtils: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+//struct ScrollUIView: UIViewRepresentable {
+//
+//}
 
-struct ScrollViewUtils_Previews: PreviewProvider {
-    static var previews: some View {
-        ScrollViewUtils()
-    }
-}
+//struct ScrollViewUtils_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ScrollUIView()
+//    }
+//}

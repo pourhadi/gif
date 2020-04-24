@@ -9,23 +9,22 @@ target 'giffed' do
 	pod 'SnapKit'
   pod 'SwiftDate'
   pod 'YYImage'
-  pod 'iCloudSync', :path => '~/Projects/iCloudSync'
-  pod 'Drawsana', :path => '~/Projects/Drawsana'
+  pod 'iCloudSync', :path => '~/Projects/gif/iCloudSync'
+  pod 'Drawsana', :path => '~/Projects/gif/Drawsana'
   pod 'mobile-ffmpeg-full-gpl'
   pod 'IGColorPicker'
-  pod 'Gifu'
-  pod 'Introspect', :git => 'git@github.com:siteline/SwiftUI-Introspect.git'
+#  pod 'Introspect', :git => 'git@github.com:siteline/SwiftUI-Introspect.git'
   pod 'BiometricAuthentication'
   pod 'SmileLock'
   pod 'Alamofire'
-  pod 'Firebase/Auth'
-  pod "InAppPurchase"
+#  pod 'Firebase/Auth'
+  pod 'Purchases'
 end
 
 
 target 'share' do
   
-  pod 'iCloudSync', :path => '~/Projects/iCloudSync'
+  pod 'iCloudSync', :path => '~/Projects/gif/iCloudSync'
   pod 'SwiftDate'
 
 end

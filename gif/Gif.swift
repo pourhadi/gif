@@ -99,7 +99,7 @@ class GifConfig: ObservableObject, Equatable {
         }
         
         
-//        @Clamped
+        @Clamped
         var startTime: CGFloat = 0 {
             didSet {
                 if endTime < startTime {
@@ -108,7 +108,7 @@ class GifConfig: ObservableObject, Equatable {
             }
         }
         
-//        @Clamped
+        @Clamped
         var endTime: CGFloat = 0 {
             didSet {
                 if endTime.isInfinite {
@@ -595,10 +595,14 @@ class VideoGifGenerator: GifGenerator {
     let frameGenerator: AVAssetImageGenerator
     
     let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent("frames")
-    
+    let url: URL
     init(gifConfig: GifConfig, playState: PlayState, asset: AVAsset) {
         self.gifConfig = gifConfig
         self.currentPlayState = playState
+        
+        self.url = (asset as! AVURLAsset).url
+            
+        
         
         self.frameGenerator = AVAssetImageGenerator(asset: asset)
         self.frameGenerator.appliesPreferredTrackTransform = true

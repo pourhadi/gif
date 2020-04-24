@@ -13,7 +13,8 @@ import Firebase
 
 
 class API: NSObject, URLSessionTaskDelegate, RedirectHandler {
-    
+    static var apiURL: URL { API.debug ? URL(string:"http://192.168.1.12:8080/")! : URL(string: "https://app.giffed.app/")! }
+
     static func reath(_ req: URLRequest) -> AnyPublisher<URLRequest, Never> {
         return Future<URLRequest, Never> { promise in
             Auth.auth().signInAnonymously() { (authResult, error) in

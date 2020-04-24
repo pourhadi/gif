@@ -535,6 +535,8 @@ struct ImageAdjustmentView: View {
     
     @State var compact = false
     
+    @State var selectorTouchDown = false
+    
     init(gif: GIF, editor: ImageEditor) {
         self.gif = gif
         self.editor = editor
@@ -583,17 +585,20 @@ struct ImageAdjustmentView: View {
                 Spacer()
                 
                 VStack(spacing: 8) {
-                    if self.selectedAdjustment != .filters {
+                    
+                    if self.compact {
                         Text(self.selectedAdjustment.name.uppercased())
                             
                             .font(.subheadline)
                             .foregroundColor(Color.text)
-                            .brightness(-0.3)
+                            .brightness(-0.2)
                             .scaledToFill()
                             .noAnimations()
                             
                             .modifier(PopModifier(visible: self.$visible, delay: 0.2))
-                        
+                    }
+                        if self.selectedAdjustment != .filters {
+
                         if !self.compact {
                             Text("\(Int((self.editor.values[self.selectedAdjustment] ?? 0) * 100))")
                                 
@@ -604,62 +609,69 @@ struct ImageAdjustmentView: View {
                                 .noAnimations()
                                 
                                 .modifier(PopModifier(visible: self.$visible, delay: 0.3))
-                        }
+                                .opacity(self.selectorTouchDown ? 0.5 : 1)
+                            
+                            }
                     }
                     
-                }.animation(nil)
+                }
+                //                .animation(nil)
                 
                 Group {
-                    if self.selectedAdjustment == .brightness {
-                        Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
-                            self.changeMade = true
-                        })
-                    } else if self.selectedAdjustment == .contrast {
-                        Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
-                            self.changeMade = true
-                            
-                        })
-                    } else if self.selectedAdjustment == .saturation {
-                        Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
-                            self.changeMade = true
-                            
-                        })
-                    } else if self.selectedAdjustment == .hue {
-                        Slider(value: self.value, in: -180...180, onEditingChanged: { _ in
-                            self.changeMade = true
-                            
-                        })
-                    } else if self.selectedAdjustment == .highlights {
-                        Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
-                            self.changeMade = true
-                        })
-                    } else if self.selectedAdjustment == .shadows {
-                        Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
-                            self.changeMade = true
-                        })
-                    } else if self.selectedAdjustment == .bloom {
-                        Slider(value: self.value, in: 0...1, onEditingChanged: { _ in
-                            self.changeMade = true
-                        })
-                    } else if self.selectedAdjustment == .exposure {
-                        Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
-                            self.changeMade = true
-                        })
-                    } else if self.selectedAdjustment == .vibrance {
-                        Slider(value: self.value, in: -2...2, onEditingChanged: { _ in
-                            self.changeMade = true
-                        })
-                    }
                     
+                        Group {
+                            if self.selectedAdjustment == .brightness {
+                                Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                })
+                            } else if self.selectedAdjustment == .contrast {
+                                Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                    
+                                })
+                            } else if self.selectedAdjustment == .saturation {
+                                Slider(value: self.value, in: -1...3, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                    
+                                })
+                            } else if self.selectedAdjustment == .hue {
+                                Slider(value: self.value, in: -180...180, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                    
+                                })
+                            } else if self.selectedAdjustment == .highlights {
+                                Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                })
+                            } else if self.selectedAdjustment == .shadows {
+                                Slider(value: self.value, in: -1...1, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                })
+                            } else if self.selectedAdjustment == .bloom {
+                                Slider(value: self.value, in: 0...1, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                })
+                            } else if self.selectedAdjustment == .exposure {
+                                Slider(value: self.value, in: -1...2, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                })
+                            } else if self.selectedAdjustment == .vibrance {
+                                Slider(value: self.value, in: -2...2, onEditingChanged: { _ in
+                                    self.changeMade = true
+                                })
+                            }
+                            
+                        }
+                        .padding([.leading, .trailing], 20)
+                        .modifier(PopModifier(visible: self.$visible, delay: 0.5))
+                        
+                        if self.selectedAdjustment == .filters {
+                            self.getFilterSelector(width: metrics.size.width).padding(.bottom, 10)
+                                .modifier(PopModifier(visible: self.$visible, delay: 0.5))
+                            
+                        }
                 }
-                .padding([.leading, .trailing], 20)
-                .modifier(PopModifier(visible: self.$visible, delay: 0.5))
-                
-                if self.selectedAdjustment == .filters {
-                    self.getFilterSelector(width: metrics.size.width).padding(.bottom, 10)
-                    .modifier(PopModifier(visible: self.$visible, delay: 0.5))
-
-                }
+                .opacity(self.selectorTouchDown ? 0.5 : 1)
                 
                 if !self.compact {
                     if self.selectedAdjustment != .filters {
@@ -669,11 +681,26 @@ struct ImageAdjustmentView: View {
                             .opacity(self.editor.values[self.selectedAdjustment] != self.selectedAdjustment.resetValue ? 1 : 0.5)
                             .padding(12)
                             .modifier(PopModifier(visible: self.$visible, delay: 0.4))
+                            .opacity(self.selectorTouchDown ? 0.5 : 1)
+
                         
                     }
-                    Divider()
                     
-                    AdjustmentSelector(selectedType: self.$selectedAdjustment, width: metrics.size.width)
+                    Divider()
+
+                    
+                    Text(self.selectedAdjustment.name.uppercased())
+                    
+                    .font(.subheadline)
+                    .foregroundColor(Color.text)
+                    .brightness(-0.2)
+                    .scaledToFill()
+                    .noAnimations()
+                    
+                    .modifier(PopModifier(visible: self.$visible, delay: 0.2))
+                        .padding(.top, 10)
+                    
+                    AdjustmentSelector(selectedType: self.$selectedAdjustment, width: metrics.size.width, touchDown: self.$selectorTouchDown)
                         .frame(width: metrics.size.width)
                 }
                 
@@ -697,6 +724,9 @@ struct ImageAdjustmentView: View {
         
     }
     
+    @State var selectedFilter: Int = 0
+    @State var filterTouchDown: Bool = false
+    
     func getFilterSelector(width: CGFloat) -> some View {
         
         var name = "None"
@@ -715,6 +745,13 @@ struct ImageAdjustmentView: View {
                     .brightness(-0.3)
                     .scaledToFill()
                     .noAnimations()
+                
+                
+                SlidingMenuView(items: self.getFilterItems(), itemWidth: 80, selectedIndex: self.$selectedFilter, touchDown: self.$filterTouchDown) { (x) in
+                    self.editor.selectedFilter = FilterType.allCases[x]
+                }
+                
+                /*
                 ScrollView(.horizontal, showsIndicators: false) {
                     
                     HStack(spacing: 8) {
@@ -734,8 +771,8 @@ struct ImageAdjustmentView: View {
                                     self.editor.selectedFilter = x
                             }
                             .padding([.top, .bottom], 5)
-                            
-                        .noAnimations()
+                                
+                            .noAnimations()
                             
                         }
                         Spacer(minLength: width * 0.2)
@@ -748,10 +785,33 @@ struct ImageAdjustmentView: View {
                     
                     
                 }
+                    
+                    */
                 .frame(height: imgSize.height + 10)
                 .fadedEdges()
                 
                 
+        }
+    }
+    
+    func getFilterItems() -> [AnyView] {
+        return FilterType.allCases.map { x in
+            FilterPreviewImageView(imageEditor: self.editor, filter: x.filter)
+                .equatable()
+                .compositingGroup()
+                
+                .aspectRatio(self.gif.aspectRatio ?? 1, contentMode: .fit)
+                .cornerRadius(4)
+                .overlay(RoundedRectangle(cornerRadius: 4)                            .stroke(self.editor.selectedFilter == x ? Color.accent : Color.clear, lineWidth: 4).foregroundColor(Color.clear))
+                
+                
+                .onTapGesture {
+                    self.editor.selectedFilter = x
+            }
+            .padding([.top, .bottom], 5)
+                
+            .noAnimations()
+        .any
         }
     }
 }

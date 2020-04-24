@@ -83,14 +83,26 @@ struct EditorView<Player, Generator>: View where Player : PlayerView, Generator 
                     
                     TimelineView<Generator>(selection: self.$context.gifConfig.selection,
                                             playState: self.$context.playState)
-                    .frame(minHeight: metrics.size.height / 3)
+//                    .frame(minHeight: metrics.size.height / 3)
+                    TimelineSummaryView(selection: self.$context.gifConfig.selection, playState: self.$context.playState)
+                    .frame(width: metrics.size.width, height: 30)
+                    Rectangle().fill(Color.clear).frame(height: 50 + metrics.safeAreaInsets.bottom + 10)
                     
-                    ControlsView(selection: self.$context.gifConfig.selection,
-                                 playState: self.$context.playState,
-                                 context: self.context)
+//                    ControlsView(selection: self.$context.gifConfig.selection,
+//                                 playState: self.$context.playState,
+//                                 context: self.context)
                     
                 }
+                .overlay(VStack {
+                    Spacer()
+                    ControlsView(selection: self.$context.gifConfig.selection,
+                    playState: self.$context.playState,
+                    context: self.context).frame(height: 50 + metrics.safeAreaInsets.bottom)
+                })
+
                 .modifier(BlurredPlayerBackgroundModifier<Player>(item: self.context.item, playState: self.$context.playState))
+                    .edgesIgnoringSafeArea(.bottom)
+
                 .zIndex(1)
                 .overlayPreferenceValue(EditorPreferencesKey.self) { (val: EditorPreferences) in
                     GeometryReader { metrics in

@@ -24,6 +24,8 @@ public enum VideoMode {
 
 
 struct PlayState {
+    
+    @Clamped
     var currentPlayhead: CGFloat = 0
     
     var playing: Bool = false

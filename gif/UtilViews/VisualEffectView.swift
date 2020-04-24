@@ -35,7 +35,7 @@ struct VisualEffectView: UIViewRepresentable {
  
 struct BarVisualEffectView : View {
     
-    @Environment(\.colorScheme) var colorScheme
+//    @Environment(\.colorScheme) var colorScheme
     
     var body : some View {
         VisualEffectView.blur(.prominent)

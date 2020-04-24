@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import Introspect
+//import Introspect
 import Combine
 
 struct TextView : UIViewRepresentable {

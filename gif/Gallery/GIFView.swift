@@ -205,6 +205,7 @@ struct GIFView<G>: View where G : Gallery  {
 //                                self.gifImageScroller(metrics: metrics).zIndex(0)
 
                             self.scroller()
+                                .disabled(!self.transitionAnimation.isComplete)
                             .frame(height: metrics.size.height + metrics.safeAreaInsets.top + metrics.safeAreaInsets.bottom)
                                 .offset(y: -(metrics.safeAreaInsets.top + metrics.safeAreaInsets.bottom))
                             
@@ -358,6 +359,8 @@ struct GIFView<G>: View where G : Gallery  {
             .background(Color.background)
     }
     
+    @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
+    
     func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .systemChromeMaterial)) .any) -> AnyView {
         return ToolbarView(metrics: metrics, bottomAdjustment: metrics.safeAreaInsets.bottom, background: VisualEffectView.barBlur().any) {
             //            self.gallery.viewConfig.toolbarContent(self.gallery, self.$selectedGIFs, self.$gifViewState)
@@ -405,6 +408,16 @@ struct GIFView<G>: View where G : Gallery  {
                         Spacer()
                         
                         Button(action: {
+                            
+                            if !self.subscriptionState.active {
+                                
+                                Async {
+                                    self.subscriptionState.showUI = true
+                                }
+                                
+                                return
+                            }
+                            
                             
                             Async {
                                 HUDAlertState.global.showLoadingIndicator = true
@@ -521,7 +534,10 @@ struct GIFImageScrollerView: UIViewRepresentable {
 
             self.$animationInProgress.animation(Animation.easeOut(duration: 0.15)).wrappedValue = false
             
-            self.$selectedGIFs.animation(Animation.default.delay(0.2)).wrappedValue = []
+            
+            Delayed(0.2) {
+                self.$selectedGIFs.animation(Animation.default).wrappedValue = []
+            }
 
         } else {
 //            self.$opacity.animation(.easeInOut(duration: 0.3)).wrappedValue = Double(CalculatePercentComplete(start: 1, end: 0, current: percent))

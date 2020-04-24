@@ -128,12 +128,20 @@ struct EditContainerView: View {
     
     let dismissBlock: () -> Void
     
+    @Environment(\.subscriptionState) var subscriptionState : SubscriptionState
+    
     var body: some View {
         let trailing = Button("Save") {
-            GlobalState.instance.saveGeneratedGIF(gif: self.gif) { (success) in
-                if success {
-                    Delayed(0.4) {
-                        self.dismissBlock()
+            
+            if self.subscriptionState.limited || !self.subscriptionState.active {
+                self.subscriptionState.showUI = true
+            } else {
+                
+                GlobalState.instance.saveGeneratedGIF(gif: self.gif) { (success) in
+                    if success {
+                        Delayed(0.4) {
+                            self.dismissBlock()
+                        }
                     }
                 }
             }
@@ -154,7 +162,7 @@ struct EditContainerView: View {
                     }
                 }
                 
-                self.getToolbar(with: metrics).offset(y: self.activeEditor == nil ? 0 : 80)
+                self.getToolbar(with: metrics).offset(y: self.activeEditor == nil ? 0 : 90)
                 
             }
         }
@@ -210,14 +218,14 @@ struct EditContainerView: View {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.trim
                 
                 
-            }, label: { Image.symbol("slider.horizontal.below.rectangle") }).padding(12)
+            }, label: { self.buttonLabel("Trim", "slider.horizontal.below.rectangle") }).padding(12)
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.2))
             
             Spacer()
             
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.crop
-            }, label: { Image.symbol("crop") }).padding(12)
+            }, label: { self.buttonLabel("Crop", "crop") }).padding(12)
                 
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.3))
             
@@ -226,7 +234,7 @@ struct EditContainerView: View {
             
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.text
-            }, label: { Image.symbol("textbox") }).padding(12)
+            }, label: { self.buttonLabel("Text", "textbox") }).padding(12)
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.4))
             
             
@@ -235,9 +243,16 @@ struct EditContainerView: View {
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.image
                 
-            }, label: { Image.symbol("dial.fill") }).padding(12)
+            }, label: { self.buttonLabel("Adjust", "dial.fill") }).padding(12)
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.5))
             
+        }
+    }
+    
+    func buttonLabel(_ text: String, _ symbol: String) -> some View {
+        VStack {
+            Image.symbol(symbol)
+            Text(text).font(.footnote).foregroundColor(Color.primary)
         }
     }
     
@@ -312,7 +327,7 @@ struct EditContainerView: View {
             }
             
         }.transition(AnyTransition.scale(scale: 1.2).combined(with: .opacity).animation(Animation.default))
-            .animation(.default)
+//            .animation(.default)
     }
     
     

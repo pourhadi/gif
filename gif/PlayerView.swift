@@ -136,6 +136,7 @@ enum PlayerType: Hashable {
     case playhead
     case start
     case end
+    case preview
 }
 
 protocol PlayerView: View {

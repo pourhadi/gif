@@ -25,7 +25,7 @@ struct DisplayedEditor {
     let gif: GIF
     
     func reset() {
-        gif.reset()
+        self.gif.reset()
     }
     
     static func editor(_ gif: GIF) -> DisplayedEditor {
@@ -103,9 +103,6 @@ struct VisualState: Equatable {
     }
 }
 
-
-
-
 struct ConditionalCornerRadius: ViewModifier {
     let condition: Bool
     
@@ -133,7 +130,6 @@ struct GIFCollection: Identifiable {
 }
 
 struct ContentView: View {
-    
     var accent: Binding<UIColor> = _accentColorBinding
     
     @State var displayedEditor: DisplayedEditor? = nil
@@ -158,72 +154,63 @@ struct ContentView: View {
     @ObservedObject var privacySettings = PrivacySettings.shared
     
     @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
-
-    @State var rerendering = false
     
-    //    @State var hudMessage: HUDAlertMessage = HUDAlertMessage.empty
+    @State var rerendering = false
+    var blurContents: Bool {
+        self.showSubscriptionView
+    }
+    
+    @State var showSubscriptionView = false
+    @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
+    
     var body: some View {
-//        GeometryReader { metrics in
+        self.getMain()
             
-            //            ZStack {
-            self.getMain()
-//                .frame(width: metrics.size.width, height: metrics.size.height).zIndex(0)
-//                .overlay(Color.background                .opacity(self.displayedEditor == nil ? 0 : 1).animation(Animation.linear(duration: 0.1).delay(0.5)).edgesIgnoringSafeArea(.all))
-            
-            
-            
-            //            }
-//        }
-//        .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
-        .sheet(item: self.$globalState.activePopover, content: { _ in
-            self.getPopover()
-        })
+            .sheet(item: self.$globalState.activePopover, content: { _ in
+                self.getPopover()
+            })
             .onReceive(self.globalState.video.unwrappedGifConfig.$visible) { s in
                 self.globalState.activePopover = s ? .gifSettings : nil
-        }.onReceive(self.globalState.video.updated.receive(on: DispatchQueue.main)) { v in
-            if self.globalState.activePopover == .videoPicker {
-                if v.isValid ?? false {
-                    self.globalState.activePopover = nil
+            }.onReceive(self.globalState.video.updated.receive(on: DispatchQueue.main)) { v in
+                if self.globalState.activePopover == .videoPicker {
+                    if v.isValid ?? false {
+                        self.globalState.activePopover = nil
+                    }
                 }
-            }
-        }.onReceive(GlobalPublishers.default.created) { gif in
-            
-            
-            Delayed(0.1) {
-                self.$displayedEditor.animation(Animation.default).wrappedValue = .editor(gif)
-                self.globalState.video.reset()
+            }.onReceive(GlobalPublishers.default.created) { gif in
                 
-                self.activeView = .pickVideo
-            }
-            
-            //            self.$createdGIF.animation(Animation.spring(dampingFraction: 0.7)).wrappedValue = gif
-        }.onReceive(self.globalState.video.readyToEdit, perform: { valid in
-            guard let valid = valid else {
-                
-                DispatchQueue.main.async {
-                self.globalState.hudAlertState.showLoadingIndicator = false
-                }
-                return
-                
-            }
-            if valid {
-                DispatchQueue.main.async {
-                    self.globalState.hudAlertState.showLoadingIndicator = false
+                Delayed(0.1) {
+                    self.$displayedEditor.animation(Animation.default).wrappedValue = .editor(gif)
+                    self.globalState.video.reset()
                     
-                    withAnimation(Animation.default.delay(0.4)) {
-                        self.activeView = .editor
-                    }
+                    self.activeView = .pickVideo
                 }
                 
-            } else {
-                Delayed(0.2) {
-                    withAnimation(Animation.default.delay(0.1)) {
+                //            self.$createdGIF.animation(Animation.spring(dampingFraction: 0.7)).wrappedValue = gif
+            }.onReceive(self.globalState.video.readyToEdit, perform: { valid in
+                guard let valid = valid else {
+                    DispatchQueue.main.async {
+                        self.globalState.hudAlertState.showLoadingIndicator = false
+                    }
+                    return
+                }
+                if valid {
+                    DispatchQueue.main.async {
+                        self.globalState.hudAlertState.showLoadingIndicator = false
                         
-                        self.globalState.hudAlertState.show(.error("something went wrong"))
+                        withAnimation(Animation.default.delay(0.4)) {
+                            self.activeView = .editor
+                        }
+                    }
+                    
+                } else {
+                    Delayed(0.2) {
+                        withAnimation(Animation.default.delay(0.1)) {
+                            self.globalState.hudAlertState.show(.error("something went wrong"))
+                        }
                     }
                 }
-            }
-        })
+            })
             .onReceive(GlobalPublishers.default.addText, perform: { gif in
                 self.displayedEditor = .text(gif)
             })
@@ -236,64 +223,80 @@ struct ContentView: View {
             
             .onReceive(GlobalPublishers.default.showShare) { gif in
                 self.globalState.activePopover = .gifToShare(gif)
-        }
-            
-            
-            //            .overlay(ZStack {
-            //                EmptyView().zIndex(0)
-            //
-            //                if self.createdGIF != nil {
-            //
-            //                    self.gifCreatedView()
-            //                }
-            //            })
-            
-            .onReceive(GlobalPublishers.default.dismissEditor) { (_) in
+            }
+            .onReceive(GlobalPublishers.default.dismissEditor) { _ in
                 self.dismissEditor()
-        }
-        .overlay(ZStack {
-            
-            if self.activeView == .editor {
-                self.getEditor()
-                    .transition(.slide)
-                    .zIndex(1)
             }
-            
-            if self.displayedEditor != nil {
-                
-                self.getDisplayedEditor()
-                    .background(Color.background.edgesIgnoringSafeArea(.all))
-                    .transition(AnyTransition.opacity.animation(Animation.easeIn(duration: 0.3).delay(0.2)))
-                    .zIndex(2)
+            .onReceive(self.subscriptionState.$showUI) { showUI in
+                self.$showSubscriptionView.animation(Animation.easeIn(duration: 0.5).delay(0.1)).wrappedValue = showUI
             }
-            
-            if self.privacySettings.passcodeEnabled && !self.privacySettings.authorized  {
-                VisualEffectView.blur(.regular).edgesIgnoringSafeArea(.all)
-                    .transition(AnyTransition.opacity.animation(Animation.default)).zIndex(1000)
+            .onAppear {
                 
-                Group {
-                    if self.privacySettings.passcode == nil {
-                        PasscodeLockView(state: .setPasscode)
-                    } else if self.privacySettings.needsPasscodeUnlock {
-                        PasscodeLockView(state: .enterPasscode)
+                IAP.shared.checkActive { (active) in
+                    if !active {
+                        Delayed(1) {
+                            self.subscriptionState.showUI = true
+                        }
                     }
                 }
-                .scaleEffect(self.verticalSizeClass == .compact ? 0.7 : 1)
-            .zIndex(1001)
-                .transition(AnyTransition.scale(scale: 1.1).combined(with: .opacity).animation(Animation.default))
+                
             }
             
-        })
-                .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
-                    .opacity(self.rerendering ? 0 : 1)
-                    .onReceive(AccentPublisher.shared.$publisher) { (val) in
-                        self.rerendering = true
-                        
-                        Async {
-                            self.rerendering = false
-                        }
+            .overlay(ZStack {
+                if self.activeView == .editor {
+                    self.getEditor()
+                        .transition(.slide)
+                        .zIndex(1)
                 }
+                
+                if self.displayedEditor != nil {
+                    self.getDisplayedEditor()
+                        .background(Color.background.edgesIgnoringSafeArea(.all))
+                        .transition(AnyTransition.opacity.animation(Animation.easeIn(duration: 0.3).delay(0.2)))
+                        .zIndex(2)
+                }
+                
+                if self.privacySettings.passcodeEnabled && !self.privacySettings.authorized {
+                    VisualEffectView.blur(.regular).edgesIgnoringSafeArea(.all)
+                        .transition(AnyTransition.opacity.animation(Animation.default)).zIndex(1000)
+                    
+                    Group {
+                        if self.privacySettings.passcode == nil {
+                            PasscodeLockView(state: .setPasscode)
+                        } else if self.privacySettings.needsPasscodeUnlock {
+                            PasscodeLockView(state: .enterPasscode)
+                        }
+                    }
+                    .scaleEffect(self.verticalSizeClass == .compact ? 0.7 : 1)
+                    .zIndex(1001)
+                    .transition(AnyTransition.scale(scale: 1.1).combined(with: .opacity).animation(Animation.default))
+                }
+                
+            })
+            .opacity(self.rerendering ? 0 : 1)
+            .onReceive(AccentPublisher.shared.$publisher) { _ in
+                self.rerendering = true
+                
+                Async {
+                    self.rerendering = false
+                }
+            }
             .accentColor(Color(self.accent.wrappedValue))
+            
+            .brightness(self.blurContents ? -0.2 : 0)
+            .blur(radius: self.blurContents ? 25 : 0)
+            .disabled(self.blurContents)
+            .overlay(ZStack {
+                if self.showSubscriptionView {
+                    SubscriptionSignupView {
+                        self.subscriptionState.showUI = false
+                        //                    self.$showSubscriptionView.animation(Animation.easeIn(duration: 0.5).delay(0.1)).wrappedValue = false
+                    }.zIndex(1)
+                }
+                
+            })
+        .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
+
     }
     
     func dismissEditor() {
@@ -306,27 +309,24 @@ struct ContentView: View {
     }
     
     func cropEditor(gif: GIF) -> some View {
-        
         gif.cropState = CropState(aspectRatio: gif.aspectRatio ?? 1)
         
         return NavigationView {
             GIFCroppingView(croppingGIF: gif).zIndex(2)
                 
-                
                 .navigationBarTitle(Text("Crop GIF"), displayMode: .inline)
                 .navigationBarItems(leading: Button("Cancel") {
                     self.dismissEditor()
-                    }, trailing: Button("Save") {
-                        GlobalPublishers.default.readyToCrop.send(gif)
-                        
-                        Async {
-                            self.dismissEditor()
-                        }
+                }, trailing: Button("Save") {
+                    GlobalPublishers.default.readyToCrop.send(gif)
+                    
+                    Async {
+                        self.dismissEditor()
+                    }
                 })
             
         }.navigationViewStyle(StackNavigationViewStyle())
             .transition(AnyTransition.opacity.animation(Animation.easeInOut(duration: 0.3).delay(0.1)))
-        
     }
     
     func gifCreatedView() -> some View {
@@ -337,7 +337,7 @@ struct ContentView: View {
                                   .init(color: Color.black.opacity(0.8), location: 0.2),
                                   .init(color: Color.black.opacity(0.8), location: 0.8),
                                   .init(color: .black, location: 1)]), startPoint: .leading,
-                                                                       endPoint: .trailing))
+                               endPoint: .trailing))
                 //                    .fill(Color.black.opacity(0.8))
                 .blendMode(.destinationOver)
                 .zIndex(3)
@@ -362,20 +362,18 @@ struct ContentView: View {
     
     func gifEditor(gif: GIF) -> some View {
         return
-            //NavigationView {
+            // NavigationView {
             
             EditContainerView(gif: gif, dismissBlock: {
                 self.dismissEditor()
             })
 //                .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
-                
-                .navigationBarItems(leading: Button(action: {
-                    self.displayedEditor = .none
-                }, label: { Text("Cancel") }))
+            
+            .navigationBarItems(leading: Button(action: {
+                self.displayedEditor = .none
+            }, label: { Text("Cancel") }))
         
         // }.navigationViewStyle(StackNavigationViewStyle())
-        
-        
         
         //         return NavigationView {
         //                   EditorView<FramePlayerView, ExistingFrameGenerator>(
@@ -397,9 +395,7 @@ struct ContentView: View {
     }
     
     func getDisplayedEditor() -> some View {
-        
         Group {
-            
             if self.displayedEditor?.type == .editor {
                 self.gifEditor(gif: self.displayedEditor!.gif)
             } else if self.displayedEditor?.type == .crop {
@@ -407,9 +403,7 @@ struct ContentView: View {
             } else if self.displayedEditor?.type == .text {
                 self.getTextEditor(gif: self.displayedEditor!.gif)
             }
-            
         }
-        
     }
     
     func getPopover() -> AnyView {
@@ -470,9 +464,9 @@ struct ContentView: View {
                                 withAnimation(Animation.default) {
                                     if Downloader.instance.failed {
                                         self.globalState.hudAlertState.show(.error("something went wrong"))
-
+                                        
                                     } else {
-                                    self.globalState.hudAlertState.show(.error("cancelled"))
+                                        self.globalState.hudAlertState.show(.error("cancelled"))
                                     }
                                 }
                             }
@@ -487,18 +481,16 @@ struct ContentView: View {
                                     self.globalState.video.reset(video)
                                     
                                     //                                    }
-                                    
                                 }
                             } else {
                                 Delayed(0.2) {
                                     withAnimation(Animation.default) {
-                                        
                                         self.globalState.hudAlertState.show(.error("something went wrong"))
                                     }
                                 }
                                 print("no video")
                             }
-                    }.store(in: &Downloader.instance.cancellables)
+                        }.store(in: &Downloader.instance.cancellables)
                 } else {
                     Async {
                         self.globalState.hudAlertState.show(.error("Bad URL"))
@@ -521,13 +513,13 @@ struct ContentView: View {
                     self.globalState.generateGIF(editingContext: gif.textEditingContext)
                 }, label: { Text("Create GIF") }))
         }
-            //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
+        //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
 //            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
-            .environmentObject(gif.textEditingContext)
-            .background(Color.background)
-            .navigationViewStyle(StackNavigationViewStyle())
-            .transition(.slide)
-            .zIndex(3)
+        .environmentObject(gif.textEditingContext)
+        .background(Color.background)
+        .navigationViewStyle(StackNavigationViewStyle())
+        .transition(.slide)
+        .zIndex(3)
     }
     
     func getEditor() -> some View {
@@ -542,14 +534,14 @@ struct ContentView: View {
                     self.globalState.generateGIF(editingContext: self.globalState.video.editingContext)
                 }, label: { Text("Create GIF") }))
         }
-            //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
+        //        .edgesIgnoringSafeArea(self.globalState.visualState.compact ? [.leading, .trailing, .top] : [.top, .bottom])
 //            .modifier(WithHUDModifier(hudAlertState: self.globalState.hudAlertState))
-            .environmentObject(self.globalState.video.editingContext)
-            .background(Color.background)
-            .navigationViewStyle(StackNavigationViewStyle())
+        .environmentObject(self.globalState.video.editingContext)
+        .background(Color.background)
+        .navigationViewStyle(StackNavigationViewStyle())
     }
     
-    let transitionAnimationContext = TransitionAnimationContext()
+    @State var transitionAnimationContext = TransitionAnimationContext()
     func getMain() -> some View {
         return GalleryContainer(activePopover: self.$globalState.activePopover, transitionAnimation: self.transitionAnimationContext)
     }

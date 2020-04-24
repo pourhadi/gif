@@ -6,7 +6,7 @@
 //
 
 import Combine
-import Introspect
+//import Introspect
 import SnapKit
 import SwiftUI
 import UIKit
@@ -38,6 +38,7 @@ class Cell: UICollectionViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
 }
 
 struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentable, Equatable where ItemContent: View, Item: Identifiable & Equatable, PreviewContent: View {
@@ -89,6 +90,9 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
     
     @State var reloadData = false
     
+    @Environment(\.orientation) var orientation: Orientation
+
+    
     public init(items: Binding<[Item]>,
                 selectedItems: Binding<[Item]>,
                 selectionMode: Binding<Bool>,
@@ -113,126 +117,168 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         return Coordinator(self)
     }
     
-    func makeUIView(context: Context) -> UICollectionView {
+    func makeUIView(context: Context) -> Self.UIViewType {
         let layout = UICollectionViewFlowLayout()
         let cv = UICollectionView(frame: CGRect.zero, collectionViewLayout: layout)
         cv.delegate = context.coordinator
         cv.dataSource = context.coordinator
         cv.register(Cell.self, forCellWithReuseIdentifier: "cell")
         cv.contentInsetAdjustmentBehavior = .always
-
+        
         return cv
     }
     
-    func updateUIView(_ uiView: UICollectionView, context: Context) {
-        print("update collection view representable")
+    static func dismantleUIView(_ uiView: Self.UIViewType, coordinator: Coordinator) {
+        coordinator.removed = true
         
-        Async {
-            context.coordinator.transaction = context.transaction
-            var reload = false
-            var invalidateLayout = false
-            var added = [IndexPath]()
-            var removed = [IndexPath]()
+        print("dismantle: \(uiView)")
+    }
+    
+    func updateUIView(_ uiView: Self.UIViewType, context: Context) {
+        
+        //        Async
+        //            {
+        //                [weak weakView = uiView, weak weakCoordinator = context.coordinator] in
+        //            guard let uiView = weakView, let coordinator = weakCoordinator, !coordinator.removed else { return }
+        print("update collection view representable1")
+        
+        let coordinator = context.coordinator
+        if coordinator.removed { return }
+        print("update collection view representable2")
+        
+        
+//        coordinator.transaction = context.transaction
+        var reload = false
+        var invalidateLayout = false
+        var added = [IndexPath]()
+        var removed = [IndexPath]()
+        var animateInvalidate = false
+        
+//        if context.environment.verticalSizeClass == .compact, self.layout.numberOfColumns == 3 {
+//            invalidateLayout = true
+//        } else if context.environment.verticalSizeClass != .compact, self.layout.numberOfColumns == 5, context.environment.deviceDetails.uiIdiom != .pad {
+//            invalidateLayout = true
+//        }
+        
+        if coordinator.orientation != self.orientation {
+            invalidateLayout = true
+            animateInvalidate = true
+        }
+        
+        if coordinator.previousValues.layout != self.layout
+            || coordinator.firstRun
+            || coordinator.size != uiView.frame.size {
+            print("layout changed")
+            coordinator.firstRun = false
             
-            if context.environment.verticalSizeClass == .compact, self.layout.numberOfColumns == 3 {
-                invalidateLayout = true
-            } else if context.environment.verticalSizeClass != .compact, self.layout.numberOfColumns == 5, context.environment.deviceDetails.uiIdiom != .pad {
-                invalidateLayout = true
+            
+            let layout = uiView.collectionViewLayout as! UICollectionViewFlowLayout
+            
+            layout.sectionInset = UIEdgeInsets(top: self.layout.scrollViewInsets.top, left: 0, bottom: self.layout.scrollViewInsets.bottom, right: 0)
+            
+            layout.itemSize = CGSize(width: self.getColumnWidth(for: uiView.frame.size.width), height: self.getRowHeight(for: 0, metrics: uiView.frame.size))
+            
+            invalidateLayout = true
+        }
+        
+        if coordinator.selectionMode != self.selectionMode {
+            print("reload data")
+            reload = true
+        }
+        
+        if coordinator.selectedItems != self.selectedItems {
+            reload = true
+        }
+        
+        if coordinator.items != self.items {
+            reload = true
+            if coordinator.items.count == 0 && false {
+                reload = true
+            } else {
+                
+                let diff = self.items.difference(from: coordinator.items)
+                
+                for change in diff {
+                    switch change {
+                    case .insert(let offset, _, _):
+                        added.append(IndexPath(item: offset, section: 0))
+                    case .remove(let offset, _, _):
+                        removed.append(IndexPath(item: offset, section: 0))
+                    }
+                }
             }
+        }
+        
+        var scrollDown = false
+        
+        if coordinator.items.count < self.items.count {
+            scrollDown = true
+        }
+        
+        //            uiView.performBatchUpdates({
+        coordinator.previousValues.layout = self.layout
+        coordinator.previousValues.itemCount = self.items.count
+        coordinator.selectedItems = self.selectedItems
+        coordinator.selectionMode = self.selectionMode
+        coordinator.items = self.items
+        coordinator.size = uiView.frame.size
+        coordinator.orientation = self.orientation
+        
+        //                uiView.insertItems(at: added)
+        //                uiView.deleteItems(at: removed)
+        
+        if invalidateLayout {
             
-            if context.coordinator.previousValues.layout != self.layout
-                || context.coordinator.firstRun
-                || context.coordinator.size != uiView.frame.size {
-                print("layout changed")
-                context.coordinator.firstRun = false
+            Async {
                 
                 
-                let layout = uiView.collectionViewLayout as! UICollectionViewFlowLayout
-                
+                let layout = UICollectionViewFlowLayout()
                 layout.sectionInset = UIEdgeInsets(top: self.layout.scrollViewInsets.top, left: 0, bottom: self.layout.scrollViewInsets.bottom, right: 0)
                 
                 layout.itemSize = CGSize(width: self.getColumnWidth(for: uiView.frame.size.width), height: self.getRowHeight(for: 0, metrics: uiView.frame.size))
                 
-                invalidateLayout = true
-                reload = true
-            }
-            
-            if context.coordinator.selectionMode != self.selectionMode {
-                print("reload data")
-                reload = true
-            }
-            
-            if context.coordinator.selectedItems != self.selectedItems {
-                reload = true
-            }
-            
-            if context.coordinator.items != self.items {
-                reload = true 
-                if context.coordinator.items.count == 0 && false {
-                    reload = true
-                } else {
-                    
-                    let diff = self.items.difference(from: context.coordinator.items)
-                    
-                    for change in diff {
-                        switch change {
-                        case .insert(let offset, _, _):
-                            added.append(IndexPath(item: offset, section: 0))
-                        case .remove(let offset, _, _):
-                            removed.append(IndexPath(item: offset, section: 0))
-                        }
-                    }
-                }
-            }
-            
-            var scrollDown = false
-            
-            if context.coordinator.items.count < self.items.count {
-                scrollDown = true
-            }
-            
-//            uiView.performBatchUpdates({
-                context.coordinator.previousValues.layout = self.layout
-                context.coordinator.previousValues.itemCount = self.items.count
-                context.coordinator.selectedItems = self.selectedItems
-                context.coordinator.selectionMode = self.selectionMode
-                context.coordinator.items = self.items
-            context.coordinator.size = uiView.frame.size
-                
-//                uiView.insertItems(at: added)
-//                uiView.deleteItems(at: removed)
-                
-                if invalidateLayout {
-                    uiView.collectionViewLayout.invalidateLayout()
-                    uiView.reloadData()
-                } else if reload {
-                    uiView.reloadData()
-                }
-                
+                print("column width: \(layout.itemSize.width)")
+                uiView.setCollectionViewLayout(layout, animated: animateInvalidate)
+                uiView.reloadData()
 
-                
-//            }) { _ in
-                
-                
-                context.coordinator.transaction = nil
-                
-                
-                if scrollDown {
-//                    uiView.scrollToItem(at: IndexPath(item: context.coordinator.items.count - 1, section: 0), at: .bottom, animated: false)
-                }
             }
-            
-//        }
+            //                        uiView.reloadData()
+        } else if reload {
+            uiView.reloadData()
+        }
+        
+        
+        
+        //            }) { _ in
+        
+        
+        coordinator.transaction = nil
+        
+        
+        if scrollDown {
+            //                    uiView.scrollToItem(at: IndexPath(item: context.coordinator.items.count - 1, section: 0), at: .bottom, animated: false)
+        }
+        //            }
+        
+        //        }
     }
     
     typealias UIViewType = UICollectionView
     
     class Coordinator: NSObject, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+        
+        deinit {
+            print("deinit \(self)")
+        }
+        var removed = false
+        
         var transaction: Transaction?
         
         var firstRun = true
         
         var size = CGSize.zero
+        
+        var orientation: Orientation
         
         class PreviousValues {
             var itemCount: Int = 0
@@ -247,13 +293,18 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
                     return
                 }
                 
-                self.parent.selectedItems = self.selectedItems
+                DispatchQueue.main.async {
+                    self.parent.selectedItems = self.selectedItems
+                }
             }
         }
         var selectionMode: Bool = false {
             didSet {
                 guard self.selectionMode != self.parent.selectionMode else { return }
-                self.parent.selectionMode = self.selectionMode
+                
+                DispatchQueue.main.async {
+                    self.parent.selectionMode = self.selectionMode
+                }
             }
         }
         
@@ -263,13 +314,15 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         
         var scrolled = false
         
-        //        func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        //            return UIEdgeInsets(top: self.parent.layout.scrollViewInsets.top, left: 0, bottom: 0, right: 0)
+        //                func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
+        //                    return UIEdgeInsets(top: self.parent.layout.scrollViewInsets.top, left: 0, bottom: self.parent.layout.scrollViewInsets.bottom, right: 0)
+        //                }
+        //
+        //
+        //        func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        //            CGSize(width: self.parent.getColumnWidth(for: collectionView.frame.size.width), height: self.parent.getRowHeight(for: 0, metrics: collectionView.frame.size))
         //        }
         //
-        
-        
-        
         func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
             let item = self.items[indexPath.item]
             return UIContextMenuConfiguration(identifier: indexPath as NSCopying, previewProvider: { () -> UIViewController? in
@@ -327,6 +380,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         }
         
         func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+            if self.removed { return 0 }
             print("item count: \(self.items.count)")
             return self.items.count
         }
@@ -338,14 +392,23 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! Cell
             
+            let item = self.items[indexPath.item]
+            let _ = self.parent.itemBuilder(indexPath.item,
+                                            item,
+                                            CGSize(width: self.parent.getColumnWidth(for: collectionView.frame.size.width), height: self.parent.getRowHeight(for: indexPath.item, metrics: collectionView.frame.size)),
+                                            self.selectedItems.contains(item))
+            
             return cell
         }
         
-        func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-            let cell = cell as! Cell
-            
-            cell.host.rootView = EmptyView().any
-        }
+        //        func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        //            let cell = cell as! Cell
+        //
+        //
+        //
+        //
+        //            cell.host.rootView = EmptyView().any
+        //        }
         
         func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
             let cell = cell as! Cell
@@ -381,6 +444,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         var cancellable: AnyCancellable?
         init(_ parent: FlowCollectionView) {
             self.parent = parent
+            self.orientation = parent.orientation
             super.init()
         }
     }
@@ -474,20 +538,20 @@ struct ScrollDownModifier: ViewModifier {
         //        }
     }
 }
-
-extension View {
-    func tweakTableView() -> some View {
-        self.introspectTableView { tableView in
-            tableView.separatorStyle = .none
-            tableView.separatorInset = UIEdgeInsets.zero
-            tableView.directionalLayoutMargins.leading = 0
-            Delayed(2) {
-                print(tableView.contentInset)
-                print(tableView.safeAreaInsets)
-            }
-        }
-    }
-}
+//
+//extension View {
+//    func tweakTableView() -> some View {
+//        self.introspectTableView { tableView in
+//            tableView.separatorStyle = .none
+//            tableView.separatorInset = UIEdgeInsets.zero
+//            tableView.directionalLayoutMargins.leading = 0
+//            Delayed(2) {
+//                print(tableView.contentInset)
+//                print(tableView.safeAreaInsets)
+//            }
+//        }
+//    }
+//}
 
 public let ScrollViewCoordinateSpaceKey = "ScrollViewCoordinateSpace"
 

@@ -50,7 +50,7 @@ struct MenuItem: Equatable, Identifiable {
 extension Animation {
     
     static var bouncy1 : Animation {
-        return Animation.interpolatingSpring(stiffness: 300, damping: 19).speed(0.8)
+        return Animation.interpolatingSpring(stiffness: 300, damping: 22).speed(0.8)
     }
     
     static var bouncy2 : Animation {
@@ -137,7 +137,7 @@ struct MenuView: View {
                     ConditionallyStacked(hStacked: self.verticalSizeClass == .compact) {
                         ForEach(self.subMenu!) { x in
                             self.button(x)
-                                .scaleEffect(self.subVisible ? 1 : 0.25)
+                                .scaleEffect(x: self.subVisible ? 1 : 0.05, y: self.subVisible ? 1 : 0.5)
                                 .opacity(self.subVisible ? 1 : 0)
                                 .animation(self.bouncyAnimation.delay(Double(self.subMenu!.firstIndex(of: x)!) * Double(0.2) + 0.2))
                                 .transformEffect(self.dismissingMenuItem == x ? .init(scaleX: 0.95, y: 0.95) : .identity)
@@ -153,7 +153,7 @@ struct MenuView: View {
                         ForEach(self.menuItems) { x in
                             
                             self.button(x)
-                                .scaleEffect(self.buttonsVisible ? 1 : 0.25)
+                                .scaleEffect(x: self.buttonsVisible ? 1 : 0.05, y: self.buttonsVisible ? 1 : 0.5)
                                 .opacity(self.buttonsVisible ? 1 : 0)
 
                                 .transition(AnyTransition.pop(delayed: Double(self.menuItems.firstIndex(of: x)!) * Double(0.2)))
@@ -214,18 +214,20 @@ struct MenuView: View {
     func button(_ item: MenuItem) -> some View {
         BouncyButton(content: {
 
-            VStack(spacing: 20) {
-//            Stack(self.verticalSizeClass == .compact ? .vertical : .horizontal, spacing: 20) {
-                
-                
-                //            HStack(spacing: 20) {
-                item.image
-                item.text.font(.headline).minimumScaleFactor(0.9).foregroundColor(Color.white)
+            HStack {
+                Spacer()
+                Stack(self.verticalSizeClass == .compact ? .vertical : .horizontal,
+                      spacing: 20) {
+                    item.image
+                    item.text.font(.headline).minimumScaleFactor(0.9).foregroundColor(Color.white)
+                }
+                Spacer()
             }
+            
         .shadow(radius: 1)
-            .padding([.leading, .trailing], self.verticalSizeClass == .compact ? 20 : 40)
+            .padding([.leading, .trailing], self.verticalSizeClass == .compact ? 20 : 20)
             .padding([.top, .bottom], 20)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.7).opacity(0.5)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.5).opacity(0.8))) //.opacity(0.5)))
             
         }) {
             switch item.action {

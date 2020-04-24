@@ -154,25 +154,27 @@ class GIF: Identifiable, Equatable, Editable {
     var killAnimation = false
     
     lazy var nextAnimationPublisher: AnyPublisher<UIImage, Never> = {
-        self.nextAnimationImageSubject.handleEvents(receiveSubscription: { [unowned self] _ in
-            self.subscribers += 1
+        self.nextAnimationImageSubject.handleEvents(receiveSubscription: { [weak self] _ in
+            guard let weakSelf = self else { return }
+            weakSelf.subscribers += 1
             
-            print(self.id + " + 1, total: \(self.subscribers)")
+            print(weakSelf.id + " + 1, total: \(weakSelf.subscribers)")
             
-            if self.subscribers == 1 {
+            if weakSelf.subscribers == 1 {
                 serialQueue.async {
-                    while self.killAnimation {
+                    while weakSelf.killAnimation {
                         // wait
                     }
-                    self.startAnimation()
+                    weakSelf.startAnimation()
                 }
             }
-        }, receiveCancel: { [unowned self] in
-            self.subscribers -= 1
-            if self.subscribers == 0 {
-                self.killAnimation = true
+        }, receiveCancel: { [weak self] in
+            guard let weakSelf = self else { return }
+            weakSelf.subscribers -= 1
+            if weakSelf.subscribers == 0 {
+                weakSelf.killAnimation = true
             }
-            print(self.id + " - 1, total: \(self.subscribers)")
+            print(weakSelf.id + " - 1, total: \(weakSelf.subscribers)")
             
         }).eraseToAnyPublisher()
     }()
@@ -977,7 +979,7 @@ final class FileGallery: Gallery, FileGalleryUtils {
 //        }
         
         func iCloudFilesDidChange(_ files: [NSMetadataItem], with filenames: [String]) {
-            if !self.initialized || DEMO { return }
+            if !self.initialized || DEMO || !Settings.shared.icloudEnabled { return }
             
             print("icloud list changed")
 //            if self.parent.updating { return }
@@ -1111,6 +1113,8 @@ final class FileGallery: Gallery, FileGalleryUtils {
     
     let userId: String
     
+    var cancellable : AnyCancellable?
+    
     init() {
         if Settings.shared.icloudEnabled {
             if let id = NSUbiquitousKeyValueStore.default.string(forKey: "_userId") {
@@ -1183,37 +1187,44 @@ final class FileGallery: Gallery, FileGalleryUtils {
 //        for file in thumbs ?? [] {
 //            try? FileManager.default.removeItem(at: self.thumbURL.appendingPathComponent(file))
 //
-//        }
+        //        }
         
-//        do {
-//            try FileManager.default.createDirectory(at: gifURL, withIntermediateDirectories: true, attributes: nil)
-//        } catch {
-//            print(error)
-//        }
+        //        do {
+        //            try FileManager.default.createDirectory(at: gifURL, withIntermediateDirectories: true, attributes: nil)
+        //        } catch {
+        //            print(error)
+        //        }
         
         
         
-        iCloud.shared.delegate = self.icloudObserver
+        if Settings.shared.icloudEnabled {
+            iCloud.shared.delegate = self.icloudObserver
+            iCloud.shared.setupiCloud(nil)
+        }
         
-        iCloud.shared.setupiCloud(nil)
-        
-
+        self.cancellable = Settings.shared.$icloudEnabled.sink { enabled  in
+            if enabled {
+                iCloud.shared.delegate = self.icloudObserver
+                iCloud.shared.setupiCloud(nil)
+                iCloud.shared.updateFiles()
+            }
+        }
         
         
         self.load()
     }
     
-        func add(data: Data) -> AnyPublisher<String, Error> {
-            return Future<String, Error> { promise in
-                self.add(data: data) { id, error in
-                    if let error = error {
-                        promise(.failure(error))
-                    } else {
-                        promise(.success(id ?? ""))
-                    }
+    func add(data: Data) -> AnyPublisher<String, Error> {
+        return Future<String, Error> { promise in
+            self.add(data: data) { id, error in
+                if let error = error {
+                    promise(.failure(error))
+                } else {
+                    promise(.success(id ?? ""))
                 }
-            }.eraseToAnyPublisher()
-        }
+            }
+        }.eraseToAnyPublisher()
+    }
     
     func add(url: URL) {}
     

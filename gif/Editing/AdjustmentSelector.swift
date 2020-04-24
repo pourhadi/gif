@@ -8,15 +8,64 @@
 
 import SwiftUI
 
+struct SelectorItem: View {
+    
+    let type: AdjustmentType
+    let selected: Bool
+    @Binding var visible: Bool
+    var body: some View {
+//        VStack {
+        Image.symbol(self.type.symbol, .init(scale: .large))?
+            .renderingMode(.template)
+            .foregroundColor(self.selected ? Color.accent : Color.primary.opacity(0.8))
+
+                .frame(height: 60)
+
+//            Text(self.type.name).font(.footnote)
+
+//        }
+
+        .padding([.top, .bottom], 12)
+        .scaledToFill()
+        .frame(width: 60)
+            .scaleEffect(self.selected ? 1.15 : 1)
+        .zIndex(self.selected ? 1 : 0)
+        .shadow(radius: self.selected ? 3 : 0)
+            
+        .animation(Animation.default.delay(0))
+        .modifier(SlideUpModifier(visible: self.$visible, delay: 0.2 + (Double(AdjustmentType.allCases.firstIndex(of: self.type)!) / 10)))
+        .background(Color.background)
+
+    }
+    
+}
+
 struct AdjustmentSelector: View {
     @State var visible = false
     
     @Binding var selectedType: AdjustmentType
     
+    @State var selectedIndex: Int = 0
+    
     let width: CGFloat
+    
+    @Binding var touchDown : Bool
     
     var body: some View {
         
+        SlidingMenuView(items: self.getRenderedButtons(), itemWidth: 80, selectedIndex: self.$selectedIndex, touchDown: self.$touchDown) { x in
+            
+            self.selectedType = AdjustmentType.allCases[x]
+                HapticController.shared.selectionHaptic()
+        }
+        .onAppear {
+            Delayed(0.2) {
+                self.visible = true
+            }
+        }
+        .frame(height: 80)
+        .mask(LinearGradient(gradient: self.fadedEdgeGradient, startPoint: UnitPoint.leading, endPoint: UnitPoint.trailing))
+        /*
         //        GeometryReader { metrics in
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 1) {
@@ -31,7 +80,17 @@ struct AdjustmentSelector: View {
             
         }
         .mask(LinearGradient(gradient: self.fadedEdgeGradient, startPoint: UnitPoint.leading, endPoint: UnitPoint.trailing))
-        
+        */
+    }
+    
+    func getRenderedButtons() -> [SelectorItem] {
+        return AdjustmentType.allCases.map { x in
+            
+            SelectorItem(type: x, selected: self.selectedType == x, visible: self.$visible)
+            
+            
+            
+        }
     }
     
     var renderedButtons: some View {
@@ -64,8 +123,8 @@ struct AdjustmentSelector: View {
     
     var fadedEdgeGradient: Gradient {
         return Gradient(stops: [Gradient.Stop(color: Color.clear, location: 0),
-                                Gradient.Stop.init(color: Color.black, location: 0.1),
-                                Gradient.Stop.init(color: Color.black, location: 0.9),
+                                Gradient.Stop.init(color: Color.black, location: 0.2),
+                                Gradient.Stop.init(color: Color.black, location: 0.8),
                                 Gradient.Stop.init(color: Color.clear, location: 1)])
     }
     
@@ -179,12 +238,13 @@ struct AdjustmentSelector: View {
 
 struct AdjustmentSelector_Previews: PreviewProvider {
     @State static var selectedAdjustment = AdjustmentType.brightness
+    @State static var touchDown = false
     static var previews: some View {
         EditNavView(title: "Test", leadingItem: EmptyView().any, trailingItem: EmptyView().any) {
             GeometryReader { metrics in
                 VStack {
                     Spacer()
-                    AdjustmentSelector(selectedType: self.$selectedAdjustment, width: metrics.size.width)
+                    AdjustmentSelector(selectedType: self.$selectedAdjustment, width: metrics.size.width, touchDown: self.$touchDown)
                         .frame(width: metrics.size.width, height: 80 + metrics.safeAreaInsets.bottom).edgesIgnoringSafeArea(.bottom)
                     
                 }

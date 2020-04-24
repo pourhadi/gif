@@ -11,21 +11,49 @@ import SwiftUI
 struct ControlsView<Generator>: View where Generator : GifGenerator {
     @Binding var selection: GifConfig.Selection
     @Binding var playState: PlayState
-   var context: EditingContext<Generator>
+    var context: EditingContext<Generator>
     
     var body: some View {
-        HStack(spacing: 20) {
-            Spacer()
-            Button(action: {
-                self.selection.startTime = self.playState.currentPlayhead
-                
-            }, label: { Text(self.context.mode == .text ? "Set Text Start" : "Set Start").padding(8) }).foregroundColor(Color.green.opacity(1)).cornerRadius(4)
-            Spacer()
-            Button(action: {
-                self.selection.endTime = self.playState.currentPlayhead
+        GeometryReader { metrics in
+            HStack(spacing: 4) {
+                Button(action: {
+                    self.selection.startTime = self.playState.currentPlayhead
+                    
+                }, label: {
+                    HStack {
+                        Spacer()
+                        Text(self.context.mode == .text ? "Set Text Start" : "Set Start").bold()
+                            .shadow(radius: 1)
+                            .padding(8)
+                            .padding(.top, 8)
+                        Spacer()
+                    }
+                    .padding(.bottom, metrics.safeAreaInsets.bottom)
+                        
+                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(white: 0.7).opacity(0.2)).edgesIgnoringSafeArea(.bottom))
+                }).foregroundColor(Color.green.opacity(1))
+                Button(action: {
+                    self.selection.endTime = self.playState.currentPlayhead
+                    
+                }, label: {
+                    
+                    HStack {
+                        Spacer()
+                        Text(self.context.mode == .text ? "Set Text End" : "Set End").bold()
+                        .shadow(radius: 1)
+                            .padding(8)
+                        .padding(.top, 8)
 
-            }, label: { Text(self.context.mode == .text ? "Set Text End" : "Set End").padding(8) }).foregroundColor(Color.red.opacity(1)).cornerRadius(4)
-            Spacer()
+                        Spacer()
+                    }
+                    .padding(.bottom, metrics.safeAreaInsets.bottom)
+                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(white: 0.7).opacity(0.2)).edgesIgnoringSafeArea(.bottom))
+
+                }).foregroundColor(Color.red.opacity(1))
+            }
+//            .padding(.top, metrics.safeAreaInsets.bottom)
+
+//            .frame(height: metrics.size.height + metrics.safeAreaInsets.bottom)
         }
     }
 }
@@ -34,6 +62,9 @@ struct ControlsView<Generator>: View where Generator : GifGenerator {
 //    @State static var playState = PlayState()
 //    @State static var selection = GifConfig.Selection()
 //    static var previews: some View {
-//        ControlsView(selection: $selection, playState: $playState)
+//        VStack {
+//            Spacer()
+//            ControlsView(selection: $selection, playState: $playState)
+//        }.edgesIgnoringSafeArea(.bottom)
 //    }
 //}

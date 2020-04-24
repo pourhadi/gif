@@ -75,6 +75,15 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
         }
     }
     
+    @ViewBuilder
+    var previewView: some View {
+        if self.context.generator is VideoGifGenerator {
+            VideoPreviewView()
+        } else {
+            PreviewView<Generator>()
+        }
+    }
+    
     func getTimestampLabel() -> some View{
         let duration = self.context.gifConfig.assetInfo.duration
         let seconds = duration * Double(self.context.playState.currentPlayhead)
@@ -167,10 +176,11 @@ struct PlayerContainerView<Player, Generator>: View where Player: PlayerView, Ge
                 }
             }
             
-            ZStack {
+            VStack(spacing: 0) {
                 
-                PercentCompleteLine(percent: self.$context.playState.currentPlayhead)
-                    .frame(width: metrics.size.width, height: metrics.size.height, alignment: .top).zIndex(2)
+                
+//                PercentCompleteLine(percent: self.$context.playState.currentPlayhead)
+//                    .frame(width: metrics.size.width, height: metrics.size.height, alignment: .top).zIndex(2)
                 Stack(outer, spacing: spacing) {
                     self.getMainView()
                         .frame(width: self.size(for: metrics.size,

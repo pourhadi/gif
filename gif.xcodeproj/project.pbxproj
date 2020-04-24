@@ -33,6 +33,7 @@
 		AE04BEA60BA5D1A978564AAF /* Pods_giffed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 495AA15FD322FFBCBB0247A2 /* Pods_giffed.framework */; };
 		CF57FBF9D4E8390DEDD25F4E /* Pods_share.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B002BDE1E320429871BA68E /* Pods_share.framework */; };
 		DC0156DD23C0D3DA00E993D2 /* GifCreatedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0156DC23C0D3DA00E993D2 /* GifCreatedView.swift */; };
+		DC03CC66245076C400AA272B /* TimelineSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC03CC65245076C400AA272B /* TimelineSummaryView.swift */; };
 		DC1ED73523ECFCA90082D16E /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73023ECFCA90082D16E /* View.swift */; };
 		DC1ED73723ECFCA90082D16E /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73123ECFCA90082D16E /* Image.swift */; };
 		DC1ED73923ECFCA90082D16E /* Stack.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73323ECFCA90082D16E /* Stack.swift */; };
@@ -55,6 +56,7 @@
 		DC3DB1C323B41D00004F706F /* 3.gif in Resources */ = {isa = PBXBuildFile; fileRef = DC3DB1BE23B41CFF004F706F /* 3.gif */; };
 		DC3DB1C423B41D00004F706F /* 2.gif in Resources */ = {isa = PBXBuildFile; fileRef = DC3DB1BF23B41CFF004F706F /* 2.gif */; };
 		DC3DB1C523B41D00004F706F /* 5.gif in Resources */ = {isa = PBXBuildFile; fileRef = DC3DB1C023B41D00004F706F /* 5.gif */; };
+		DC47317D2441CA8000FD9509 /* SlidingMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC47317C2441CA8000FD9509 /* SlidingMenuView.swift */; };
 		DC488FF823D3D3EE00E4C865 /* EditContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC488FF723D3D3EE00E4C865 /* EditContainerView.swift */; };
 		DC488FFA23D3DB7700E4C865 /* GifEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC488FF923D3DB7700E4C865 /* GifEditor.swift */; };
 		DC488FFC23D46D5700E4C865 /* ImageAdjustmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC488FFB23D46D5700E4C865 /* ImageAdjustmentView.swift */; };
@@ -162,6 +164,7 @@
 		4E61FA6AE0F826D446D1F649 /* Pods-gif.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-gif.release.xcconfig"; path = "Target Support Files/Pods-gif/Pods-gif.release.xcconfig"; sourceTree = "<group>"; };
 		642D151B3CA7633FB3B91944 /* Pods-share.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-share.debug.xcconfig"; path = "Target Support Files/Pods-share/Pods-share.debug.xcconfig"; sourceTree = "<group>"; };
 		DC0156DC23C0D3DA00E993D2 /* GifCreatedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GifCreatedView.swift; sourceTree = "<group>"; };
+		DC03CC65245076C400AA272B /* TimelineSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSummaryView.swift; sourceTree = "<group>"; };
 		DC1ED73023ECFCA90082D16E /* View.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
 		DC1ED73123ECFCA90082D16E /* Image.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		DC1ED73323ECFCA90082D16E /* Stack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Stack.swift; sourceTree = "<group>"; };
@@ -180,6 +183,7 @@
 		DC3DB1BE23B41CFF004F706F /* 3.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 3.gif; sourceTree = "<group>"; };
 		DC3DB1BF23B41CFF004F706F /* 2.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 2.gif; sourceTree = "<group>"; };
 		DC3DB1C023B41D00004F706F /* 5.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = 5.gif; sourceTree = "<group>"; };
+		DC47317C2441CA8000FD9509 /* SlidingMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlidingMenuView.swift; sourceTree = "<group>"; };
 		DC488FF723D3D3EE00E4C865 /* EditContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditContainerView.swift; sourceTree = "<group>"; };
 		DC488FF923D3DB7700E4C865 /* GifEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GifEditor.swift; sourceTree = "<group>"; };
 		DC488FFB23D46D5700E4C865 /* ImageAdjustmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAdjustmentView.swift; sourceTree = "<group>"; };
@@ -325,6 +329,7 @@
 				37A7A959238087A500BBCADB /* Preview Content */,
 				37A7A9672380BED900BBCADB /* Video.swift */,
 				3757E65F2381059E00D9E953 /* TimelineView.swift */,
+				DC03CC65245076C400AA272B /* TimelineSummaryView.swift */,
 				3757E661238744E000D9E953 /* PlayerContainerView.swift */,
 				3757E66323877DE000D9E953 /* PlayerView.swift */,
 				37FD5A03238F989E00CB098E /* Utils.swift */,
@@ -374,6 +379,7 @@
 				DCE7964F23CB92CD000BCEBF /* MenuView.swift */,
 				DC81FDB823E076E800017FAE /* CustomNavView.swift */,
 				DCCF1A3423E9A80F00940D6F /* LoadingCircleView.swift */,
+				DC47317C2441CA8000FD9509 /* SlidingMenuView.swift */,
 			);
 			path = UtilViews;
 			sourceTree = "<group>";
@@ -742,6 +748,7 @@
 				3757E6602381059E00D9E953 /* TimelineView.swift in Sources */,
 				3757E662238744E000D9E953 /* PlayerContainerView.swift in Sources */,
 				DCCF1A3523E9A80F00940D6F /* LoadingCircleView.swift in Sources */,
+				DC47317D2441CA8000FD9509 /* SlidingMenuView.swift in Sources */,
 				DC821E9E23AF519B0015C0FE /* GIFImageView.swift in Sources */,
 				DCA355D723C4B53B00A28C69 /* State.swift in Sources */,
 				3757E66423877DE000D9E953 /* PlayerView.swift in Sources */,
@@ -757,6 +764,7 @@
 				3707E1D923A1517800ABC970 /* PreviewView.swift in Sources */,
 				DCB9DDFB23B85142005B8741 /* CustomTabView.swift in Sources */,
 				DCCDAFC023F607200019A63C /* EnterPasscodeState.swift in Sources */,
+				DC03CC66245076C400AA272B /* TimelineSummaryView.swift in Sources */,
 				37A7A954238087A000BBCADB /* SceneDelegate.swift in Sources */,
 				DCB9DDF923B83F68005B8741 /* SettingsView.swift in Sources */,
 				DCCDAFC823F607200019A63C /* PasscodeLockPresenter.swift in Sources */,
@@ -877,7 +885,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -931,7 +939,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -960,7 +968,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.3;
+				MARKETING_VERSION = 0.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -990,7 +998,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.3;
+				MARKETING_VERSION = 0.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1017,7 +1025,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.3;
+				MARKETING_VERSION = 0.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1043,7 +1051,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.3;
+				MARKETING_VERSION = 0.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

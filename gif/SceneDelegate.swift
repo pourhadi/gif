@@ -10,6 +10,58 @@ import UIKit
 import SwiftUI
 import BiometricAuthentication
 import Security
+
+
+enum Orientation {
+    case landscape
+    case portrait
+}
+
+struct OrientationKey : EnvironmentKey {
+    static var defaultValue: Orientation = .portrait
+    typealias Value = Orientation
+}
+
+extension EnvironmentValues {
+    var orientation: Orientation {
+        get {
+            return self[OrientationKey.self]
+        }
+        set {
+            self[OrientationKey.self] = newValue
+        }
+    }
+}
+
+class HostingController<InnerContent> : UIHostingController<OrientatedView<InnerContent>> where InnerContent: View {
+    
+    init(rootView: InnerContent) {
+        super.init(rootView: OrientatedView(orientation: .portrait, content: rootView))
+    }
+    
+    @objc required dynamic init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        self.rootView = OrientatedView(orientation: size.width > size.height ? .landscape : .portrait, content: self.rootView.content)
+    }
+    
+}
+
+struct OrientatedView<Content> : View where Content : View {
+    
+    let orientation: Orientation
+    let content: Content
+    
+    var body: some View {
+        content.environment(\.orientation, self.orientation)
+    }
+    
+}
+
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
@@ -33,7 +85,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
-            window.rootViewController = UIHostingController(rootView: contentView)
+            window.rootViewController = HostingController(rootView: contentView)
             self.window = window
             window.makeKeyAndVisible()
         }
@@ -80,6 +132,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
         authorizeIfNecessary()
 
+        IAP.shared.checkActive { (active) in
+            SubscriptionState.shared.active = active
+        }
     }
 
     func sceneWillResignActive(_ scene: UIScene) {

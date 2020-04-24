@@ -35,6 +35,11 @@ extension View {
             self
         }
     }
+    
+    
+    func frame(_ size: CGSize) -> some View {
+        frame(width: size.width, height: size.height)
+    }
 }
 
 @propertyWrapper
@@ -267,13 +272,13 @@ extension CGFloat {
     }
 }
 
-final class DeviceDetails: ObservableObject {
+final class DeviceDetails {
     enum Orientation {
         case portrait
         case landscape
     }
       
-    var compact: Bool = false
+    @Published var compact: Bool = false
     
     @Published var orientation: Orientation
     
@@ -304,9 +309,12 @@ final class DeviceDetails: ObservableObject {
                 self?.orientation = .landscape
             }
             
+            self?.compact = self?.uiIdiom == .phone && device.orientation.isLandscape
 
         }
         
+        self.compact = self.uiIdiom == .phone && self.orientation == .landscape
+
     }
       
     deinit {

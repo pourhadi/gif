@@ -305,7 +305,9 @@ extension EnvironmentValues {
 
 
 class HapticController {
-        
+      
+    static let shared = HapticController()
+    
     let feedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
     
     init() {
@@ -315,6 +317,12 @@ class HapticController {
     func longPressHaptic() {
         
         feedbackGenerator.impactOccurred(intensity: 1.0)
+
+    }
+    
+    func selectionHaptic() {
+        
+        feedbackGenerator.impactOccurred(intensity: 0.5)
 
     }
     

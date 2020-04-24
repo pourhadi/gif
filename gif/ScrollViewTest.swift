@@ -70,33 +70,50 @@ struct ScrollViewTest: View {
     
 }
 
-struct ScrollUIView: UIViewRepresentable{
+struct ScrollUIView<Content>: UIViewRepresentable where Content : View {
     func makeCoordinator() -> ScrollUIView.Coordinator {
         return Coordinator(self)
     }
     
     @Binding var offset: CGPoint
     
-    init(offset: Binding<CGPoint>, @ViewBuilder content: @escaping () -> AnyView) {
+    init(offset: Binding<CGPoint> = {
+        var val: CGPoint = CGPoint.zero
+        
+        return Binding<CGPoint>(get: { () -> CGPoint in
+            return val
+        }) { (new) in
+            val = new
+        }
+        }(), @ViewBuilder content: @escaping () -> Content) {
         self.content = content
         self._offset = offset
     }
     
-    let content: () -> AnyView
+    let content: () -> Content
     
     func makeUIView(context: UIViewRepresentableContext<ScrollUIView>) -> CustomScrollView {
-        let v = CustomScrollView(contentHost: UIHostingController(rootView: content()).view)
+        let v = CustomScrollView()
         v.delegate = context.coordinator
         return v
     }
     
     func updateUIView(_ uiView: CustomScrollView, context: UIViewRepresentableContext<ScrollUIView>) {
         
-        uiView.contentOffset = self.offset
+        Async {
+            uiView.host.rootView = self.content().any
+            
+            uiView.host.view.snp.remakeConstraints { (make) in
+                make.edges.equalToSuperview()
+            }
+            
+            uiView.contentOffset = self.offset
+            
+        }
     }
     
     typealias UIViewType = CustomScrollView
-
+    
     class Coordinator: NSObject, UIScrollViewDelegate {
         let parent: ScrollUIView
         
@@ -112,16 +129,13 @@ struct ScrollUIView: UIViewRepresentable{
 
 class CustomScrollView : UIScrollView {
     
-    let contentHost : UIView
+    let host = UIHostingController(rootView: EmptyView().any)
     
-    init(contentHost: UIView) {
-        self.contentHost = contentHost
+    init() {
         super.init(frame: CGRect.zero)
         
-        addSubview(self.contentHost)
-        self.contentHost.snp.makeConstraints { (make) in
-            make.edges.equalToSuperview()
-        }
+        addSubview(self.host.view)
+        
     }
     
     required init?(coder: NSCoder) {
