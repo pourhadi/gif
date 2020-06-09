@@ -171,13 +171,25 @@ struct BlurredPlayerView<Player>: View where Player: PlayerView {
     let playerView: Player
     
     let effect: UIBlurEffect
+    
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     var body: some View {
         ZStack {
             playerView
                 .blur(radius: 50)
-//                .blendMode(.plusDarker)
-                .overlay(Color.black.opacity(0.7).blendMode(.darken))
-//            VisualEffectView(effect: effect)
+                //                .blendMode(.plusDarker)
+                .overlay(
+                    Group {
+                        if self.colorScheme == .dark {
+                            Color.black.opacity(0.7).blendMode(.darken)
+                        } else {
+                            Color.white.opacity(0.7).blendMode(.lighten)
+                            
+                        }
+                    }
+                    
+            )
+            //            VisualEffectView(effect: effect)
         }
     }
 }

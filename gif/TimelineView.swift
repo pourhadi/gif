@@ -26,7 +26,7 @@ struct TimelineControlsView<Generator>: View where Generator : GifGenerator {
                 .background(self.previewing ? Color.accent: Color.clear)
                 .cornerRadius(6)
                 .padding(10)
-                .foregroundColor(self.previewing ? Color.black : Color.accent)
+                .foregroundColor(self.previewing ? Color.background : Color.accent)
 //            Spacer()
 //            Button(action: {
 //                self.context.cropState.visible = true

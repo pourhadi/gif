@@ -7,7 +7,185 @@
 //
 
 import SwiftUI
+import UIKit
+import SnapKit
 
+
+class FeaturePager : UIView, UIScrollViewDelegate {
+    
+    let features: [String]
+    
+    let pageControl = UIPageControl()
+    
+    let scrollView = UIScrollView()
+    
+    var pagerTimer: Timer?
+    
+    var heightConstraint: NSLayoutConstraint?
+    
+    let updateHeightBlock: (CGFloat) -> Void
+    
+    init(_ features: [String], updateHeightBlock: @escaping (CGFloat) -> Void) {
+        self.features = features
+        self.updateHeightBlock = updateHeightBlock
+        super.init(frame: CGRect.zero)
+        
+        pageControl.numberOfPages = features.count
+        
+        addSubview(pageControl)
+        addSubview(scrollView)
+        
+        scrollView.isPagingEnabled = true
+        
+        scrollView.snp.makeConstraints { (make) in
+            make.top.leading.trailing.equalToSuperview()
+            
+        }
+        
+        heightConstraint = NSLayoutConstraint(item: scrollView, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 0)
+        heightConstraint?.isActive = true
+        
+        pageControl.snp.makeConstraints { (make) in
+            make.top.equalTo(scrollView.snp.bottom).offset(10)
+            make.bottom.equalToSuperview()
+            make.centerX.equalToSuperview()
+            make.height.lessThanOrEqualTo(40).priority(.required)
+        }
+        
+        scrollView.delegate = self
+        
+        var lastLabel: UIView?
+        for feature in features {
+            
+            let labelContainer = UIView()
+            let label = UILabel()
+            label.text = feature
+            label.textAlignment = .center
+            label.textColor = _accent
+            label.numberOfLines = 0
+            labelContainer.addSubview(label)
+            scrollView.addSubview(labelContainer)
+            labelContainer.snp.makeConstraints { (make) in
+                make.centerY.equalToSuperview()
+                make.width.equalTo(self)
+                if let last = lastLabel {
+                    make.leading.equalTo(last.snp.trailing)
+                }
+                
+                if feature == features.last {
+                    make.trailing.equalToSuperview()
+                }
+                
+                if feature == features.first {
+                    make.leading.equalToSuperview()
+                }
+            }
+            
+            label.snp.makeConstraints { (make) in
+                make.edges.equalToSuperview().inset(10)
+            }
+            
+            lastLabel = labelContainer
+        }
+        
+        self.setTimer()
+    }
+    
+    var heightSet = false
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        var largestHeight: CGFloat = 0.0
+        
+        for view in scrollView.subviews {
+            if view.frame.size.height > largestHeight {
+                largestHeight = view.frame.size.height
+            }
+        }
+        
+        
+        let newHeight = largestHeight
+        if heightConstraint?.constant != newHeight {
+            self.heightSet = true
+
+            heightConstraint?.constant = newHeight
+            self.updateConstraintsIfNeeded()
+            self.setNeedsLayout()
+            
+            self.updateHeightBlock(newHeight + pageControl.frame.size.height)
+        }
+        
+    }
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        pagerTimer?.invalidate()
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        pageControl.currentPage = Int(scrollView.contentOffset.x / self.frame.size.width)
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        setTimer()
+    }
+    
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        setTimer()
+    }
+    
+    func setTimer() {
+        pagerTimer?.invalidate()
+        
+        pagerTimer = Timer.scheduledTimer(withTimeInterval: 4, repeats: false, block: { [weak self] (_) in
+            guard let weakSelf = self else { return }
+            
+            var newPage = weakSelf.pageControl.currentPage + 1
+            if newPage == weakSelf.features.count {
+                newPage = 0
+            }
+            
+            weakSelf.goTo(newPage)
+        })
+    }
+    
+    func goTo(_ page: Int) {
+        pagerTimer?.invalidate()
+        
+        let x = self.frame.width * CGFloat(page)
+        scrollView.setContentOffset(CGPoint(x: x, y: 0), animated: true)
+        
+        
+        
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+}
+
+
+struct FeaturePagerView : UIViewRepresentable {
+    
+    let features: [String]
+    @Binding var height: CGFloat
+    
+    func makeUIView(context: Context) -> FeaturePager {
+        return FeaturePager(features, updateHeightBlock: { height in
+            self.height = height
+        })
+    }
+    
+    func updateUIView(_ uiView: FeaturePager, context: Context) {
+        
+    }
+    
+    typealias UIViewType = FeaturePager
+    
+    
+    
+    
+}
 
 struct SubscriptionStateKey : EnvironmentKey {
     static var defaultValue: SubscriptionState = SubscriptionState.shared
@@ -79,10 +257,38 @@ extension View {
         .animation(Animation.bouncy1.delay(delay))
 
     }
-    
 }
 
+//class SubscriptionController: UIHostingController<ContainedSubscriptionSignupView> {
+//
+//    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+//        return .portrait
+//    }
+//
+//    override var shouldAutorotate: Bool { return false }
+//}
+//
+//struct _SubscriptionSignupView : UIViewControllerRepresentable {
+//    let onDismiss: (() -> Void)?
+//    init(_ onDismiss: (() -> Void)? = nil) {
+//        self.onDismiss = onDismiss
+//    }
+//    func makeUIViewController(context: Context) -> SubscriptionController {
+//        return SubscriptionController(rootView: ContainedSubscriptionSignupView(onDismiss))
+//    }
+//
+//    func updateUIViewController(_ uiViewController: SubscriptionController, context: Context) {
+//        uiViewController.view.backgroundColor = UIColor.clear
+//        uiViewController.view.isOpaque = false
+//    }
+//
+//    typealias UIViewControllerType = SubscriptionController
+//}
+
+
 struct SubscriptionSignupView: View {
+    
+//    var verticalSizeClass = UserInterfaceSizeClass.regular
     
     @Environment(\.verticalSizeClass) var verticalSizeClass : UserInterfaceSizeClass?
 //    @Environment(\.subscriptionState) var subscriptionState : SubscriptionState
@@ -97,6 +303,8 @@ struct SubscriptionSignupView: View {
     @State var isActive: Bool = false
     
     @State var visible = false
+    
+    @State var featureScrollerHeight: CGFloat = 0
     
     let onDismiss: (() -> Void)?
     
@@ -128,9 +336,15 @@ struct SubscriptionSignupView: View {
             self.isActive = active
         }
         .onAppear {
+            
+            GlobalState.instance.disableRotation = true
             Delayed(0.2) {
                 self.visible = true
             }
+        }
+        
+        .onDisappear {
+            GlobalState.instance.disableRotation = false
         }
         
     }
@@ -166,7 +380,6 @@ struct SubscriptionSignupView: View {
                             .popIn(self.visible, delay: 0)
                         
                         Text("Thank you for subscribing!").fontWeight(.medium)
-                            .shadow(radius: 1)
                             
                             .popIn(self.visible, delay: 0.1)
                     }
@@ -183,7 +396,6 @@ struct SubscriptionSignupView: View {
                             Text("Manage your")
                             Text("subscription")
                         }
-                        .shadow(radius: 1)
                             
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
@@ -203,7 +415,6 @@ struct SubscriptionSignupView: View {
                         self.dismiss()
                     }, label: {
                             Text(" Done ")
-                        .shadow(radius: 1)
 
                         .accentColor(Color.accent)
                         .padding(10)
@@ -266,6 +477,14 @@ struct SubscriptionSignupView: View {
         }
     }
     
+    var featureView : some View {
+        FeaturePagerView(features: ["Sync your GIFs with iCloud Drive",
+        "Create public links to your GIFs for easy sharing anywhere",
+        "View your GIFs on your Apple Watch",
+        "Create GIFs from your online videos"], height: self.$featureScrollerHeight)
+            .frame(height: self.featureScrollerHeight)
+    }
+    
     var content: some View {
         
         return GeometryReader { metrics in
@@ -275,24 +494,35 @@ struct SubscriptionSignupView: View {
                 Stack(self.verticalSizeClass == .compact ? .horizontal : .vertical, spacing: 14) {
                     
                     
-                    VStack(spacing: 14) {
+                    VStack(spacing: 10) {
                         Image(decorative: "app_icon")
                             .padding(20)
                             .background(RoundedRectangle(cornerRadius: 20).fill(Color.white))
-                            .padding(.bottom, 20)
-                            .scaleEffect(0.9)
-                        .popIn(self.visible, delay:0)
-
+                            //                            .padding(.bottom, 20)
+                            .scaleEffect(0.8)
+                            //                            .frame(width: 80)
+                            .popIn(self.visible, delay:0)
                         
-                        Text("Subscribe to enable all of Giffed's features")
+                        
+                        Text("Subscribe to unlock saving, and to enable all of Giffed's features:")
                             .fontWeight(.medium)
-
+                            
                             .multilineTextAlignment(.center)
-                            .shadow(radius: 1)
+                            
+                            .popIn(self.visible, delay:0.1)
+                        
+                        
+                        if self.verticalSizeClass != .compact {
+                            Divider()
+                                .popIn(self.visible, delay:0.12)
+                            self.featureView
+                            .popIn(self.visible, delay: 0.13)
 
-                        .popIn(self.visible, delay:0.1)
-
+                        }
+                        
                     }
+                    
+                    
                     
                     if self.verticalSizeClass != .compact {
                         Divider()
@@ -301,6 +531,14 @@ struct SubscriptionSignupView: View {
                     }
                     
                     VStack(spacing: self.verticalSizeClass == .compact ? 8 : 14) {
+                        if self.verticalSizeClass == .compact {
+                            self.featureView
+                            .popIn(self.visible, delay:0.14)
+                            Divider()
+                            .popIn(self.visible, delay:0.17)
+
+                        }
+                        
                         Button(action: {
                             self.purchase(promo: .oneWeekFree)
                         }, label: {
@@ -311,7 +549,6 @@ struct SubscriptionSignupView: View {
                                     Text("\(self.iapDetails.monthlyPriceString) / month").bold().noAnimations()
                                 }
                             }
-                                .shadow(radius: 1)
 
                             .accentColor(Color.accent)
                             .padding(10)
@@ -319,7 +556,7 @@ struct SubscriptionSignupView: View {
 //                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.3))
                                 .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.5).opacity(0.8)) //.opacity(0.5)))
 
-                            .frame(width: self.verticalSizeClass == .compact ? metrics.size.width / 2 : metrics.size.width - 120, alignment: .center)
+                            .frame(width: self.verticalSizeClass == .compact ? metrics.size.width / 3 : metrics.size.width - 120, alignment: .center)
                             )
                         })
                             .popIn(self.visible, delay:0.2)
@@ -351,7 +588,6 @@ struct SubscriptionSignupView: View {
                                     .scaleEffect(0.8)
                             }
                             .multilineTextAlignment(.center)
-                                .shadow(radius: 1)
 
                             .accentColor(Color.accent)
                             .padding(10)
@@ -359,7 +595,7 @@ struct SubscriptionSignupView: View {
 //                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.3))
                                 .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.5).opacity(0.8)) //.opacity(0.5)))
 
-                            .frame(width: self.verticalSizeClass == .compact ? metrics.size.width / 2 : metrics.size.width - 120, alignment: .center)
+                            .frame(width: self.verticalSizeClass == .compact ? metrics.size.width / 3 : metrics.size.width - 120, alignment: .center)
                             )
                         })
                             .popIn(self.visible, delay:0.3)

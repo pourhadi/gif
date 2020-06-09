@@ -65,7 +65,14 @@ struct MainPlayerView<Player, Generator>: View where Player: PlayerView, Generat
                                 }, label: { Rectangle().foregroundColor(Color.clear) }).padding(.bottom, 70).zIndex(2)
                             }
                             
-                            self.getTimestampLabel().zIndex(1)
+                            VStack {
+                                Spacer()
+                            
+                            self.getTimestampLabel()
+                                .background(Color.black.opacity(0.5).cornerRadius(4, corners: [.topLeft, .topRight]))
+                            }
+                            .zIndex(1)
+
                         }
                 )
                 
@@ -99,16 +106,13 @@ struct TimestampLabel : View {
     var text: String
     
     var body : some View {
-        VStack {
-            Spacer()
+
             Text(text)
-                .fontWeight(.medium)
+                .minimumScaleFactor(0.5)
+                .foregroundColor(Color.white)
+//                .fontWeight(.medium)
                 //                .shadow(color: Color.black, radius: 2, x: 0, y: 0)
-                .scaledToFill()
                 .padding(6)
-                .background(Color.black.opacity(0.5).cornerRadius(4))
-                .frame(alignment: .bottom)
-        }
     }
     
 }

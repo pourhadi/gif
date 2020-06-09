@@ -8,6 +8,16 @@
 
 import SwiftUI
 
+
+struct MenuButtonStyle : ButtonStyle {
+    let colorScheme: ColorScheme
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+
+    }
+}
+
 enum MenuItemAction {
     case expand(String?, [MenuItem])
     case action(() -> Void)
@@ -108,6 +118,8 @@ struct MenuView: View {
     
     @Environment(\.verticalSizeClass) var verticalSizeClass: UserInterfaceSizeClass?
     
+    @Environment(\.deviceDetails) var deviceDetails : DeviceDetails
+    
     var bouncyAnimation : Animation {
         return Animation.bouncy1
     }
@@ -129,7 +141,7 @@ struct MenuView: View {
                 if self.subMenu != nil {
                     if self.title != nil {
                         Group {
-                            Text(self.title!).font(.title).foregroundColor(Color.white)
+                            Text(self.title!).font(.title).foregroundColor(Color.primary)
                             Divider()
                         }.transition(AnyTransition.pop())
                     }
@@ -192,6 +204,7 @@ struct MenuView: View {
             .opacity(self.dismissing ? 0 : 1)
             .zIndex(1)
         }
+            .frame(width: self.deviceDetails.uiIdiom == .pad ? 500 : nil)
         .edgesIgnoringSafeArea([.top, .bottom])
         .accentColor(Color.accent)
         .onTapGesture {
@@ -211,6 +224,7 @@ struct MenuView: View {
         }
     }
     
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     func button(_ item: MenuItem) -> some View {
         BouncyButton(content: {
 
@@ -218,17 +232,17 @@ struct MenuView: View {
                 Spacer()
                 Stack(self.verticalSizeClass == .compact ? .vertical : .horizontal,
                       spacing: 20) {
-                    item.image
-                    item.text.font(.headline).minimumScaleFactor(0.9).foregroundColor(Color.white)
+                        item.image?.accentColor(.accent)
+                    item.text.font(.headline).minimumScaleFactor(0.9).foregroundColor(Color.primary)
                 }
                 Spacer()
             }
             
-        .shadow(radius: 1)
+            .shadow(radius: self.colorScheme == .dark ? 1 : 0)
             .padding([.leading, .trailing], self.verticalSizeClass == .compact ? 20 : 20)
             .padding([.top, .bottom], 20)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.5).opacity(0.8))) //.opacity(0.5)))
-            
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: self.colorScheme == .dark ? 0.5 : 1.0).opacity(0.8))) //.opacity(0.5)))
+
         }) {
             switch item.action {
             case .action(let action):

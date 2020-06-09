@@ -366,36 +366,50 @@ public struct VideoPlayerView: PlayerView {
     }
 }
 
-struct StepperView: View {
+struct StepperView<TimestampLabel>: View where TimestampLabel : View {
     let stepForward: () -> Void
     let stepBackward: () -> Void
-    
+    let timestampLabel: TimestampLabel
     var body: some View {
-        VStack {
-            Spacer()
-            
-            HStack {
+
+        GeometryReader { metrics in
+            HStack(alignment: .bottom, spacing: 2) {
+                Group {
+                
                 Button(action: {
                     self.stepBackward()
-                }, label: { self.backView.frame(width: 40, height: 40) })
-                Spacer()
+                }, label: { self.backView.padding(7) })
+                    .layoutPriority(1)
+//                Spacer()
+                self.timestampLabel
+                    .noAnimations()
+                    .minimumScaleFactor(0.7)
+                .allowsTightening(true)
+                    .layoutPriority(2)
                 Button(action: {
                     self.stepForward()
-                }, label: { self.forwardView.frame(width: 40, height: 40) })
-            }.padding(10)
-            Spacer()
+                }, label: { self.forwardView.padding(7) })
+                .layoutPriority(1)
+                    
+                }
+                .background(Color.black.opacity(0.5).cornerRadius(4, corners: [.topLeft, .topRight]))
+
+
+            }
+
+            .frame(height: metrics.size.height, alignment: .bottom)
         }
     }
     
     var backView: some View {
-        return Image.symbol("backward.fill", .init(pointSize: 20))!.foregroundColor(Color.text).shadow(color: Color.black.opacity(0.6), radius: 4, x: 0, y: 0)
-//        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("backward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
+        return Image.symbol("backward.fill", .init(pointSize: 15))!.foregroundColor(Color.white)
+            //.shadow(color: Color.black.opacity(0.6), radius: 4, x: 0, y: 0)
     }
     
     var forwardView: some View {
-        return Image.symbol("forward.fill", .init(pointSize: 20))!.foregroundColor(Color.text).shadow(color: Color.black.opacity(0.6), radius: 4, x: 0, y: 0)
+        return Image.symbol("forward.fill", .init(pointSize: 15))!.foregroundColor(Color.white)
+            //.shadow(color: Color.black.opacity(0.6), radius: 4, x: 0, y: 0)
 
-//        return VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialLight)).mask(Image.symbol("forward.fill", .init(pointSize: 20))!.frame(alignment: .center)).opacity(0.9).shadow(color: Color.black.opacity(0.6), radius: 2)
     }
 }
 
@@ -444,14 +458,16 @@ struct PlayerLabelView<Player>: View where Player: PlayerView {
 //                            .brightness(0.3)
                         
                         StepperView(stepForward: self.stepForward,
-                                    stepBackward: self.stepBackward)
+                                    stepBackward: self.stepBackward,
+                                    timestampLabel: self.getTimestampLabel())
                     }
-                    .opacity(self.controlsState.controlsVisible ? 1 : 0)
+//                    .opacity(self.controlsState.controlsVisible ? 1 : 0)
                     .animation(.easeInOut(duration: 0.3))
                     .zIndex(2)
                 }
             }
-        }.overlay(self.getTimestampLabel())
+        }
+//        .overlay(self.getTimestampLabel())
     }
     
     var text: Text {

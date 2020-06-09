@@ -27,21 +27,12 @@ struct TimelineSummaryView: View { // <Generator>: View where Generator : GifGen
                 Group {
                     self.timelineBackground
                         
-                        .contentShape(Rectangle().size(metrics.size))
-                        .gesture(DragGesture().onChanged({ (v) in
-                            let touchWidth: CGFloat = 60
-                            let touchAreaStart = (metrics.size.width * self.playState.currentPlayhead) - (touchWidth / 2)
-                            
-                            if v.location.x >= touchAreaStart || v.location.x <= touchAreaStart + touchWidth {
-                                let p = v.location.x / metrics.size.width
-                                self.playState.currentPlayhead = p
-                            }
-                            
-                        }))
+
                             .overlay(
-                                RoundedRectangle(cornerRadius: metrics.size.height / 4)
+                                Capsule()
+//                                RoundedRectangle(cornerRadius: metrics.size.height / 4)
                                     .size(width: metrics.size.width * selectionWidth, height: metrics.size.height / 2)
-                                    .fill(Color.accent.opacity(0.5))
+                                    .stroke(Color.accent.opacity(0.5), lineWidth: 2)
                                     .padding([.top, .bottom], metrics.size.height / 4)
 
                                     .offset(x: metrics.size.width * selectionX)
@@ -63,6 +54,17 @@ struct TimelineSummaryView: View { // <Generator>: View where Generator : GifGen
                         .frame(width: 4, height: metrics.size.height)
                         .offset(x: metrics.size.width * self.playState.currentPlayhead)
                         .zIndex(2)
+                    .contentShape(Rectangle().size(metrics.size))
+                    .gesture(DragGesture().onChanged({ (v) in
+                        let touchWidth: CGFloat = 60
+                        let touchAreaStart = (metrics.size.width * self.playState.currentPlayhead) - (touchWidth / 2)
+                        
+                        if v.location.x >= touchAreaStart || v.location.x <= touchAreaStart + touchWidth {
+                            let p = v.location.x / metrics.size.width
+                            self.playState.currentPlayhead = p
+                        }
+                        
+                    }))
                 }
 
             }

@@ -53,6 +53,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
     
+//    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+//        if GlobalState.instance.disableRotation {
+//            return .portrait
+//        }
+//        
+//        print("ASKING SUPPORTED INTERFACE ORIENTATION")
+//        print("")
+//        print("\n\n\n\n\n\n\n\n\n")
+//        
+//        return .all
+//    }
+//    
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
         
         let videoExtensions = ["mp4", "mkv", "mov"]

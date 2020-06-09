@@ -218,7 +218,7 @@ struct EditContainerView: View {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.trim
                 
                 
-            }, label: { self.buttonLabel("Trim", "slider.horizontal.below.rectangle") }).padding(12)
+            }, label: { self.buttonLabel("Edit", "slider.horizontal.below.rectangle") }).padding(12)
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.2))
             
             Spacer()
@@ -243,7 +243,7 @@ struct EditContainerView: View {
             Button(action: {
                 self.$activeEditor.animation().wrappedValue = ActiveEditor.image
                 
-            }, label: { self.buttonLabel("Adjust", "dial.fill") }).padding(12)
+            }, label: { self.buttonLabel("Adjust", "slider.horizontal.3") }).padding(12)
                 .modifier(SlideUpModifier(visible: self.$visible, delay: 0.5))
             
         }

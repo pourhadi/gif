@@ -270,7 +270,18 @@ struct WithHUDModifier: ViewModifier {
     func body(content: _ViewModifier_Content<WithHUDModifier>) -> some View {
         ZStack {
             content
-                .overlay(Color.background.opacity(self.showHUD ? 0.3 : 0).animation(Animation.default).edgesIgnoringSafeArea(.all))
+                .overlay(
+//                    Group {
+//                        if self.showHUD {
+//                            Color.background.opacity(0.3)
+//                            .animation(Animation.default).edgesIgnoringSafeArea(.all)
+//                        }
+//                    }
+                    
+                    Rectangle()
+                        .fill(Color.background).opacity(self.showHUD ? 0.3 : 0).animation(Animation.default).edgesIgnoringSafeArea(.all))
+                
+                
                 .zIndex(4)
             
             if self.showHUD {

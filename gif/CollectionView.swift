@@ -124,7 +124,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         cv.dataSource = context.coordinator
         cv.register(Cell.self, forCellWithReuseIdentifier: "cell")
         cv.contentInsetAdjustmentBehavior = .always
-        
+        cv.backgroundColor = UIColor.clear
         return cv
     }
     
@@ -140,11 +140,9 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         //            {
         //                [weak weakView = uiView, weak weakCoordinator = context.coordinator] in
         //            guard let uiView = weakView, let coordinator = weakCoordinator, !coordinator.removed else { return }
-        print("update collection view representable1")
         
         let coordinator = context.coordinator
         if coordinator.removed { return }
-        print("update collection view representable2")
         
         
 //        coordinator.transaction = context.transaction
@@ -230,8 +228,7 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
         if invalidateLayout {
             
             Async {
-                
-                
+               
                 let layout = UICollectionViewFlowLayout()
                 layout.sectionInset = UIEdgeInsets(top: self.layout.scrollViewInsets.top, left: 0, bottom: self.layout.scrollViewInsets.bottom, right: 0)
                 
@@ -393,10 +390,10 @@ struct FlowCollectionView<Item, ItemContent, PreviewContent>: UIViewRepresentabl
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! Cell
             
             let item = self.items[indexPath.item]
-            let _ = self.parent.itemBuilder(indexPath.item,
+            cell.host.rootView = self.parent.itemBuilder(indexPath.item,
                                             item,
                                             CGSize(width: self.parent.getColumnWidth(for: collectionView.frame.size.width), height: self.parent.getRowHeight(for: indexPath.item, metrics: collectionView.frame.size)),
-                                            self.selectedItems.contains(item))
+                self.selectedItems.contains(item)).any
             
             return cell
         }

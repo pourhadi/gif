@@ -16,7 +16,8 @@
   },
   "swift_versions": "5.0",
   "platforms": {
-    "ios": "12.1"
+    "ios": "12.1",
+    "watchos": "6"
   },
   "source_files": [
     "iCloudSync/*.swift"

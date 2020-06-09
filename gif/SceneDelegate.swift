@@ -62,6 +62,7 @@ struct OrientatedView<Content> : View where Content : View {
     
 }
 
+
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
@@ -79,9 +80,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             .environment(\.timelineState, state.timelineState)
 //            .environment(\.injected, injected)
 //            .colorScheme(.dark)
+        
             .environmentObject(state)
 
-        
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)

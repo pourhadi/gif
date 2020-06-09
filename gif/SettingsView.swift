@@ -108,6 +108,7 @@ struct SettingsView: View {
         _sat = _accentSaturation
         _hueColor = _accentColorBinding
         _showSubscriptionView = showSubscriptionView
+        _brightness = _accentBrightness
     }
     
     @Binding var showSubscriptionView: Bool
@@ -117,6 +118,8 @@ struct SettingsView: View {
     @State var hueState: CGFloat = _accentHue.wrappedValue
     
     @Binding var sat: CGFloat
+    @Binding var brightness: CGFloat
+    
     @State var satState: CGFloat = _accentSaturation.wrappedValue
     
     @EnvironmentObject var settings: Settings
@@ -206,6 +209,21 @@ struct SettingsView: View {
                             EmptyView()
                         }.labelsHidden()
                     }
+                    
+                    VStack {
+                                            HStack {
+                                                Text("Brightness")
+                                                Spacer()
+                                                Text("\(Int(self.brightness * 100.0))")
+                                            }
+                                            Slider(value: $brightness.animation(Animation.default), in: 0...1, step: 0.01, onEditingChanged: { _ in
+                    //                            self.satState = _accentSaturation.wrappedValue
+                    //                            self.hueColor = _accentColorBinding.wrappedValue
+                                            }) {
+                                                EmptyView()
+                                            }.labelsHidden()
+                                        }
+
                 }
                 
             }.navigationBarTitle("Settings")

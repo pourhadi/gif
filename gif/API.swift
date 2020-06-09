@@ -17,6 +17,8 @@ class API: NSObject, URLSessionTaskDelegate, RedirectHandler {
 
     static func reath(_ req: URLRequest) -> AnyPublisher<URLRequest, Never> {
         return Future<URLRequest, Never> { promise in
+            
+            
             Auth.auth().signInAnonymously() { (authResult, error) in
                 if let authResult = authResult {
                     authResult.user.getIDTokenForcingRefresh(true, completion: { (result, error) in
@@ -29,6 +31,7 @@ class API: NSObject, URLSessionTaskDelegate, RedirectHandler {
                     promise(.success(req))
                 }
             }
+ 
         }.eraseToAnyPublisher()
     }
     

@@ -23,16 +23,6 @@ public enum VideoMode {
 }
 
 
-struct PlayState {
-    
-    @Clamped
-    var currentPlayhead: CGFloat = 0
-    
-    var playing: Bool = false
-    
-    var previewing = false
-}
-
 
 //class PlayState: ObservableObject, Equatable {
 //    static func == (lhs: PlayState, rhs: PlayState) -> Bool {
@@ -63,20 +53,6 @@ struct PlayState {
 //    }
 //}
 
-struct AssetInfo {
-    var fps: Float
-    var duration: Double
-    var size: CGSize
-    
-    var unitFrameIncrement: CGFloat {
-        let totalFrames = fps * Float(duration)
-        return CGFloat(1 / totalFrames)
-    }
-    
-    static var empty: Self {
-        return Self(fps: 0, duration: 0, size: CGSize.zero)
-    }
-}
 
 class TextContext : ObservableObject {
     
@@ -87,11 +63,7 @@ class TextContext : ObservableObject {
 }
 
 
-class ContextStore {
-    
-    static var context: AnyObject?
-    
-}
+
 
 class EditingContext<Generator>: ObservableObject where Generator : GifGenerator {
 
@@ -199,10 +171,6 @@ class EditingContext<Generator>: ObservableObject where Generator : GifGenerator
     }
 }
 
-protocol Editable {
-    var url: URL { get }
-    
-}
 
 extension Optional where Wrapped == URL {
     var isEmpty: Bool {
@@ -366,10 +334,10 @@ class Video: ObservableObject, Identifiable, Editable {
         
     }
     
-    static func createFromGIF(url: URL, completion: (Video?) -> Void) {
+    static func createFromGIF(url: URL, _ needsGIFCopy: Bool = true, completion: (URL?) -> Void) {
         let tmpDirURL = FileManager.default.temporaryDirectory.appendingPathComponent("tmpVideo.mp4")
         
-        let localGIFURL = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
+        var localGIFURL = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
         
         do {
             
@@ -377,23 +345,28 @@ class Video: ObservableObject, Identifiable, Editable {
                 try FileManager.default.removeItem(at: tmpDirURL)
             }
             
+            if needsGIFCopy {
             if FileManager.default.fileExists(atPath: localGIFURL.path) {
                 try FileManager.default.removeItem(at: localGIFURL)
+            }
             }
             
         } catch { }
         
         do {
             
+            if needsGIFCopy {
             try FileManager.default.copyItem(at: url, to: localGIFURL)
-            
+            } else {
+                localGIFURL = url
+            }
             if MobileFFmpeg.execute("-i \(localGIFURL.path) -pix_fmt yuv420p -vf \"crop=trunc(iw/2)*2:trunc(ih/2)*2\" \(tmpDirURL.path)") == 0 {
                 
-                let video = Video(data: nil, url: tmpDirURL)
-                let selection = GifConfig.Selection(startTime: 0, endTime: 1)
-                video.gifConfig.selection = selection
-                video.gifConfig.animationQuality = .high
-                completion(video)
+//                let video = Video(data: nil, url: tmpDirURL)
+//                let selection = GifConfig.Selection(startTime: 0, endTime: 1)
+//                video.gifConfig.selection = selection
+//                video.gifConfig.animationQuality = .high
+                completion(tmpDirURL)
             } else {
                 completion(nil)
             }

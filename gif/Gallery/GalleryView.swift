@@ -268,7 +268,7 @@ struct CollectionViewWrapper<G>: View where G : Gallery {
                 if !self.selectionMode && selected {
                     
                     Rectangle()
-                        .fill(Color.black)
+                        .fill(Color.background)
                         .frame(width: size.width, height: size.height)
                     
                 } else {
@@ -521,6 +521,7 @@ struct GalleryContainer: View {
     
     @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
 
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     
     var body: some View {
         var tabs = [TabModel]()
@@ -594,9 +595,11 @@ struct GalleryContainer: View {
             
             
             
-            .opacity(self.loaded ? 1 : 0)
-            .brightness(self.blurContents ? -0.2 : 0)
-            .blur(radius: self.blurContents ? 25 : 0)
+                .opacity(self.loaded ? self.colorScheme != .dark && self.blurContents ? 0.5 : 1 : 0)
+
+            .brightness(self.blurContents ? self.colorScheme == .dark ? -0.2 : 0 : 0)
+                .blur(radius: self.blurContents ? self.colorScheme == .dark ? 25 : 25 : 0)
+//                .saturation(self.blurContents && self.colorScheme == .light ? 0.5 : 1)
             .compositingGroup()
             .disabled(self.blurContents)
             .zIndex(0)
@@ -749,7 +752,7 @@ struct GalleryContainer: View {
         }.onDisappear {
             self.showPlusMenu = false
         }
-        .frame(width: self.deviceDetails.uiIdiom == .pad ? 300 : nil)
+        
     }
     
     func handlePaste() {

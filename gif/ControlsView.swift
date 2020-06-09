@@ -13,6 +13,8 @@ struct ControlsView<Generator>: View where Generator : GifGenerator {
     @Binding var playState: PlayState
     var context: EditingContext<Generator>
     
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    
     var body: some View {
         GeometryReader { metrics in
             HStack(spacing: 4) {
@@ -23,14 +25,14 @@ struct ControlsView<Generator>: View where Generator : GifGenerator {
                     HStack {
                         Spacer()
                         Text(self.context.mode == .text ? "Set Text Start" : "Set Start").bold()
-                            .shadow(radius: 1)
+//                            .shadow(radius: 1)
                             .padding(8)
                             .padding(.top, 8)
                         Spacer()
                     }
                     .padding(.bottom, metrics.safeAreaInsets.bottom)
                         
-                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(white: 0.7).opacity(0.2)).edgesIgnoringSafeArea(.bottom))
+                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(white: self.colorScheme == .dark ? 0.7 : 1.0).opacity(0.2)).edgesIgnoringSafeArea(.bottom))
                 }).foregroundColor(Color.green.opacity(1))
                 Button(action: {
                     self.selection.endTime = self.playState.currentPlayhead
@@ -40,14 +42,14 @@ struct ControlsView<Generator>: View where Generator : GifGenerator {
                     HStack {
                         Spacer()
                         Text(self.context.mode == .text ? "Set Text End" : "Set End").bold()
-                        .shadow(radius: 1)
+//                        .shadow(radius: 1)
                             .padding(8)
                         .padding(.top, 8)
 
                         Spacer()
                     }
                     .padding(.bottom, metrics.safeAreaInsets.bottom)
-                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(white: 0.7).opacity(0.2)).edgesIgnoringSafeArea(.bottom))
+                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(white: self.colorScheme == .dark ?  0.7 : 1.0).opacity(0.2)).edgesIgnoringSafeArea(.bottom))
 
                 }).foregroundColor(Color.red.opacity(1))
             }

@@ -7,7 +7,12 @@
 //
 
 import Foundation
+
+#if os(iOS)
 import iCloudSync
+#endif
+
+
 import Combine
 import SwiftUI
 import SwiftDate
@@ -45,11 +50,19 @@ extension FileGalleryUtils {
             let documentsDirectory = paths[0]
             try? FileManager.default.createDirectory(at: documentsDirectory.appendingPathComponent("demo"), withIntermediateDirectories: true, attributes: nil)
             return documentsDirectory.appendingPathComponent("demo")
+        } else {
+            
         }
         
+        #if os(iOS)
          if self.cloudAvailable {
              return iCloud.shared.localDocumentsURL!
          }
+        
+        #else
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.pourhadi.gif")!
+        #endif
+        
          let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
          var documentsDirectory = paths[0]
 
@@ -57,7 +70,11 @@ extension FileGalleryUtils {
      }
     
     var cloudAvailable: Bool {
+        #if os(iOS)
         return iCloud.shared.cloudAvailable && !DEMO && (UserDefaults(suiteName: "group.com.pourhadi.gif")?.bool(forKey: "iCloudEnabled") ?? false)
+        #else
+        return false
+        #endif
     }
     
 
@@ -98,7 +115,7 @@ extension FileGalleryUtils {
             }
         
         if self.cloudAvailable {
-            
+            #if os(iOS)
             iCloud.shared.saveAndCloseDocument("\(id).gif", with: data) { (_, _, error) in
                 guard error == nil else {
                     completion?(nil, error)
@@ -108,7 +125,7 @@ extension FileGalleryUtils {
                 completion?(id, nil)
                 iCloud.shared.updateFiles()
             }
-            
+            #endif
             
         } else {
             

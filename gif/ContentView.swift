@@ -163,6 +163,8 @@ struct ContentView: View {
     @State var showSubscriptionView = false
     @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
     
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    
     var body: some View {
         self.getMain()
             
@@ -242,6 +244,7 @@ struct ContentView: View {
                 
             }
             
+            
             .overlay(ZStack {
                 if self.activeView == .editor {
                     self.getEditor()
@@ -273,6 +276,8 @@ struct ContentView: View {
                 }
                 
             })
+            
+            
             .opacity(self.rerendering ? 0 : 1)
             .onReceive(AccentPublisher.shared.$publisher) { _ in
                 self.rerendering = true
@@ -281,9 +286,9 @@ struct ContentView: View {
                     self.rerendering = false
                 }
             }
-            .accentColor(Color(self.accent.wrappedValue))
+        .accentColor(Color.accent)
             
-            .brightness(self.blurContents ? -0.2 : 0)
+        .brightness(self.blurContents ? self.colorScheme == .dark ? -0.2 : 0.2 : 0)
             .blur(radius: self.blurContents ? 25 : 0)
             .disabled(self.blurContents)
             .overlay(ZStack {

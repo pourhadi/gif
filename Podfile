@@ -1,5 +1,4 @@
 # Uncomment the next line to define a global platform for your project
- platform :ios, '13.4'
 use_frameworks!
 
 target 'giffed' do
@@ -17,7 +16,7 @@ target 'giffed' do
   pod 'BiometricAuthentication'
   pod 'SmileLock'
   pod 'Alamofire'
-#  pod 'Firebase/Auth'
+  pod 'Firebase/Auth'
   pod 'Purchases'
 end
 
@@ -25,6 +24,16 @@ end
 target 'share' do
   
   pod 'iCloudSync', :path => '~/Projects/gif/iCloudSync'
+  pod 'SwiftDate'
+
+end
+
+target 'giffed4Watch' do
+  pod 'SwiftDate'
+
+end
+
+target 'giffed4Watch Extension' do
   pod 'SwiftDate'
 
 end

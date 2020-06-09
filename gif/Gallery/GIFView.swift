@@ -90,6 +90,8 @@ struct GIFView<G>: View where G : Gallery  {
     
     @State var showLinkCopied = false
     
+    @State var watchAvailable = false
+    
     var title: String {
         if let gif = selectedGIFs.first {
             if let date = gif.creationDate {
@@ -314,6 +316,13 @@ struct GIFView<G>: View where G : Gallery  {
             return Alert(title: Text("URL copied"), message: nil, dismissButton: .default(Text("OK")))
 
         }
+        .onReceive(WatchController.shared.$watchAvailable.receive(on: DispatchQueue.main)) { (available) in
+            self.watchAvailable = available
+        }
+        .onReceive(WatchController.shared.$uploadedGIFs.receive(on: DispatchQueue.main)) { (list) in
+            self.gifsOnWatch = list
+        }
+
     }
     
     func getPopover(metrics: GeometryProxy, values: PopoverPrefs) -> some View {
@@ -361,6 +370,8 @@ struct GIFView<G>: View where G : Gallery  {
     
     @Environment(\.subscriptionState) var subscriptionState: SubscriptionState
     
+    @State var gifsOnWatch = [WatchGIF]()
+    
     func getToolbar(with metrics: GeometryProxy, background: AnyView = VisualEffectView(effect: .init(style: .systemChromeMaterial)) .any) -> AnyView {
         return ToolbarView(metrics: metrics, bottomAdjustment: metrics.safeAreaInsets.bottom, background: VisualEffectView.barBlur().any) {
             //            self.gallery.viewConfig.toolbarContent(self.gallery, self.$selectedGIFs, self.$gifViewState)
@@ -369,12 +380,11 @@ struct GIFView<G>: View where G : Gallery  {
                 
                 if self.showSpeedPopover {
                     HStack(spacing: 12) {
-                        if self.speed != 1 {
                             Button(action: {
                                 self.$speed.animation(Animation.default).wrappedValue = 1.0
                             }, label: { Text("Reset") .padding(12) })
+                                .disabled(self.speed != 1.0)
                                 .transition(AnyTransition.move(edge: .leading).animation(Animation.default))
-                        }
                         
                         Slider(value: self.$speed.animation(Animation.default), in: 0.25...3)
                         Button(action: {
@@ -388,17 +398,48 @@ struct GIFView<G>: View where G : Gallery  {
                 } else {
                     
                     
-                        Button(action: {
-                            GlobalPublishers.default.showShare.send([self.selectedGIFs[0]])
-                            
-                        }, label: { Image.symbol("square.and.arrow.up") .padding(12) } )
-                           
+                    Button(action: {
+                        GlobalPublishers.default.showShare.send([self.selectedGIFs[0]])
+                        
+                    }, label: { Image.symbol("square.and.arrow.up") .padding(12) } )
+                    
+                    if self.watchAvailable {
                         
                         Spacer()
                         
                         Button(action: {
+                            if self.gifsOnWatch.contains(where: { (gif) -> Bool in
+                                gif.name.contains(self.selectedGIFs[0].id)
+                            }) {
+                                WatchController.shared.removeFromWatch(self.selectedGIFs[0].id)
+                            } else {
+                                let gif = self.selectedGIFs[0]
+                                gif.getData { (data, gif, _) in
+                                    if let data = data {
+                                        WatchController.shared.sendToWatch(data: data, name: gif.id, thumb: gif.thumbnail)
+                                    }
+                                }
+                            }
+                        }, label: {
+                            if self.gifsOnWatch.contains(where: { (gif) -> Bool in
+                                gif.name.contains(self.selectedGIFs.first?.id ?? "noooo")
+                            }) {
+                                Image.symbol("stopwatch.fill") .padding(12)
+                                
+                            } else {
+                                
+                                Image.symbol("stopwatch") .padding(12)
+                            }
+                        })
+                        
+                    }
+                    
+                    
+                    Spacer()
+                    
+                    Button(action: {
                             self.$showSpeedPopover.animation().wrappedValue.toggle()
-                        }, label: { Image.symbol("speedometer").padding(12) } )
+                        }, label: { Image.symbol("hare").padding(12) } )
                             .transformAnchorPreference(key: PopoverPreferencesKey.self, value: .center) { (val, anchor) in
                                 val.origin = anchor
                         }

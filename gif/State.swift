@@ -13,7 +13,6 @@ import mobileffmpeg
 import MobileCoreServices
 
 
-let serialQueue = DispatchQueue(label: "com.pourhadi.gif.global", qos: .userInitiated, attributes: [], autoreleaseFrequency: .workItem, target: nil)
 
 enum GenerateGIFError: Error {
       case unknownFailure
@@ -74,6 +73,8 @@ class GIFItemProvider : NSObject, UIActivityItemSource {
 class GlobalState: ObservableObject {
     
     static let instance = GlobalState()
+    
+    var disableRotation = false
     
     var previousURL: URL? {
         set {

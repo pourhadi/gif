@@ -253,13 +253,13 @@ public struct Clamped<N> where N : Numeric, N : Strideable {
 
 extension Double {
     func secondsToFormattedTimestamp() -> String {
-        var formatted = String(format: "%.2f", self)
+        var formatted = String(format: "0%.2f", self)
 
         if (self / 60 > 1) {
             let leftover = self - Double(Int(self / 60.0) * 60)
             let minutes = Int(self / 60.0)
             
-            formatted = String(format: "%d:%.2f", minutes, leftover)
+            formatted = String(format: "%02d:%.2f", minutes, leftover)
         }
         
         return formatted
@@ -272,6 +272,7 @@ extension CGFloat {
     }
 }
 
+#if os(iOS)
 final class DeviceDetails {
     enum Orientation {
         case portrait
@@ -323,6 +324,7 @@ final class DeviceDetails {
         }
     }
 }  
+#endif
 
 extension Alignment {
     
@@ -417,7 +419,7 @@ enum Scaled {
     case toFill
 }
 
-
+#if os(iOS)
 extension View {
     
     func scaled(_ how: Scaled) -> some View {
@@ -451,6 +453,7 @@ extension View {
         return self.mask(LinearGradient(gradient: _fadedEdgeGradient, startPoint: startPoint, endPoint: endPoint))
     }
 }
+#endif
 
 extension CGRect {
     
