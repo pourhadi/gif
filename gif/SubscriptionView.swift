@@ -523,7 +523,6 @@ struct SubscriptionSignupView: View {
                     }
                     
                     
-                    
                     if self.verticalSizeClass != .compact {
                         Divider()
                         .popIn(self.visible, delay:0.15)
