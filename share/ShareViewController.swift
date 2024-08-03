@@ -15,10 +15,6 @@ class ShareViewController: UIHostingController<AnyView> {
 
     let queue = DispatchQueue(label: "com.pourhadi.giffed.share")
     
-    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
-        super.init(rootView: AnyView(EmptyView()))
-    }
-    
     @objc required dynamic init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }

@@ -516,7 +516,7 @@ struct GIFView<G>: View where G : Gallery  {
             //            }, label: { Image.symbol("trash") } )
             //                .disabled(self.selectedGIFs.count == 0)
             //                .padding(12).opacity(self.selectedGIFs.count > 0 ? 1 : 0.5)
-        }.frame(height: metrics.size.height + metrics.safeAreaInsets.top + metrics.safeAreaInsets.bottom, alignment: .bottom).any
+        }.frame(height: metrics.size.height + metrics.safeAreaInsets.top + metrics.safeAreaInsets.bottom, alignment: .bottom).foregroundColor(.primary).tint(.primary).any
     }
 }
 

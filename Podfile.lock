@@ -1,64 +1,18 @@
 PODS:
-  - Alamofire (5.0.4)
-  - BiometricAuthentication (3.1.2)
+  - Alamofire (5.8.1)
+  - BiometricAuthentication (3.1.3)
   - Drawsana (0.10.0)
-  - Firebase/Auth (6.21.0):
-    - Firebase/CoreOnly
-    - FirebaseAuth (~> 6.5.1)
-  - Firebase/CoreOnly (6.21.0):
-    - FirebaseCore (= 6.6.5)
-  - FirebaseAuth (6.5.1):
-    - FirebaseAuthInterop (~> 1.0)
-    - FirebaseCore (~> 6.6)
-    - GoogleUtilities/AppDelegateSwizzler (~> 6.5)
-    - GoogleUtilities/Environment (~> 6.5)
-    - GTMSessionFetcher/Core (~> 1.1)
-  - FirebaseAuthInterop (1.1.0)
-  - FirebaseCore (6.6.5):
-    - FirebaseCoreDiagnostics (~> 1.2)
-    - FirebaseCoreDiagnosticsInterop (~> 1.2)
-    - GoogleUtilities/Environment (~> 6.5)
-    - GoogleUtilities/Logger (~> 6.5)
-  - FirebaseCoreDiagnostics (1.2.2):
-    - FirebaseCoreDiagnosticsInterop (~> 1.2)
-    - GoogleDataTransportCCTSupport (~> 2.0)
-    - GoogleUtilities/Environment (~> 6.5)
-    - GoogleUtilities/Logger (~> 6.5)
-    - nanopb (~> 0.3.901)
-  - FirebaseCoreDiagnosticsInterop (1.2.0)
-  - GoogleDataTransport (5.1.0)
-  - GoogleDataTransportCCTSupport (2.0.1):
-    - GoogleDataTransport (~> 5.1)
-    - nanopb (~> 0.3.901)
-  - GoogleUtilities/AppDelegateSwizzler (6.5.2):
-    - GoogleUtilities/Environment
-    - GoogleUtilities/Logger
-    - GoogleUtilities/Network
-  - GoogleUtilities/Environment (6.5.2)
-  - GoogleUtilities/Logger (6.5.2):
-    - GoogleUtilities/Environment
-  - GoogleUtilities/Network (6.5.2):
-    - GoogleUtilities/Logger
-    - "GoogleUtilities/NSData+zlib"
-    - GoogleUtilities/Reachability
-  - "GoogleUtilities/NSData+zlib (6.5.2)"
-  - GoogleUtilities/Reachability (6.5.2):
-    - GoogleUtilities/Logger
-  - GTMSessionFetcher/Core (1.3.1)
   - iCloudSync (8.0.21)
   - IGColorPicker (0.4.3):
     - M13Checkbox
   - M13Checkbox (3.4.0)
-  - mobile-ffmpeg-full-gpl (4.3.1)
-  - nanopb (0.3.9011):
-    - nanopb/decode (= 0.3.9011)
-    - nanopb/encode (= 0.3.9011)
-  - nanopb/decode (0.3.9011)
-  - nanopb/encode (0.3.9011)
-  - Purchases (3.2.2)
+  - mobile-ffmpeg-full-gpl (4.4)
+  - Purchases (3.14.4):
+    - PurchasesCoreSwift (= 3.14.4)
+  - PurchasesCoreSwift (3.14.4)
   - SmileLock (3.0.7)
-  - SnapKit (5.0.1)
-  - SwiftDate (6.1.0)
+  - SnapKit (5.6.0)
+  - SwiftDate (7.0.0)
   - YYImage (1.0.4):
     - YYImage/Core (= 1.0.4)
   - YYImage/Core (1.0.4)
@@ -66,9 +20,8 @@ PODS:
 DEPENDENCIES:
   - Alamofire
   - BiometricAuthentication
-  - Drawsana (from `~/Projects/gif/Drawsana`)
-  - Firebase/Auth
-  - iCloudSync (from `~/Projects/gif/iCloudSync`)
+  - Drawsana (from `./Drawsana`)
+  - iCloudSync (from `./iCloudSync`)
   - IGColorPicker
   - mobile-ffmpeg-full-gpl
   - Purchases
@@ -78,24 +31,14 @@ DEPENDENCIES:
   - YYImage
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  trunk:
     - Alamofire
     - BiometricAuthentication
-    - Firebase
-    - FirebaseAuth
-    - FirebaseAuthInterop
-    - FirebaseCore
-    - FirebaseCoreDiagnostics
-    - FirebaseCoreDiagnosticsInterop
-    - GoogleDataTransport
-    - GoogleDataTransportCCTSupport
-    - GoogleUtilities
-    - GTMSessionFetcher
     - IGColorPicker
     - M13Checkbox
     - mobile-ffmpeg-full-gpl
-    - nanopb
     - Purchases
+    - PurchasesCoreSwift
     - SmileLock
     - SnapKit
     - SwiftDate
@@ -103,35 +46,25 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   Drawsana:
-    :path: "~/Projects/gif/Drawsana"
+    :path: "./Drawsana"
   iCloudSync:
-    :path: "~/Projects/gif/iCloudSync"
+    :path: "./iCloudSync"
 
 SPEC CHECKSUMS:
-  Alamofire: 0fe5fd24b4298dc377a6550da7d5f1b30e286fcb
-  BiometricAuthentication: 36445f3ab77699489f91995bed887be89890afac
+  Alamofire: 3ca42e259043ee0dc5c0cdd76c4bc568b8e42af7
+  BiometricAuthentication: b63d51be9260ba94165e032829ae78f074b129df
   Drawsana: 1866ffebc03f36030fe241a60a39a76758cd3ed8
-  Firebase: f378c80340dd41c0ad0914af740c021eb282a04b
-  FirebaseAuth: a6da11d78dfd956b7f7af3222a0f0b1c93ef8fc9
-  FirebaseAuthInterop: a0f37ae05833af156e72028f648d313f7e7592e9
-  FirebaseCore: 9f495d3afacb7b558711e6218ebb14b1c51b5802
-  FirebaseCoreDiagnostics: e9b4cd8ba60dee0f2d13347332e4b7898cca5b61
-  FirebaseCoreDiagnosticsInterop: 296e2c5f5314500a850ad0b83e9e7c10b011a850
-  GoogleDataTransport: b29a21d813e906014ca16c00897827e40e4a24ab
-  GoogleDataTransportCCTSupport: 6f15a89b0ca35d6fa523e1f752ef818588885988
-  GoogleUtilities: ad0f3b691c67909d03a3327cc205222ab8f42e0e
-  GTMSessionFetcher: cea130bbfe5a7edc8d06d3f0d17288c32ffe9925
   iCloudSync: da2187b1eb82299a4471f81f1eace13264aa21f1
   IGColorPicker: f6034f8629aa90cce308a76ecc0fdf2afed0bf34
   M13Checkbox: 6f59404540ac98ba83a3d1afac335895a40c6a5d
-  mobile-ffmpeg-full-gpl: bb4b4d5f6ca5ecc1c9e60e51dc8cc869149f1ba7
-  nanopb: 18003b5e52dab79db540fe93fe9579f399bd1ccd
-  Purchases: 392c729893c011c7d4d37d7f7c9f863e597d4a9b
+  mobile-ffmpeg-full-gpl: 77de728206f08f30c70f530b18abb4e8f6413eb6
+  Purchases: 2c326c3a0a93445db8fe194d4938fc001e2cec1c
+  PurchasesCoreSwift: 00f41d415f3fb701a5c4bc9909bcbbcf1b1c4b05
   SmileLock: 46b847b3ad963e3140d083b53f09036a4d210537
-  SnapKit: 97b92857e3df3a0c71833cce143274bf6ef8e5eb
-  SwiftDate: fa2bb3962056bb44047b4b85a30044e5eae30b03
+  SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
+  SwiftDate: bbc26e26fc8c0c33fbee8c140c5e8a68293a148a
   YYImage: 1e1b62a9997399593e4b9c4ecfbbabbf1d3f3b54
 
-PODFILE CHECKSUM: 54d8bab6be9844aa2ccdb41a9f6c9a1d2a964020
+PODFILE CHECKSUM: d663fd468efecc45d7fcf79daeef22e6d6e23e0b
 
-COCOAPODS: 1.7.5
+COCOAPODS: 1.14.3

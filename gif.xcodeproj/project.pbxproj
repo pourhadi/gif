@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 51;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -42,7 +42,6 @@
 		DC023AFC24864A2E000D2514 /* ExtensionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC023AFB24864A2E000D2514 /* ExtensionDelegate.swift */; };
 		DC023AFE24864A2E000D2514 /* ComplicationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC023AFD24864A2E000D2514 /* ComplicationController.swift */; };
 		DC023B0324864A2F000D2514 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DC023B0224864A2F000D2514 /* Preview Assets.xcassets */; };
-		DC023B0724864A2F000D2514 /* giffed4Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DC023AE624864A2C000D2514 /* giffed4Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DC023B1024864AAF000D2514 /* Gif.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37AC0E1D239CB54A0073A1FD /* Gif.swift */; };
 		DC023B132486991B000D2514 /* Generator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC023B122486991B000D2514 /* Generator.swift */; };
 		DC023B1424869A30000D2514 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FD5A03238F989E00CB098E /* Utils.swift */; };
@@ -68,7 +67,6 @@
 		DC1ED73B23ECFCA90082D16E /* WrappedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1ED73423ECFCA90082D16E /* WrappedView.swift */; };
 		DC23D6D423F25E7C00224CB6 /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC23D6D323F25E7C00224CB6 /* Test.swift */; };
 		DC245D092416635600AF70C4 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC245D082416635600AF70C4 /* ShareViewController.swift */; };
-		DC245D102416635600AF70C4 /* share.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = DC245D062416635600AF70C4 /* share.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DC245D152416690F00AF70C4 /* AnimatedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC245D142416690F00AF70C4 /* AnimatedImage.swift */; };
 		DC245D1724166EDC00AF70C4 /* FileGalleryUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4894D923D7219100E4C865 /* FileGalleryUtils.swift */; };
 		DC245D1924166FBB00AF70C4 /* LoadingCircleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCF1A3423E9A80F00940D6F /* LoadingCircleView.swift */; };
@@ -150,13 +148,6 @@
 			remoteGlobalIDString = DC023AF124864A2E000D2514;
 			remoteInfo = "giffed4Watch Extension";
 		};
-		DC023B0524864A2F000D2514 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 37A7A946238087A000BBCADB /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = DC023AE524864A2C000D2514;
-			remoteInfo = giffed4Watch;
-		};
 		DC245D0E2416635600AF70C4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 37A7A946238087A000BBCADB /* Project object */;
@@ -167,17 +158,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		DC023B0824864A2F000D2514 /* Embed Watch Content */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
-			files = (
-				DC023B0724864A2F000D2514 /* giffed4Watch.app in Embed Watch Content */,
-			);
-			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		DC023B0B24864A2F000D2514 /* Embed App Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -185,17 +165,6 @@
 			dstSubfolderSpec = 13;
 			files = (
 				DC023AF324864A2E000D2514 /* giffed4Watch Extension.appex in Embed App Extensions */,
-			);
-			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		DC4894C223D6F84700E4C865 /* Embed App Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				DC245D102416635600AF70C4 /* share.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -750,14 +719,11 @@
 				37A7A94B238087A000BBCADB /* Frameworks */,
 				37A7A94C238087A000BBCADB /* Resources */,
 				0B075E2DB5E5D407A9401F12 /* [CP] Embed Pods Frameworks */,
-				DC4894C223D6F84700E4C865 /* Embed App Extensions */,
-				DC023B0824864A2F000D2514 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				DC245D0F2416635600AF70C4 /* PBXTargetDependency */,
-				DC023B0624864A2F000D2514 /* PBXTargetDependency */,
 			);
 			name = giffed;
 			productName = gif;
@@ -1209,11 +1175,6 @@
 			target = DC023AF124864A2E000D2514 /* giffed4Watch Extension */;
 			targetProxy = DC023AF424864A2E000D2514 /* PBXContainerItemProxy */;
 		};
-		DC023B0624864A2F000D2514 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = DC023AE524864A2C000D2514 /* giffed4Watch */;
-			targetProxy = DC023B0524864A2F000D2514 /* PBXContainerItemProxy */;
-		};
 		DC245D0F2416635600AF70C4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = DC245D052416635600AF70C4 /* share */;
@@ -1308,7 +1269,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GLOBAL_VERSION = 0.5.496;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1363,7 +1324,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GLOBAL_VERSION = 0.5.496;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -1387,10 +1348,177 @@
 				DEVELOPMENT_TEAM = 84476NUWZH;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = gif/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"bz2\"",
+					"-l\"c++\"",
+					"-l\"iconv\"",
+					"-l\"z\"",
+					"-framework",
+					"\"AVFoundation\"",
+					"-framework",
+					"\"Accelerate\"",
+					"-framework",
+					"\"Alamofire\"",
+					"-framework",
+					"\"AssetsLibrary\"",
+					"-framework",
+					"\"AudioToolbox\"",
+					"-framework",
+					"\"BiometricAuthentication\"",
+					"-framework",
+					"\"CFNetwork\"",
+					"-framework",
+					"\"CoreFoundation\"",
+					"-framework",
+					"\"CoreGraphics\"",
+					"-framework",
+					"\"CoreMedia\"",
+					"-framework",
+					"\"Drawsana\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"IGColorPicker\"",
+					"-framework",
+					"\"ImageIO\"",
+					"-framework",
+					"\"M13Checkbox\"",
+					"-framework",
+					"\"MobileCoreServices\"",
+					"-framework",
+					"\"Purchases\"",
+					"-framework",
+					"\"PurchasesCoreSwift\"",
+					"-framework",
+					"\"QuartzCore\"",
+					"-framework",
+					"\"SmileLock\"",
+					"-framework",
+					"\"SnapKit\"",
+					"-framework",
+					"\"StoreKit\"",
+					"-framework",
+					"\"SwiftDate\"",
+					"-framework",
+					"\"UIKit\"",
+					"-framework",
+					"\"VideoToolbox\"",
+					"-framework",
+					"\"YYImage\"",
+					"-framework",
+					"\"expat\"",
+					"-framework",
+					"\"fontconfig\"",
+					"-framework",
+					"\"freetype\"",
+					"-framework",
+					"\"fribidi\"",
+					"-framework",
+					"\"giflib\"",
+					"-framework",
+					"\"gmp\"",
+					"-framework",
+					"\"gnutls\"",
+					"-framework",
+					"\"iCloudSync\"",
+					"-framework",
+					"\"jpeg\"",
+					"-framework",
+					"\"kvazaar\"",
+					"-framework",
+					"\"lame\"",
+					"-framework",
+					"\"libaom\"",
+					"-framework",
+					"\"libass\"",
+					"-framework",
+					"\"libavcodec\"",
+					"-framework",
+					"\"libavdevice\"",
+					"-framework",
+					"\"libavfilter\"",
+					"-framework",
+					"\"libavformat\"",
+					"-framework",
+					"\"libavutil\"",
+					"-framework",
+					"\"libhogweed\"",
+					"-framework",
+					"\"libilbc\"",
+					"-framework",
+					"\"libnettle\"",
+					"-framework",
+					"\"libogg\"",
+					"-framework",
+					"\"libopencore-amrnb\"",
+					"-framework",
+					"\"libpng\"",
+					"-framework",
+					"\"libsndfile\"",
+					"-framework",
+					"\"libswresample\"",
+					"-framework",
+					"\"libswscale\"",
+					"-framework",
+					"\"libtheora\"",
+					"-framework",
+					"\"libtheoradec\"",
+					"-framework",
+					"\"libtheoraenc\"",
+					"-framework",
+					"\"libvidstab\"",
+					"-framework",
+					"\"libvorbis\"",
+					"-framework",
+					"\"libvorbisenc\"",
+					"-framework",
+					"\"libvorbisfile\"",
+					"-framework",
+					"\"libvpx\"",
+					"-framework",
+					"\"libwebp\"",
+					"-framework",
+					"\"libwebpdemux\"",
+					"-framework",
+					"\"libwebpmux\"",
+					"-framework",
+					"\"libxml2\"",
+					"-framework",
+					"\"mobileffmpeg\"",
+					"-framework",
+					"\"opus\"",
+					"-framework",
+					"\"shine\"",
+					"-framework",
+					"\"snappy\"",
+					"-framework",
+					"\"soxr\"",
+					"-framework",
+					"\"speex\"",
+					"-framework",
+					"\"tiff\"",
+					"-framework",
+					"\"twolame\"",
+					"-framework",
+					"\"vo-amrwbenc\"",
+					"-framework",
+					"\"wavpack\"",
+					"-framework",
+					"\"x264\"",
+					"-framework",
+					"\"x265\"",
+					"-framework",
+					"\"xvidcore\"",
+					"-weak_framework",
+					"\"LocalAuthentication\"",
+					"-ld64",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1416,10 +1544,177 @@
 				DEVELOPMENT_TEAM = 84476NUWZH;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = gif/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"bz2\"",
+					"-l\"c++\"",
+					"-l\"iconv\"",
+					"-l\"z\"",
+					"-framework",
+					"\"AVFoundation\"",
+					"-framework",
+					"\"Accelerate\"",
+					"-framework",
+					"\"Alamofire\"",
+					"-framework",
+					"\"AssetsLibrary\"",
+					"-framework",
+					"\"AudioToolbox\"",
+					"-framework",
+					"\"BiometricAuthentication\"",
+					"-framework",
+					"\"CFNetwork\"",
+					"-framework",
+					"\"CoreFoundation\"",
+					"-framework",
+					"\"CoreGraphics\"",
+					"-framework",
+					"\"CoreMedia\"",
+					"-framework",
+					"\"Drawsana\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"IGColorPicker\"",
+					"-framework",
+					"\"ImageIO\"",
+					"-framework",
+					"\"M13Checkbox\"",
+					"-framework",
+					"\"MobileCoreServices\"",
+					"-framework",
+					"\"Purchases\"",
+					"-framework",
+					"\"PurchasesCoreSwift\"",
+					"-framework",
+					"\"QuartzCore\"",
+					"-framework",
+					"\"SmileLock\"",
+					"-framework",
+					"\"SnapKit\"",
+					"-framework",
+					"\"StoreKit\"",
+					"-framework",
+					"\"SwiftDate\"",
+					"-framework",
+					"\"UIKit\"",
+					"-framework",
+					"\"VideoToolbox\"",
+					"-framework",
+					"\"YYImage\"",
+					"-framework",
+					"\"expat\"",
+					"-framework",
+					"\"fontconfig\"",
+					"-framework",
+					"\"freetype\"",
+					"-framework",
+					"\"fribidi\"",
+					"-framework",
+					"\"giflib\"",
+					"-framework",
+					"\"gmp\"",
+					"-framework",
+					"\"gnutls\"",
+					"-framework",
+					"\"iCloudSync\"",
+					"-framework",
+					"\"jpeg\"",
+					"-framework",
+					"\"kvazaar\"",
+					"-framework",
+					"\"lame\"",
+					"-framework",
+					"\"libaom\"",
+					"-framework",
+					"\"libass\"",
+					"-framework",
+					"\"libavcodec\"",
+					"-framework",
+					"\"libavdevice\"",
+					"-framework",
+					"\"libavfilter\"",
+					"-framework",
+					"\"libavformat\"",
+					"-framework",
+					"\"libavutil\"",
+					"-framework",
+					"\"libhogweed\"",
+					"-framework",
+					"\"libilbc\"",
+					"-framework",
+					"\"libnettle\"",
+					"-framework",
+					"\"libogg\"",
+					"-framework",
+					"\"libopencore-amrnb\"",
+					"-framework",
+					"\"libpng\"",
+					"-framework",
+					"\"libsndfile\"",
+					"-framework",
+					"\"libswresample\"",
+					"-framework",
+					"\"libswscale\"",
+					"-framework",
+					"\"libtheora\"",
+					"-framework",
+					"\"libtheoradec\"",
+					"-framework",
+					"\"libtheoraenc\"",
+					"-framework",
+					"\"libvidstab\"",
+					"-framework",
+					"\"libvorbis\"",
+					"-framework",
+					"\"libvorbisenc\"",
+					"-framework",
+					"\"libvorbisfile\"",
+					"-framework",
+					"\"libvpx\"",
+					"-framework",
+					"\"libwebp\"",
+					"-framework",
+					"\"libwebpdemux\"",
+					"-framework",
+					"\"libwebpmux\"",
+					"-framework",
+					"\"libxml2\"",
+					"-framework",
+					"\"mobileffmpeg\"",
+					"-framework",
+					"\"opus\"",
+					"-framework",
+					"\"shine\"",
+					"-framework",
+					"\"snappy\"",
+					"-framework",
+					"\"soxr\"",
+					"-framework",
+					"\"speex\"",
+					"-framework",
+					"\"tiff\"",
+					"-framework",
+					"\"twolame\"",
+					"-framework",
+					"\"vo-amrwbenc\"",
+					"-framework",
+					"\"wavpack\"",
+					"-framework",
+					"\"x264\"",
+					"-framework",
+					"\"x265\"",
+					"-framework",
+					"\"xvidcore\"",
+					"-weak_framework",
+					"\"LocalAuthentication\"",
+					"-ld64",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1539,13 +1834,23 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 84476NUWZH;
 				INFOPLIST_FILE = share/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.4.9;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"SwiftDate\"",
+					"-framework",
+					"\"iCloudSync\"",
+					"-ld64",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1565,13 +1870,23 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 84476NUWZH;
 				INFOPLIST_FILE = share/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.4.9;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"SwiftDate\"",
+					"-framework",
+					"\"iCloudSync\"",
+					"-ld64",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.pourhadi.giffed.share;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

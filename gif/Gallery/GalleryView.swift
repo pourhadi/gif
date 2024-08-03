@@ -930,7 +930,7 @@ struct GalleryContainer: View {
             return Button(action: {
                 //                    self.visibleActionSheet = .addMenu
                 self.$showPlusMenu.animation(Animation.easeIn(duration: 0.5).delay(0.1)).wrappedValue = true
-            }, label: { Image.symbol("plus", .init(weight: .regular))?
+            }, label: { Image.symbol("plus", .init(weight: .regular))?.renderingMode(.template).tint(.primary).foregroundColor(Color.primary)
 //                .frame(width: 32, height:32)
                 .padding(12) })
 //                .font(.system(size: 24, weight: .regular, design: .rounded))

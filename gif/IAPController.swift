@@ -23,7 +23,7 @@ struct IAPDetails {
 
 class IAP: NSObject, SKPaymentTransactionObserver, SKProductsRequestDelegate {
     
-    var debug = false
+    var debug = true
 
     
     var signature: String?

@@ -14,16 +14,6 @@
             symbolName = "UICollectionViewFlowLayoutBreakForInvalidSizes"
             moduleName = "">
             <Locations>
-               <Location
-                  uuid = "B1DD59D3-7C6A-4D6D-AB75-211EA724C3DB - 6a6cfc8d24631f32"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "UICollectionViewFlowLayoutBreakForInvalidSizes"
-                  moduleName = "UIKitCore"
-                  usesParentBreakpointCondition = "Yes"
-                  offsetFromSymbolStart = "0">
-               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>
@@ -39,40 +29,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "133"
             endingLineNumber = "133"
-            landmarkName = "getThumbs(for:multiplier:)"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "9693FD16-5ABB-4DF3-85EC-1CDF44B40F9E - 9b80df3052d0357d"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #1 ((Swift.Result&lt;Swift.Array&lt;gif.TimelineThumb&gt;, Swift.Never&gt;) -&gt; ()) -&gt; () in gif.ThumbGenerator.getThumbs(for: Foundation.URL, multiplier: CoreGraphics.CGFloat) -&gt; Combine.Future&lt;Swift.Array&lt;gif.TimelineThumb&gt;, Swift.Never&gt;"
-                  moduleName = "gif"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/dan/Projects/gif/gif/Video.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "132"
-                  endingLineNumber = "132"
-                  offsetFromSymbolStart = "1228">
-               </Location>
-               <Location
-                  uuid = "9693FD16-5ABB-4DF3-85EC-1CDF44B40F9E - e0c0210540334862"
-                  shouldBeEnabled = "No"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "function signature specialization &lt;Arg[7] = Value Promoted from Box&gt; of closure #1 (__C.CMTime, Swift.Optional&lt;__C.CGImageRef&gt;, __C.CMTime, __C.AVAssetImageGeneratorResult, Swift.Optional&lt;Swift.Error&gt;) -&gt; () in closure #1 ((Swift.Result&lt;Swift.Array&lt;gif.TimelineThumb&gt;, Swift.Never&gt;) -&gt; ()) -&gt; () in gif.ThumbGenerator.getThumbs(for: Foundation.URL, multiplier: CoreGraphics.CGFloat) -&gt; Combine.Future&lt;Swift.Array&lt;gif.TimelineThumb&gt;, Swift.Never&gt;"
-                  moduleName = "gif"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/dan/Projects/gif/gif/Video.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "130"
-                  endingLineNumber = "130"
-                  offsetFromSymbolStart = "484">
-               </Location>
-            </Locations>
+            landmarkName = "EditingContext"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -87,8 +45,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "242"
             endingLineNumber = "242"
-            landmarkName = "getFrames(preview:)"
-            landmarkType = "7">
+            landmarkName = "GifConfig"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

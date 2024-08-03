@@ -9,7 +9,7 @@
 import Foundation
 import Alamofire
 import Combine
-import Firebase
+//import Firebase
 
 
 class API: NSObject, URLSessionTaskDelegate, RedirectHandler {
@@ -18,19 +18,19 @@ class API: NSObject, URLSessionTaskDelegate, RedirectHandler {
     static func reath(_ req: URLRequest) -> AnyPublisher<URLRequest, Never> {
         return Future<URLRequest, Never> { promise in
             
-            
-            Auth.auth().signInAnonymously() { (authResult, error) in
-                if let authResult = authResult {
-                    authResult.user.getIDTokenForcingRefresh(true, completion: { (result, error) in
-                        API.token = result
-                        var req = req
-                        req.authorize()
-                        promise(.success(req))
-                    })
-                } else {
-                    promise(.success(req))
-                }
-            }
+            promise(.success(req))
+//            Auth.auth().signInAnonymously() { (authResult, error) in
+//                if let authResult = authResult {
+//                    authResult.user.getIDTokenForcingRefresh(true, completion: { (result, error) in
+//                        API.token = result
+//                        var req = req
+//                        req.authorize()
+//                        promise(.success(req))
+//                    })
+//                } else {
+//                    promise(.success(req))
+//                }
+//            }
  
         }.eraseToAnyPublisher()
     }

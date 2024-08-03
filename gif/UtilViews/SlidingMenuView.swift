@@ -30,9 +30,12 @@ struct _SlidingMenuContent<Content>: View, Equatable where Content: View {
     let items: [Content]
     let itemWidth: CGFloat
     let selectedIndex: Int
+    var content: [SlidingMenuWrapperView<Content>] {
+        return self.items.map { SlidingMenuWrapperView(content: $0)}
+    }
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(self.items.map { SlidingMenuWrapperView(content: $0) }) { item in
+            ForEach(self.content) { item in
                 item
                     .frame(width: self.itemWidth)
 //                    .overlay(Color.init(red: Double.random(in: 0..<1), green: Double.random(in: 0..<1), blue: Double.random(in: 0..<1)))

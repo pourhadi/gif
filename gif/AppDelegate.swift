@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import Firebase
+//import Firebase
 import StoreKit
 import Purchases
 
@@ -21,16 +21,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         
         
-        FirebaseApp.configure()
-        
-        Auth.auth().signInAnonymously() { (authResult, error) in
-            print("signed in")
-            authResult?.user.getIDTokenForcingRefresh(true, completion: { (token, _) in
-                print("token: \(token ?? "")")
-                API.token = token
-            })
-        }
-        
+//        FirebaseApp.configure()
+//        
+//        Auth.auth().signInAnonymously() { (authResult, error) in
+//            print("signed in")
+//            authResult?.user.getIDTokenForcingRefresh(true, completion: { (token, _) in
+//                print("token: \(token ?? "")")
+//                API.token = token
+//            })
+//        }
+//        
  
         Purchases.debugLogsEnabled = true
         Purchases.configure(withAPIKey: "vKmmTEQfrYvYzHuzvwNXziYnxoDmQylx")
